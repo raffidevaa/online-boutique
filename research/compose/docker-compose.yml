@@ -1,0 +1,341 @@
+x-grpc-healthcheck-defaults: &grpc-healthcheck-defaults
+  interval: 10s
+  timeout: 5s
+  retries: 5
+
+services:
+  # Data store
+  redis-cart:
+    image: redis:alpine
+    mem_limit: 256m
+    cpus: 0.125
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks: [boutique]
+
+  # Tier 1: backend services with no intra-app dependencies
+  productcatalogservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/productcatalogservice:v0.10.6
+    mem_limit: 128m
+    cpus: 0.2
+    environment:
+      PORT: "3550"
+      DISABLE_PROFILER: "1"
+    volumes:
+      - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
+    healthcheck:
+      <<: *grpc-healthcheck-defaults
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:3550"]
+    networks: [boutique]
+
+  currencyservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/currencyservice:v0.10.6
+    mem_limit: 128m
+    cpus: 0.2
+    environment:
+      PORT: "7000"
+      DISABLE_PROFILER: "1"
+    volumes:
+      - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
+    healthcheck:
+      <<: *grpc-healthcheck-defaults
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:7000"]
+    networks: [boutique]
+
+  paymentservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/paymentservice:v0.10.6
+    mem_limit: 128m
+    cpus: 0.2
+    environment:
+      PORT: "50051"
+      DISABLE_PROFILER: "1"
+    volumes:
+      - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
+    healthcheck:
+      <<: *grpc-healthcheck-defaults
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:50051"]
+    networks: [boutique]
+
+  shippingservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/shippingservice:v0.10.6
+    mem_limit: 128m
+    cpus: 0.2
+    environment:
+      PORT: "50051"
+      DISABLE_PROFILER: "1"
+    volumes:
+      - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
+    healthcheck:
+      <<: *grpc-healthcheck-defaults
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:50051"]
+    networks: [boutique]
+
+  emailservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/emailservice:v0.10.6
+    mem_limit: 128m
+    cpus: 0.2
+    environment:
+      PORT: "8080"
+      DISABLE_PROFILER: "1"
+    volumes:
+      - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
+    healthcheck:
+      <<: *grpc-healthcheck-defaults
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:8080"]
+    networks: [boutique]
+
+  adservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/adservice:v0.10.6
+    mem_limit: 300m
+    cpus: 0.3
+    environment:
+      PORT: "9555"
+    volumes:
+      - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
+    healthcheck:
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:9555"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 45s
+    networks: [boutique]
+
+  # Tier 2: depends on tier 1
+  cartservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/cartservice:v0.10.6
+    mem_limit: 128m
+    cpus: 0.3
+    environment:
+      REDIS_ADDR: "redis-cart:6379"
+    volumes:
+      - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
+    healthcheck:
+      <<: *grpc-healthcheck-defaults
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:7070"]
+      start_period: 15s
+    depends_on:
+      redis-cart:
+        condition: service_healthy
+    networks: [boutique]
+
+  recommendationservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/recommendationservice:v0.10.6
+    mem_limit: 450m
+    cpus: 0.2
+    environment:
+      PORT: "8080"
+      PRODUCT_CATALOG_SERVICE_ADDR: "productcatalogservice:3550"
+      DISABLE_PROFILER: "1"
+    volumes:
+      - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
+    healthcheck:
+      <<: *grpc-healthcheck-defaults
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:8080"]
+    depends_on:
+      productcatalogservice:
+        condition: service_healthy
+    networks: [boutique]
+
+  # Tier 3: orchestrates tier 1 + 2
+  checkoutservice:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/checkoutservice:v0.10.6
+    mem_limit: 128m
+    cpus: 0.2
+    environment:
+      PORT: "5050"
+      PRODUCT_CATALOG_SERVICE_ADDR: "productcatalogservice:3550"
+      SHIPPING_SERVICE_ADDR: "shippingservice:50051"
+      PAYMENT_SERVICE_ADDR: "paymentservice:50051"
+      EMAIL_SERVICE_ADDR: "emailservice:8080"
+      CURRENCY_SERVICE_ADDR: "currencyservice:7000"
+      CART_SERVICE_ADDR: "cartservice:7070"
+    volumes:
+      - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
+    healthcheck:
+      <<: *grpc-healthcheck-defaults
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:5050"]
+    depends_on:
+      productcatalogservice:
+        condition: service_healthy
+      shippingservice:
+        condition: service_healthy
+      paymentservice:
+        condition: service_healthy
+      emailservice:
+        condition: service_healthy
+      currencyservice:
+        condition: service_healthy
+      cartservice:
+        condition: service_healthy
+    networks: [boutique]
+
+  # Tier 4: edge
+  frontend:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/frontend:v0.10.6
+    mem_limit: 128m
+    cpus: 0.2
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      PRODUCT_CATALOG_SERVICE_ADDR: "productcatalogservice:3550"
+      CURRENCY_SERVICE_ADDR: "currencyservice:7000"
+      CART_SERVICE_ADDR: "cartservice:7070"
+      RECOMMENDATION_SERVICE_ADDR: "recommendationservice:8080"
+      SHIPPING_SERVICE_ADDR: "shippingservice:50051"
+      CHECKOUT_SERVICE_ADDR: "checkoutservice:5050"
+      AD_SERVICE_ADDR: "adservice:9555"
+      SHOPPING_ASSISTANT_SERVICE_ADDR: "shoppingassistantservice:80"
+      ENABLE_ASSISTANT: "false"
+      productcatalogservice:
+        condition: service_healthy
+      currencyservice:
+        condition: service_healthy
+      cartservice:
+        condition: service_healthy
+      recommendationservice:
+        condition: service_healthy
+      shippingservice:
+        condition: service_healthy
+      checkoutservice:
+        condition: service_healthy
+      adservice:
+        condition: service_healthy
+    networks: [boutique]
+
+  loadgenerator:
+    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/loadgenerator:v0.10.6
+    mem_limit: 512m
+    cpus: 0.5
+    environment:
+      FRONTEND_ADDR: "frontend:8080"
+      USERS: "10"
+      RATE: "1"
+    depends_on:
+      frontend:
+        condition: service_started
+    networks: [boutique]
+
+  # Observability stack
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    mem_limit: 256m
+    cpus: 0.3
+    privileged: true
+    command:
+      - "-containerd=/var/run/containerd/containerd.sock"
+      - "-containerd-namespace=moby"
+    volumes:
+      - /:/rootfs:ro
+      - /run/containerd/containerd.sock:/var/run/containerd/containerd.sock:ro
+      - /sys:/sys:ro
+      - /dev/disk/:/dev/disk:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [boutique]
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:v1.8.2
+    mem_limit: 64m
+    cpus: 0.1
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    networks: [boutique]
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    mem_limit: 512m
+    cpus: 0.3
+    ports:
+      - "9090:9090"
+    volumes:
+      - ../observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      cadvisor:
+        condition: service_healthy
+    networks: [boutique]
+
+  loki:
+    image: grafana/loki:3.2.1
+    mem_limit: 512m
+    cpus: 0.3
+    volumes:
+      - ../observability/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+    command: ["-config.file=/etc/loki/loki-config.yml"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3100/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks: [boutique]
+
+  promtail:
+    image: grafana/promtail:3.2.1
+    mem_limit: 128m
+    cpus: 0.2
+    volumes:
+      - ../observability/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: ["-config.file=/etc/promtail/promtail-config.yml"]
+    depends_on:
+      loki:
+        condition: service_healthy
+    networks: [boutique]
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    mem_limit: 256m
+    cpus: 0.3
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:-admin}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:-admin}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ../observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+    networks: [boutique]
+
+networks:
+  boutique:
+    name: research-boutique
+
+volumes:
+  redis-data:
+  prometheus-data:
+  loki-data:
+  grafana-data:

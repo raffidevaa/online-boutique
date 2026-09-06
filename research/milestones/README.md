@@ -9,7 +9,7 @@ each one depends on the previous phase's deliverables.
 
 | # | Phase | Status |
 |---|---|---|
-| 00 | [Environment setup](00-environment-setup.md) | Not started |
+| 00 | [Environment setup](00-environment-setup.md) | Done |
 | 01 | [Fault injection pipeline](01-fault-injection-pipeline.md) | Not started |
 | 02 | [Ground truth dataset collection](02-ground-truth-dataset.md) | Not started |
 | 03 | [RCA agent](03-rca-agent.md) | Not started |

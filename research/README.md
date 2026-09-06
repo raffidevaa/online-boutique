@@ -38,7 +38,7 @@ docker compose -f research/compose/docker-compose.yml up -d
 docker compose -f research/compose/docker-compose.yml ps
 
 # 3. Access
-# Online Boutique frontend : http://localhost:<port>
+# Online Boutique frontend : http://localhost:8080
 # Grafana                  : http://localhost:3000
 # Prometheus               : http://localhost:9090
 

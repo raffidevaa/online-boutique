@@ -121,3 +121,20 @@ limitations" below.
 6. Distributed tracing relies on Online Boutique's native OpenTelemetry instrumentation;
    deeper custom instrumentation, if needed, requires building selected services from source
    rather than using prebuilt images.
+7. The actual homelab host has 7.6 GB RAM (2-core/4-thread CPU confirmed: i3-6100T), not the
+   20 GB this doc's "Resource allocation" table targets — the RAM upgrade referenced there
+   hadn't happened as of phase 00. The full stack (app + observability, `research/compose/`)
+   still runs, but with the desktop session active alongside it, available memory sits in the
+   3-3.5 GB range and some (zram-backed, not disk) swap gets used. Re-check headroom before
+   adding the agent layer (phase 03+) or running memory-heavier fault scenarios.
+8. This host's Docker Engine (29.x) defaults to the containerd-snapshotter storage driver.
+   cAdvisor's classic Docker-container factory claims every container's cgroup by name before
+   the containerd factory can, then fails to read per-container stats from the (nonexistent,
+   under this driver) graphdriver layerdb path — silently dropping all container metrics.
+   Fix (see `research/compose/docker-compose.yml`'s `cadvisor` service): don't give cAdvisor a
+   docker.sock at all, so its Docker factory fails registration at startup like the
+   crio/podman ones already do; point it at `/run/containerd/containerd.sock` with
+   `-containerd-namespace=moby` instead. Trade-off: per-container metrics carry `image` and a
+   numeric container-ID `name`, not a `container_label_com_docker_compose_service` label
+   (that enrichment came from docker.sock); Prometheus derives a readable `service` label from
+   `image` via `metric_relabel_configs` instead (see `research/observability/prometheus/prometheus.yml`).

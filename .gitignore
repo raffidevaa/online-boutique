@@ -27,3 +27,7 @@ pkg/
 release/wi-kubernetes-manifests.yaml
 vendor/
 gha-creds-*.json
+
+# Thesis research scaffold (research/) — real secrets and downloaded tooling, never committed
+research/compose/.env
+research/compose/healthcheck/grpc_health_probe
