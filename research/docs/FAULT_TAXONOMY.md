@@ -1,92 +1,66 @@
 # Fault taxonomy
 
-List of valid `fault_type` values for use in scenarios (`research/fault-injection/scenarios/*.yaml`)
-and the ground truth log. Scoped to what can be simulated with Docker Compose + Pumba (see
-`ARCHITECTURE.md` for why node-level/kernel-level faults are out of scope).
+This is the compact index for the detailed methodology and scenario catalog in
+[`FAULT_INJECTION.md`](FAULT_INJECTION.md). The primary taxonomy follows RCAEval’s three
+categories; this project selects a smaller Docker Compose-compatible core set.
 
-Target services (Online Boutique, current `src/` tree): `frontend`, `cartservice`,
-`productcatalogservice`, `currencyservice`, `paymentservice`, `shippingservice`,
-`emailservice`, `checkoutservice`, `recommendationservice`, `adservice`,
-`shoppingassistantservice`, `loadgenerator`, plus `redis-cart` (the cache backing
-`cartservice`; not under `src/`, but a running container and a valid fault target).
+## Taxonomy and status
 
-## 1. Resource-level
+| Category | Normalized fault type | Status | Primary evidence |
+|---|---|---|---|
+| Resource | `cpu_hog` | Core | CPU, latency, traces |
+| Resource | `memory_pressure` | Core | Working set, OOM/swap, latency |
+| Resource | `disk_stress` | Candidate | I/O wait and storage latency |
+| Resource | `socket_stress` | Candidate | Connections, descriptors, resets |
+| Network | `network_delay` | Core | RPC latency, traces, deadlines |
+| Network | `packet_loss` | Core | RPC errors, retries, traces |
+| Code-level | `incorrect_return_value` | Core/deferred | Application semantics and traces |
+| Code-level | `missing_exception_handler` | Core/deferred | Stack traces, failed parent spans |
+| Code-level | `incorrect_parameter` | Candidate/deferred | Validation/downstream errors |
+| Code-level | `missing_parameter` | Candidate/deferred | Invalid argument errors |
+| Code-level | `missing_function_call` | Candidate/deferred | Missing interaction or state change |
 
-| fault_type | Description | Tool |
-|---|---|---|
-| `cpu_stress` | Load the target container's CPU | `pumba stress --stress-cpu` |
-| `memory_stress` | Load/exhaust the target container's memory | `pumba stress --stress-memory` |
-| `disk_io_stress` | Load disk read/write | `pumba stress --stress-io` (via stress-ng) |
+Core/deferred code-level faults require reproducible faulty-image variants and explicit
+approval before modifying or instrumenting upstream service source.
 
-**Note:** use `cpu_stress` sparingly on this host. Given the 2-core/4-thread CPU, always run
-with host-level monitoring (`htop`/`free -h`) active to detect whether effects extend beyond
-the target container.
+## Delivery mechanisms, not categories
 
-## 2. Network-level
+Pumba, Linux `tc`, `stress-ng`, Docker lifecycle operations, Toxiproxy, and faulty image
+variants describe how a fault may be introduced. They must not be used as the RCA taxonomy
+or revealed to the RCA agent. Container stop/kill/pause and dependency unavailability are
+implementation techniques or propagated conditions, not additional headline categories.
 
-| fault_type | Description | Tool |
-|---|---|---|
-| `network_delay` | Add latency to inter-service communication | `pumba netem delay` |
-| `packet_loss` | Drop a portion of packets | `pumba netem loss` |
-| `packet_corrupt` | Corrupt packet contents | `pumba netem corrupt` |
-| `bandwidth_limit` | Restrict bandwidth | `pumba netem rate` |
+## Research constraints
 
-Note: all inter-service calls in Online Boutique use gRPC. Network faults may surface as
-gRPC-specific errors (e.g. `DEADLINE_EXCEEDED`, `UNAVAILABLE`) rather than generic HTTP
-errors — capture this in `expected_root_cause`.
+- One primary fault and one primary target per experiment; cascading cases require separate
+  documentation and explicit approval.
+- Every case records explicit intensity, duration, workload, timestamps, expected local and
+  propagated symptoms, telemetry evidence, ground truth, and recovery behavior.
+- `adservice` JVM startup/GC noise and `shoppingassistantservice` LLM-generated fallback text
+  are known confounders and must be flagged in experiment metadata.
+- CPU and memory cases require host-level monitoring on the constrained 2-core host.
+- Network cases must account for gRPC symptoms such as `DEADLINE_EXCEEDED` and `UNAVAILABLE`.
+- Kubernetes-only node, scheduling, admission, storage, and control-plane faults are out of
+  scope. Docker Compose remains the only runtime.
 
-## 3. Application/container-level
+## Ground truth minimum
 
-| fault_type | Description | Tool |
-|---|---|---|
-| `container_kill` | Forcefully kill the container | `pumba kill` |
-| `container_pause` | Freeze the container's process | `pumba pause` |
-| `container_stop` | Graceful stop (simulates slow shutdown) | `pumba stop` |
+The future structured ground truth must remain separate from agent input and contain:
 
-**`adservice` caveat:** JVM restart/cold-start after `container_kill` or `container_stop`
-takes noticeably longer than the other (Go/Python/Node) services. Account for this in
-expected recovery time, and don't mistake slow JVM warm-up for a persistent fault effect.
-
-**`shoppingassistantservice` caveat:** this service calls an LLM to generate responses.
-Faulting it (or its dependencies) can surface as AI-generated error/fallback text instead of
-a typical stack trace or gRPC status code. Treat this as a known confounder — cross-check any
-RCA finding here against this caveat before accepting it as a genuine detection, the same way
-`adservice` JVM noise is handled.
-
-## 4. Dependency-level
-
-| fault_type | Description | Tool |
-|---|---|---|
-| `grpc_error_injection` | Force an error response from a service's gRPC endpoint | Toxiproxy / manual interceptor |
-| `timeout_injection` | Delay a response past the caller's timeout | Toxiproxy |
-| `service_unavailable` | Downstream genuinely unreachable | Combination of `container_stop` + network partition |
-
-`checkoutservice` is the most useful orchestration point for dependency-level scenarios: it
-calls `paymentservice`, `shippingservice`, `emailservice`, `cartservice`, and
-`currencyservice` in sequence, making it a good target for observing fault propagation.
-
-## Ground truth logging schema
-
-Every fault execution MUST be logged with the following schema (see also `AGENTS.md`):
-
-```json
-{
-  "experiment_id": "exp-2026-09-06-001",
-  "timestamp_start": "2026-09-06T10:00:00+07:00",
-  "timestamp_end": "2026-09-06T10:02:00+07:00",
-  "fault_type": "container_kill",
-  "target_service": "productcatalogservice",
-  "parameters": {},
-  "expected_root_cause": "productcatalogservice unavailable, propagates to frontend and recommendationservice"
-}
+```yaml
+root_cause_service: paymentservice
+fault_category: network
+fault_type: network_delay
+injection_start: 2026-09-12T10:00:00Z
+injection_end: 2026-09-12T10:02:00Z
+severity: medium
 ```
 
-## Execution rules
+Full run metadata, parameters, telemetry windows, cleanup state, and remediation families
+belong in the append-only experiment directory under `research/experiments/runs/`.
 
-- One fault per execution, except for explicitly designed and separately documented
-  "cascading fault" scenarios.
-- Minimum gap between fault executions: enough for the system to return to a steady-state
-  baseline — verify via the Grafana dashboard before proceeding.
-- `resource-level` faults (especially `cpu_stress`) and any fault involving `adservice` or
-  `shoppingassistantservice` require extra attention because of known potential confounders
-  — run these with host monitoring active and note any host-wide effects.
+## Authority and implementation status
+
+RCAEval supplies the taxonomy and evaluation perspective. The scenario catalog supplies
+thesis-specific targets, workloads, parameter bands, and propagation hypotheses. During the
+current architecture phase, no fault scenario or injector backend is implemented or run.

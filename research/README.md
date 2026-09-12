@@ -16,7 +16,8 @@ manifests/Helm chart/Skaffold config at the repo root — see
 |---|---|---|
 | Microservices app | Online Boutique (`GoogleCloudPlatform/microservices-demo`) | `research/compose/` (source under repo-root `src/`) |
 | Observability | Prometheus, Grafana, Loki, Promtail, cAdvisor | `research/observability/` |
-| Fault injection | Pumba + custom ground truth logger | `research/fault-injection/` |
+| Experiment runtime | Compose application access, read-only observer, CLI, and shared utilities | `research/service/`, `observer/`, `orchestrator/`, `utils/` |
+| Fault injection | Future Pumba backend and workload controls | `research/generators/` |
 | Agentic AI | LLM via API + tool-calling into observability | `research/agent/` |
 
 ## Why Online Boutique
@@ -42,11 +43,11 @@ docker compose -f research/compose/docker-compose.yml ps
 # Grafana                  : http://localhost:3000
 # Prometheus               : http://localhost:9090
 
-# 4. Run an example fault scenario
-python research/fault-injection/run_scenario.py --scenario research/fault-injection/scenarios/resource-01.yaml
+# 4. Validate the architecture without changing runtime state
+python -m research.orchestrator doctor
 
-# 5. Run the agent against an incident time window
-python research/agent/run_rca.py --start <timestamp> --end <timestamp>
+# 5. Capture a read-only snapshot outside the repository
+python -m research.orchestrator snapshot --output /tmp/research-architecture-snapshot
 ```
 
 ## Development hardware
@@ -62,6 +63,7 @@ python research/agent/run_rca.py --start <timestamp> --end <timestamp>
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — system architecture & technical decision rationale
 - [`docs/FAULT_TAXONOMY.md`](docs/FAULT_TAXONOMY.md) — fault taxonomy covered by this research
+- [`docs/FAULT_INJECTION.md`](docs/FAULT_INJECTION.md) — RCAEval-aligned methodology and scenario catalog
 - [`docs/EXPERIMENT_LOG.md`](docs/EXPERIMENT_LOG.md) — experiment log template
 - [`../AGENTS.md`](../AGENTS.md) — conventions for AI coding agents working in this repo
 

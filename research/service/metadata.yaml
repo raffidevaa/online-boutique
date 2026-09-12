@@ -1,0 +1,77 @@
+schema_version: 1
+application: online-boutique
+services:
+  redis-cart:
+    role: cart cache
+    port: 6379
+    targetable: true
+  productcatalogservice:
+    role: product catalog
+    port: 3550
+    targetable: true
+  currencyservice:
+    role: currency conversion
+    port: 7000
+    targetable: true
+  paymentservice:
+    role: payment processing
+    port: 50051
+    targetable: true
+  shippingservice:
+    role: shipping quotation
+    port: 50051
+    targetable: true
+  emailservice:
+    role: order confirmation email
+    port: 8080
+    targetable: true
+  adservice:
+    role: advertisement recommendation
+    port: 9555
+    targetable: true
+    confounders:
+      - JVM startup and garbage-collection CPU spikes
+  cartservice:
+    role: shopping cart
+    port: 7070
+    dependencies: [redis-cart]
+    targetable: true
+  recommendationservice:
+    role: product recommendation
+    port: 8080
+    dependencies: [productcatalogservice]
+    targetable: true
+  checkoutservice:
+    role: checkout orchestrator
+    port: 5050
+    dependencies:
+      - productcatalogservice
+      - shippingservice
+      - paymentservice
+      - emailservice
+      - currencyservice
+      - cartservice
+    targetable: true
+  frontend:
+    role: public storefront
+    port: 8080
+    dependencies:
+      - productcatalogservice
+      - currencyservice
+      - cartservice
+      - recommendationservice
+      - shippingservice
+      - checkoutservice
+      - adservice
+    targetable: true
+  loadgenerator:
+    role: controlled workload generator
+    dependencies: [frontend]
+    targetable: false
+  shoppingassistantservice:
+    role: optional LLM-backed shopping assistant
+    port: 80
+    targetable: false
+    deployed: false
+    confounders:
+      - LLM-generated fallback or error text

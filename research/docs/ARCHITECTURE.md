@@ -3,7 +3,7 @@
 ## End-to-end flow
 
 ```
-Fault injection (Pumba)
+Future controlled fault injection
         │
         ▼
 Microservices app (Online Boutique) ──► Observability (Prometheus/Loki/Grafana)
@@ -13,6 +13,28 @@ Ground truth logger                     Agentic AI (RCA + remediation)
         │                                        │
         └────────────────► Evaluation ◄──────────┘
 ```
+
+## Current experiment architecture foundation
+
+The research runtime is now organized around research concepts rather than direct tool calls:
+
+```text
+Experiment command -> orchestrator
+                      -> Compose application service + metadata + Docker state
+                      -> observer (Prometheus, Loki, alerts)
+                      -> append-only experiment artifacts
+                      -> future generators / RCA agent / evaluator
+```
+
+`research/orchestrator/` has no LLM dependency. `research/service/` is the sole owner of
+low-level Compose and Docker inspection, while `research/observer/` provides read-only
+telemetry access. `research/generators/` currently contains only a tool-neutral fault input:
+no Pumba backend or fault scenario is active during the architecture phase.
+
+Fault methodology is documented separately in `FAULT_INJECTION.md`. It uses RCAEval as the
+taxonomy reference and keeps resource, network, and code-level faults distinct from the
+tools used to deliver them. Code-level cases require reproducible faulty-image variants and
+remain deferred until explicitly approved.
 
 ## Design decisions & rationale
 
@@ -39,8 +61,8 @@ rejected in favor of Docker Compose + Pumba because:
   the choice for this research, and those directories are left untouched as upstream
   reference material.
 - Trade-off: loses the ability to inject node-level and kernel-level faults (only relevant
-  under Kubernetes). This research's fault taxonomy is scoped to container, network, and
-  resource level — see `FAULT_TAXONOMY.md`.
+  under Kubernetes). This research's fault taxonomy is scoped to resource, network, and
+  code-level faults; delivery mechanisms remain separate — see `FAULT_TAXONOMY.md`.
 
 ### 2. Online Boutique as the microservices app
 
@@ -101,7 +123,7 @@ limitations" below.
 
 ## Research limitations (scope limitation)
 
-1. The fault taxonomy is scoped to container, network, and resource level — it does not
+1. The fault taxonomy is scoped to resource, network, and code-level faults — it does not
    cover node-level or kernel-level faults, since Kubernetes is not used for this research
    (despite the upstream Kubernetes manifests being present in this repo for other purposes).
 2. Host CPU is limited (2 core/4 thread). CPU-stress fault scenarios can affect the entire
@@ -126,7 +148,7 @@ limitations" below.
    hadn't happened as of phase 00. The full stack (app + observability, `research/compose/`)
    still runs, but with the desktop session active alongside it, available memory sits in the
    3-3.5 GB range and some (zram-backed, not disk) swap gets used. Re-check headroom before
-   adding the agent layer (phase 03+) or running memory-heavier fault scenarios.
+   adding the agent layer (phase 04+) or running memory-heavier fault scenarios.
 8. This host's Docker Engine (29.x) defaults to the containerd-snapshotter storage driver.
    cAdvisor's classic Docker-container factory claims every container's cgroup by name before
    the containerd factory can, then fails to read per-container stats from the (nonexistent,

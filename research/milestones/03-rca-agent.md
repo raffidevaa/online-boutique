@@ -1,4 +1,4 @@
-# Phase 03 — RCA agent
+# Phase 04 — RCA agent
 
 ## Goal
 
@@ -26,8 +26,8 @@ time window, using the observability stack as its data source.
 5. **Enforce read-only by default.** Tool-calling must not be able to execute arbitrary
    commands against containers; any mutating action requires an explicit allowlist (this
    becomes relevant in phase 04).
-6. **Validate.** Run the agent against ≥1 previously-validated fault scenario from phases
-   01/02 and compare its output against that run's `expected_root_cause`.
+6. **Validate.** Run the agent against ≥1 previously validated core scenario and compare
+   ranked Top-1/Top-3 service and fault hypotheses against the withheld ground truth.
 7. **Confounder awareness.** When testing against `adservice`- or
    `shoppingassistantservice`-related incidents, check whether the agent's hypothesis
    correctly accounts for the known confounder (JVM noise / LLM-generated error text) rather
@@ -44,8 +44,8 @@ time window, using the observability stack as its data source.
 
 - The agent runs end-to-end against a real incident window and produces a root-cause
   hypothesis.
-- At least one validation run's hypothesis is compared against `expected_root_cause` and the
-  result (match/no-match, and why) is documented.
+- At least one validation run's ranked hypothesis is compared against the withheld ground truth and the
+  result (service/fault match or no-match, and why) is documented.
 
 ## References
 

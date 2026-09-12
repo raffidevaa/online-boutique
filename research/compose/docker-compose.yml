@@ -192,6 +192,7 @@ services:
       AD_SERVICE_ADDR: "adservice:9555"
       SHOPPING_ASSISTANT_SERVICE_ADDR: "shoppingassistantservice:80"
       ENABLE_ASSISTANT: "false"
+    depends_on:
       productcatalogservice:
         condition: service_healthy
       currencyservice:
@@ -284,6 +285,8 @@ services:
     image: grafana/loki:3.2.1
     mem_limit: 512m
     cpus: 0.3
+    ports:
+      - "127.0.0.1:3100:3100"
     volumes:
       - ../observability/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
       - loki-data:/loki

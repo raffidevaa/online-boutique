@@ -11,8 +11,8 @@ Environment. The thesis work has three main parts:
 
 1. **Simulated environment** — Online Boutique plus an observability stack, run via Docker
    Compose on a homelab server.
-2. **Fault injection layer** — Pumba + custom scripts to inject controlled faults and record
-   ground truth.
+2. **Experiment framework and fault-injection layer** — Compose environment, telemetry, and
+   later controlled-fault adapters that record ground truth.
 3. **Agentic AI layer** — an LLM-based agent (accessed via API) that performs RCA and
    recommends remediation based on observability data.
 
@@ -33,10 +33,12 @@ Read `research/docs/ARCHITECTURE.md` before changing any part of the system stru
 ```
 research/
 ├── compose/                # docker-compose.yml + override files
+├── generators/             # fault/workload generator inputs and later adapters
+├── orchestrator/           # experiment commands and later lifecycle runner
+├── service/                # Compose application adapter, Docker state, and service metadata
+├── observer/               # read-only Prometheus, Loki, and alert access
+├── utils/                  # shared configuration and append-only artifact helpers
 ├── observability/          # Prometheus, Loki, Promtail config, Grafana dashboard JSON
-├── fault-injection/        # Pumba wrapper scripts + ground truth logger
-│   ├── scenarios/          # fault scenario definitions (YAML/JSON)
-│   └── logs/               # ground truth output (DO NOT commit large experiment data — gitignored)
 ├── agent/                  # agentic AI code (orchestration, tools, prompts)
 │   ├── tools/               # tool-calling wrappers for Prometheus/Loki API
 │   └── prompts/
@@ -93,24 +95,27 @@ docker compose -f research/compose/docker-compose.yml logs -f <service>
   orchestration). Follow PEP8, use type hints.
 - Any script that produces experiment data must write structured output (JSON/CSV), not
   just print to stdout — this becomes the ground truth dataset.
-- Every fault execution MUST be logged with the following schema (see
-  `research/docs/FAULT_TAXONOMY.md` for the list of valid `fault_type` values):
+- Future fault executions must follow `research/docs/FAULT_INJECTION.md`, use the
+  RCAEval-aligned identifiers in `research/docs/FAULT_TAXONOMY.md`, and write versioned
+  ground-truth and metadata artifacts under `research/experiments/`; do not add direct Pumba
+  scripts outside the `research/generators/` interface.
 
 ```json
 {
   "experiment_id": "string",
-  "timestamp_start": "ISO8601",
-  "timestamp_end": "ISO8601",
+  "scenario_id": "string",
+  "root_cause_service": "string",
+  "fault_category": "resource|network|code_level",
   "fault_type": "string",
   "target_service": "string",
-  "parameters": {},
-  "expected_root_cause": "string"
+  "injection_start": "ISO8601",
+  "injection_end": "ISO8601",
+  "severity": "low|medium|high"
 }
 ```
 
-- Fault scenario file naming: `research/fault-injection/scenarios/<category>-<number>.yaml`.
 - Don't hardcode observability endpoints/ports in multiple places — centralize them in
-  `research/agent/tools/config.py` or a `.env` file.
+  `research/utils/config.py` (future agent tools should import it).
 
 ## Agent (LLM) layer
 
@@ -128,8 +133,8 @@ docker compose -f research/compose/docker-compose.yml logs -f <service>
   `research/docs/ARCHITECTURE.md` without recording a reason.
 - Run fault scenarios that target multiple services in parallel — default to one fault per
   execution unless explicitly asked to design a cascading-fault scenario.
-- Modify or delete files in `research/fault-injection/logs/` or `research/experiments/` —
-  this is research data and should be treated as append-only.
+- Modify or delete files in `research/experiments/` — this is research data and should be
+  treated as append-only once experiment execution begins.
 - Commit large files (raw datasets, database dumps) to git — use `.gitignore` and store
   them elsewhere if needed.
 - Introduce Kubernetes/k3s/k3d into the research workflow without an explicit request — this
@@ -147,8 +152,8 @@ docker compose -f research/compose/docker-compose.yml logs -f <service>
   to `adservice` health during cold start specifically.
 - After a fault injection script change: test against a non-critical service first (e.g.
   `productcatalogservice`), verify the ground truth log is generated correctly.
-- After an agent change: run it against at least one previously validated fault scenario and
-  compare the RCA output against `expected_root_cause` in the ground truth.
+- After an agent change: run it against at least one previously validated core scenario and
+  compare ranked service/fault output against the withheld ground-truth fields.
 
 ## References
 

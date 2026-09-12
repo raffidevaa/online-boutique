@@ -10,11 +10,12 @@ each one depends on the previous phase's deliverables.
 | # | Phase | Status |
 |---|---|---|
 | 00 | [Environment setup](00-environment-setup.md) | Done |
-| 01 | [Fault injection pipeline](01-fault-injection-pipeline.md) | Not started |
-| 02 | [Ground truth dataset collection](02-ground-truth-dataset.md) | Not started |
-| 03 | [RCA agent](03-rca-agent.md) | Not started |
-| 04 | [Remediation recommendation](04-remediation-recommendation.md) | Not started |
-| 05 | [Evaluation](05-evaluation.md) | Not started |
+| 01 | [Experiment architecture foundation](01-experiment-architecture.md) | In progress |
+| 02 | [Fault injection pipeline](01-fault-injection-pipeline.md) | Not started |
+| 03 | [Ground truth dataset collection](02-ground-truth-dataset.md) | Not started |
+| 04 | [RCA agent](03-rca-agent.md) | Not started |
+| 05 | [Remediation recommendation](04-remediation-recommendation.md) | Not started |
+| 06 | [Evaluation](05-evaluation.md) | Not started |
 
 Update the **Status** column as work progresses (`Not started` / `In progress` / `Done`) —
 this is the single place tracking overall thesis progress; don't duplicate it elsewhere.

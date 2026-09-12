@@ -30,7 +30,7 @@ observability stack, both healthy and reachable.
 6. **Handle `shoppingassistantservice` (LLM-backed).** Confirm what env vars/API keys it
    needs to run (check `src/shoppingassistantservice`), document them in
    `research/compose/.env.example` (never commit real keys), and decide whether it's in
-   scope for the initial environment or deferred until phase 03.
+   scope for the initial environment or deferred until phase 04.
 7. **Add observability stack** under `research/observability/`:
    - Prometheus (scrape config for app + cAdvisor metrics)
    - cAdvisor (container-level resource metrics)

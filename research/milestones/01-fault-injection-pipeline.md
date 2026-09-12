@@ -1,9 +1,9 @@
-# Phase 01 — Fault injection pipeline
+# Phase 02 — Fault injection pipeline
 
 ## Goal
 
-Build and validate the fault injection pipeline: a scenario runner that drives Pumba and a
-ground truth logger that records every execution in the required schema.
+Build and validate the fault injection pipeline: a Pumba backend in `research/generators/`
+and structured experiment artifacts.
 
 ## Prerequisites
 
@@ -12,23 +12,20 @@ ground truth logger that records every execution in the required schema.
 
 ## Steps
 
-1. **Ground truth logger.** Implement a small module that writes the required JSON schema
-   (see `research/docs/FAULT_TAXONOMY.md` → "Ground truth logging schema") to
-   `research/fault-injection/logs/` for every fault execution — structured output
-   (JSON/CSV), never just stdout, per `AGENTS.md`.
-2. **Scenario runner.** Implement `research/fault-injection/run_scenario.py`: reads a
-   scenario file (`research/fault-injection/scenarios/<category>-<number>.yaml`), invokes the
-   corresponding Pumba command, records `timestamp_start`/`timestamp_end`, and calls the
-   ground truth logger.
-3. **Author first scenarios**, one per fault category in `FAULT_TAXONOMY.md`:
-   - Resource-level: `cpu_stress` or `memory_stress`
-   - Network-level: `network_delay` or `packet_loss`
-   - Container-level: `container_kill` or `container_pause`
-   - Dependency-level: `timeout_injection` (via `checkoutservice`'s downstream calls)
+1. **Ground-truth artifacts.** Extend the artifact helpers so every valid execution writes
+   `metadata.json`, `ground_truth.json`, injector details, and snapshots under
+   `research/experiments/runs/<experiment_id>/`.
+2. **Pumba adapter.** Implement it under `research/generators/`; scenarios belong under
+   `research/generators/scenarios/` and must use the RCAEval-aligned identifiers in
+   `research/docs/FAULT_TAXONOMY.md`, not raw commands.
+3. **Author the initial core set** from `research/docs/FAULT_INJECTION.md`:
+   - Resource: `cpu_hog`, `memory_pressure`
+   - Network: `network_delay`, `packet_loss`
+   - Code-level (deferred): `incorrect_return_value`, `missing_exception_handler`
 4. **Validate against a non-critical service first** (`productcatalogservice`), per
    `AGENTS.md`'s validation rule — confirm the ground truth log is generated correctly before
    testing against anything else.
-5. **Confounder check.** For `cpu_stress` scenarios, run with host-level monitoring
+5. **Confounder check.** For `cpu_hog` scenarios, run with host-level monitoring
    (`htop`/`free -h`) active and note in the log/notes whether effects extended beyond the
    target container.
 6. **Enforce one-fault-at-a-time.** Do not build a code path that fires faults at multiple
@@ -36,9 +33,9 @@ ground truth logger that records every execution in the required schema.
 
 ## Deliverables
 
-- `research/fault-injection/run_scenario.py` + ground truth logger module
-- One scenario YAML per fault category under `research/fault-injection/scenarios/`
-- At least one validated log entry per category under `research/fault-injection/logs/`
+- Pumba backend and scenario parser under `research/generators/`
+- One scenario YAML per implemented category under `research/generators/scenarios/`
+- At least one validated run directory per implemented category under `research/experiments/runs/`
   (gitignored — don't commit)
 
 ## Definition of done
@@ -46,7 +43,7 @@ ground truth logger that records every execution in the required schema.
 - Running the scenario runner against each of the 4 authored scenarios produces a correctly
   shaped ground truth log entry (matches the schema exactly).
 - The Grafana dashboard visibly reflects each fault's effect during the run.
-- `cpu_stress` runs have host-monitoring notes confirming (or flagging) host-wide impact.
+- `cpu_hog` runs have host-monitoring notes confirming (or flagging) host-wide impact.
 
 ## References
 

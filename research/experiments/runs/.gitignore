@@ -1,0 +1,3 @@
+# Live experiment artifacts are append-only research data and remain local.
+*
+!.gitignore

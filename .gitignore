@@ -13,7 +13,20 @@
 *.iml
 *.ipr
 *.iws
-*.pyc
+*.py[cod]
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage*
+coverage.xml
+htmlcov/
+.hypothesis/
+.nox/
+.pyre/
+.pytype/
+.tox/
+*.egg-info/
 *.swp
 *.tfstate*
 *.tfvars
@@ -28,6 +41,19 @@ release/wi-kubernetes-manifests.yaml
 vendor/
 gha-creds-*.json
 
-# Thesis research scaffold (research/) — real secrets and downloaded tooling, never committed
+# Thesis research scaffold (research/) — local state and generated data, never committed
+.env
+.env.*
+!.env.example
 research/compose/.env
 research/compose/healthcheck/grpc_health_probe
+research/experiments/runs/*
+!research/experiments/runs/.gitignore
+research/agent/.cache/
+research/agent/cache/
+research/agent/local/
+research/agent/vectorstore/
+research/agent/*.db
+research/agent/*.sqlite
+research/agent/*.sqlite3
+research/agent/*.sqlite-*

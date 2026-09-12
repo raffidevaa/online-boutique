@@ -1,46 +1,89 @@
-# Experiment log
+# Experiment log template
 
-Template for recording each fault injection + agent evaluation session. Duplicate the
-section below for each new experiment, or save as a separate entry under
-`research/experiments/<experiment_id>.md`.
+Use this Markdown entry as supplementary commentary for a structured run under
+`research/experiments/runs/<experiment_id>/`. The JSON artifacts are authoritative for
+ground truth, timestamps, telemetry, and evaluation.
 
----
+## Experiment identity
 
-## Experiment: `<experiment_id>`
+- Experiment ID:
+- Scenario ID / variant:
+- Date (UTC):
+- Objective:
+- Repository commit/configuration hash:
 
-**Date:** yyyy-mm-dd
-**Goal:** (e.g. validate end-to-end pipeline / collect ground truth dataset / evaluate RCA
-agent accuracy)
+## Environment and workload
 
-### Environment conditions
+- Compose file/version:
+- Active services:
+- Workload profile, users, and request rate:
+- Baseline window:
+- Host CPU/RAM headroom before injection:
+- Confounder flags (`adservice`, `shoppingassistantservice`, host contention):
 
-- Compose stack version: (commit hash / tag)
-- Active services: (list, or "all per `research/compose/docker-compose.yml`")
-- Load generator: on/off, what intensity
-- Host CPU/RAM headroom before starting (from `htop`/`free -h`)
+## Fault definition
 
-### Fault scenarios executed
+| Field | Value |
+|---|---|
+| Category | |
+| Fault type | |
+| Target service | |
+| Severity | |
+| Parameters/intensity | |
+| Injection start (UTC) | |
+| Injection end (UTC) | |
 
-| experiment_id | fault_type | target_service | start time | end time | notes |
-|---|---|---|---|---|---|
-| | | | | | |
+## Expected versus observed evidence
 
-### Observability results
+### Local symptoms
 
-- Were the fault's effects captured as expected in metrics/logs/(traces)?
-- Any anomalies/confounders observed (e.g. host CPU spiking beyond the intended target,
-  `adservice` JVM noise, `shoppingassistantservice` LLM-generated error text)?
+- Expected:
+- Observed:
 
-### Agent results (if this experiment evaluates the agent)
+### Propagated symptoms
 
-| experiment_id | agent's root cause | ground truth root cause | match? | detection time | remediation recommendation |
-|---|---|---|---|---|---|
-| | | | | | |
+- Expected:
+- Observed:
 
-### Notes / limitations for this run
+### Telemetry
 
--
+- Metrics:
+- Logs:
+- Alerts:
+- Traces (available/unavailable and why):
+- Docker/runtime state:
 
-### Follow-up actions
+## Recovery and data quality
+
+- Fault cleanup result:
+- Recovery verification and time:
+- Artifact completeness:
+- Any host-wide impact or other confounder:
+- Notes/limitations:
+
+## Agent result
+
+| Rank | Candidate service | Candidate fault | Confidence | Evidence summary |
+|---:|---|---|---:|---|
+| 1 | | | | |
+| 2 | | | | |
+| 3 | | | | |
+
+- Root-cause service correct (Top-1 / Top-3):
+- Fault type correct:
+- Combined RCA correct:
+- Detection/localization time:
+- Was ground truth withheld from the agent?:
+
+## Remediation recommendation
+
+- Recommendation:
+- Correctness score (1–5):
+- Relevance score (1–5):
+- Safety score (1–5):
+- Actionability score (1–5):
+- Justification:
+
+## Follow-up actions
 
 -
