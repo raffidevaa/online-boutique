@@ -15,7 +15,7 @@ manifests/Helm chart/Skaffold config at the repo root — see
 | Layer | Tools | Location |
 |---|---|---|
 | Microservices app | Online Boutique (`GoogleCloudPlatform/microservices-demo`) | `research/compose/` (source under repo-root `src/`) |
-| Observability | Prometheus, Grafana, Loki, Promtail, cAdvisor | `research/observability/` |
+| Observability | Prometheus, Grafana, Loki, Promtail, cAdvisor, OpenTelemetry, Jaeger | `research/observability/` |
 | Experiment runtime | Compose application access, read-only observer, CLI, and shared utilities | `research/service/`, `observer/`, `orchestrator/`, `utils/` |
 | Fault injection | Versioned scenario catalog, gated Pumba planner, and future workload controls | `research/generators/` |
 | Agentic AI | LLM via API + tool-calling into observability | `research/agent/` |
@@ -42,6 +42,7 @@ docker compose -f research/compose/docker-compose.yml ps
 # Online Boutique frontend : http://localhost:8080
 # Grafana                  : http://localhost:3000
 # Prometheus               : http://localhost:9090
+# Jaeger UI                : http://localhost:16686
 
 # 4. Validate the architecture without changing runtime state
 python -m research.orchestrator doctor

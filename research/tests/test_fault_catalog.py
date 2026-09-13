@@ -86,7 +86,7 @@ class FaultCatalogTests(unittest.TestCase):
                 return None
 
             def capture(self, *_: object) -> dict[str, object]:
-                return {"metrics": {}, "logs": {}, "alerts": {}}
+                return {"metrics": {}, "logs": {}, "alerts": {}, "traces": {}}
 
         class FakeInjector:
             def __init__(self, _: ResearchConfig) -> None:
@@ -115,6 +115,7 @@ class FaultCatalogTests(unittest.TestCase):
             self.assertTrue((run_path / "baseline" / "metrics.json").exists())
             self.assertTrue((run_path / "incident" / "alerts.json").exists())
             self.assertTrue((run_path / "recovery" / "logs.json").exists())
+            self.assertTrue((run_path / "incident" / "traces.json").exists())
 
 
 if __name__ == "__main__":

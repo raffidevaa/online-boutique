@@ -6,7 +6,7 @@
 Future controlled fault injection
         │
         ▼
-Microservices app (Online Boutique) ──► Observability (Prometheus/Loki/Grafana)
+Microservices app (Online Boutique) ──► Observability (Prometheus/Loki/Jaeger/Grafana)
         │                                        │
         ▼                                        ▼
 Ground truth logger                     Agentic AI (RCA + remediation)
@@ -21,7 +21,7 @@ The research runtime is now organized around research concepts rather than direc
 ```text
 Experiment command -> orchestrator
                       -> Compose application service + metadata + Docker state
-                      -> observer (Prometheus, Loki, alerts)
+                      -> observer (Prometheus, Loki, Jaeger traces, alerts)
                       -> append-only experiment artifacts
                       -> future generators / RCA agent / evaluator
 ```
@@ -115,7 +115,7 @@ Chosen over Sock Shop and TeaStore for one primary reason: **source code transpa
 | Component | RAM | Notes |
 |---|---|---|
 | Online Boutique (12 `src/` services + `loadgenerator`, prebuilt GCR images) | ~3-4 GB | See `research/compose/docker-compose.yml` for per-service limits; `adservice` capped explicitly on CPU |
-| Observability (Prometheus, Grafana, Loki, cAdvisor) | ~1.5-2 GB | |
+| Observability (Prometheus, Grafana, Loki, Jaeger/OTel Collector, cAdvisor) | ~1.5-2 GB | |
 | Pumba + ground truth logger | ~0.1-0.2 GB | Run on-demand, not as a permanent daemon |
 | Agent orchestration + vector store (optional) | ~0.5-1 GB | |
 | OS + buffer | ~2 GB | |

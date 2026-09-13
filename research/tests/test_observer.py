@@ -26,8 +26,9 @@ class ObserverTests(unittest.TestCase):
         observer = Observer(ResearchConfig())
         end = datetime.now(UTC)
         captured = observer.capture(end - timedelta(minutes=1), end)
-        self.assertEqual(set(captured), {"metrics", "logs", "alerts"})
+        self.assertEqual(set(captured), {"metrics", "logs", "alerts", "traces"})
         self.assertIn("services_up", captured["metrics"]["queries"])
+        self.assertIn("frontend", captured["traces"]["services"])
 
 
 if __name__ == "__main__":

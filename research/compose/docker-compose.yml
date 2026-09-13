@@ -26,11 +26,17 @@ services:
     environment:
       PORT: "3550"
       DISABLE_PROFILER: "1"
+      ENABLE_TRACING: "1"
+      COLLECTOR_SERVICE_ADDR: "otel-collector:4317"
+      OTEL_SERVICE_NAME: "productcatalogservice"
     volumes:
       - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
     healthcheck:
       <<: *grpc-healthcheck-defaults
       test: ["CMD", "/bin/grpc_health_probe", "-addr=:3550"]
+    depends_on:
+      otel-collector:
+        condition: service_started
     networks: [boutique]
 
   currencyservice:
@@ -40,11 +46,17 @@ services:
     environment:
       PORT: "7000"
       DISABLE_PROFILER: "1"
+      ENABLE_TRACING: "1"
+      COLLECTOR_SERVICE_ADDR: "otel-collector:4317"
+      OTEL_SERVICE_NAME: "currencyservice"
     volumes:
       - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
     healthcheck:
       <<: *grpc-healthcheck-defaults
       test: ["CMD", "/bin/grpc_health_probe", "-addr=:7000"]
+    depends_on:
+      otel-collector:
+        condition: service_started
     networks: [boutique]
 
   paymentservice:
@@ -54,11 +66,17 @@ services:
     environment:
       PORT: "50051"
       DISABLE_PROFILER: "1"
+      ENABLE_TRACING: "1"
+      COLLECTOR_SERVICE_ADDR: "otel-collector:4317"
+      OTEL_SERVICE_NAME: "paymentservice"
     volumes:
       - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
     healthcheck:
       <<: *grpc-healthcheck-defaults
       test: ["CMD", "/bin/grpc_health_probe", "-addr=:50051"]
+    depends_on:
+      otel-collector:
+        condition: service_started
     networks: [boutique]
 
   shippingservice:
@@ -82,11 +100,17 @@ services:
     environment:
       PORT: "8080"
       DISABLE_PROFILER: "1"
+      ENABLE_TRACING: "1"
+      COLLECTOR_SERVICE_ADDR: "otel-collector:4317"
+      OTEL_SERVICE_NAME: "emailservice"
     volumes:
       - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
     healthcheck:
       <<: *grpc-healthcheck-defaults
       test: ["CMD", "/bin/grpc_health_probe", "-addr=:8080"]
+    depends_on:
+      otel-collector:
+        condition: service_started
     networks: [boutique]
 
   adservice:
@@ -131,6 +155,9 @@ services:
       PORT: "8080"
       PRODUCT_CATALOG_SERVICE_ADDR: "productcatalogservice:3550"
       DISABLE_PROFILER: "1"
+      ENABLE_TRACING: "1"
+      COLLECTOR_SERVICE_ADDR: "otel-collector:4317"
+      OTEL_SERVICE_NAME: "recommendationservice"
     volumes:
       - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
     healthcheck:
@@ -139,6 +166,8 @@ services:
     depends_on:
       productcatalogservice:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
     networks: [boutique]
 
   # Tier 3: orchestrates tier 1 + 2
@@ -154,6 +183,9 @@ services:
       EMAIL_SERVICE_ADDR: "emailservice:8080"
       CURRENCY_SERVICE_ADDR: "currencyservice:7000"
       CART_SERVICE_ADDR: "cartservice:7070"
+      ENABLE_TRACING: "1"
+      COLLECTOR_SERVICE_ADDR: "otel-collector:4317"
+      OTEL_SERVICE_NAME: "checkoutservice"
     volumes:
       - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
     healthcheck:
@@ -172,6 +204,8 @@ services:
         condition: service_healthy
       cartservice:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
     networks: [boutique]
 
   # Tier 4: edge
@@ -192,6 +226,9 @@ services:
       AD_SERVICE_ADDR: "adservice:9555"
       SHOPPING_ASSISTANT_SERVICE_ADDR: "shoppingassistantservice:80"
       ENABLE_ASSISTANT: "false"
+      ENABLE_TRACING: "1"
+      COLLECTOR_SERVICE_ADDR: "otel-collector:4317"
+      OTEL_SERVICE_NAME: "frontend"
     depends_on:
       productcatalogservice:
         condition: service_healthy
@@ -207,6 +244,8 @@ services:
         condition: service_healthy
       adservice:
         condition: service_healthy
+      otel-collector:
+        condition: service_started
     networks: [boutique]
 
   loadgenerator:
@@ -220,6 +259,30 @@ services:
     depends_on:
       frontend:
         condition: service_started
+    networks: [boutique]
+
+  # Distributed tracing stack
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    mem_limit: 128m
+    cpus: 0.1
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ../observability/opentelemetry/collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    depends_on:
+      jaeger:
+        condition: service_started
+    networks: [boutique]
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    mem_limit: 256m
+    cpus: 0.2
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+      MEMORY_MAX_TRACES: "10000"
+    ports:
+      - "127.0.0.1:16686:16686"
     networks: [boutique]
 
   # Observability stack

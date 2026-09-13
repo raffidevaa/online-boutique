@@ -32,7 +32,10 @@ class Observer:
     def __init__(self, config: ResearchConfig) -> None:
         self.prometheus_url = config.prometheus_url.rstrip("/")
         self.loki_url = config.loki_url.rstrip("/")
+        self.jaeger_url = config.jaeger_url.rstrip("/")
         self.limit = config.telemetry_limit
+        self.trace_limit = config.trace_limit
+        self.trace_services = config.trace_services
 
     def _check_endpoint(self, url: str, name: str) -> None:
         try:
@@ -45,6 +48,7 @@ class Observer:
     def check_ready(self) -> None:
         self._check_endpoint(f"{self.prometheus_url}/-/ready", "Prometheus")
         self._check_endpoint(f"{self.loki_url}/ready", "Loki")
+        self._check_endpoint(f"{self.jaeger_url}/api/services", "Jaeger")
 
     def capture(self, start: datetime, end: datetime) -> dict[str, Any]:
         metric_queries = {
@@ -91,7 +95,24 @@ class Observer:
             "captured_at": datetime.now(UTC).isoformat(),
             "alerts": _get_json(f"{self.prometheus_url}/api/v1/alerts"),
         }
-        return {"metrics": metrics, "logs": logs, "alerts": alerts}
+        traces = {
+            "schema_version": 1,
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+            "services": {
+                service: _get_json(
+                    f"{self.jaeger_url}/api/traces",
+                    {
+                        "service": service,
+                        "start": int(start.timestamp() * 1_000_000),
+                        "end": int(end.timestamp() * 1_000_000),
+                        "limit": self.trace_limit,
+                    },
+                )
+                for service in self.trace_services
+            },
+        }
+        return {"metrics": metrics, "logs": logs, "alerts": alerts, "traces": traces}
 
     def capture_recent(
         self, destination: Path, duration: timedelta = timedelta(minutes=1)

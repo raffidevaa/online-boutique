@@ -26,6 +26,7 @@ def doctor(config: ResearchConfig) -> dict[str, object]:
         "services": {name: state.status for name, state in states.items()},
         "prometheus_url": config.prometheus_url,
         "loki_url": config.loki_url,
+        "jaeger_url": config.jaeger_url,
     }
 
 
