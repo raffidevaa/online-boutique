@@ -62,5 +62,8 @@ belong in the append-only experiment directory under `research/experiments/runs/
 ## Authority and implementation status
 
 RCAEval supplies the taxonomy and evaluation perspective. The scenario catalog supplies
-thesis-specific targets, workloads, parameter bands, and propagation hypotheses. During the
-current architecture phase, no fault scenario or injector backend is implemented or run.
+thesis-specific targets, workloads, parameter bands, and propagation hypotheses. The catalog
+now has 15 versioned scenario files and an allowlisted Pumba planner: eight CPU, memory, and
+network cases are `ready_for_pilot`; `disk_stress` and `socket_stress` are
+`experimental_unavailable`; the five code-level cases are `deferred_faulty_image`. None of
+these labels means a live experiment has been validated.

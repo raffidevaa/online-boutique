@@ -1,0 +1,15 @@
+schema_version: 1
+scenario_id: FI-NET-LOSS-02
+category: network
+fault_type: packet_loss
+execution_status: ready_for_pilot
+target_service: productcatalogservice
+workload: {generator: loadgenerator, trigger: browse home and product-detail pages}
+parameters: {duration_seconds: 120, loss_percent: 15}
+severity: medium
+expected_local_symptoms: ["catalog RPC failures and retries increase"]
+expected_propagated_symptoms: ["frontend browsing errors or latency increase"]
+expected_telemetry_evidence: {metrics: [catalog_error_rate, grpc_retries], logs: [unavailable_or_deadline]}
+ground_truth: {root_cause_service: productcatalogservice, fault_category: network, fault_type: packet_loss}
+expected_remediation: ["verify connectivity and avoid retry amplification"]
+recovery: "Pumba removes the netem rule at duration end; confirm catalog errors recover."

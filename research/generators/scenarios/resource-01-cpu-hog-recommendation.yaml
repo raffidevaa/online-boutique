@@ -1,0 +1,15 @@
+schema_version: 1
+scenario_id: FI-RES-CPU-01
+category: resource
+fault_type: cpu_hog
+execution_status: ready_for_pilot
+target_service: recommendationservice
+workload: {generator: loadgenerator, trigger: browse home and product-detail pages}
+parameters: {duration_seconds: 120, cpu_workers: 1, intended_cpu_percent: 80}
+severity: medium
+expected_local_symptoms: ["recommendation latency and CPU increase"]
+expected_propagated_symptoms: ["frontend product-page latency increases"]
+expected_telemetry_evidence: {metrics: [container_cpu, recommendation_latency], logs: [resource_pressure]}
+ground_truth: {root_cause_service: recommendationservice, fault_category: resource, fault_type: cpu_hog}
+expected_remediation: ["investigate CPU-intensive work and resource allocation"]
+recovery: "Allow bounded stress to finish; confirm target and host CPU return to baseline."

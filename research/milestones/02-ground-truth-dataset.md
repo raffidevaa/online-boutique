@@ -11,10 +11,11 @@ agent will later be evaluated against.
 
 ## Steps
 
-1. **Define the experiment matrix.** Start with the six-case core catalog in
-   `FAULT_INJECTION.md`, varying fault type × target × severity × repetition. Exclude
-   multi-service parallel faults unless explicitly designing a separately-documented
-   cascading scenario.
+1. **Define the experiment matrix.** Start with the eight `ready_for_pilot` runtime cases in
+   `FAULT_INJECTION.md`, varying fault type × target × severity × repetition. Keep the two
+   experimental and five faulty-image cases unavailable until their documented prerequisites
+   are met. Exclude multi-service parallel faults unless explicitly designing a
+   separately-documented cascading scenario.
 2. **Sequence runs with recovery gaps.** Between executions, wait for the system to return to
    a steady-state baseline — verify via the Grafana dashboard before starting the next run.
 3. **Log every experiment** in the structured run directory

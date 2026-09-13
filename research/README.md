@@ -17,7 +17,7 @@ manifests/Helm chart/Skaffold config at the repo root — see
 | Microservices app | Online Boutique (`GoogleCloudPlatform/microservices-demo`) | `research/compose/` (source under repo-root `src/`) |
 | Observability | Prometheus, Grafana, Loki, Promtail, cAdvisor | `research/observability/` |
 | Experiment runtime | Compose application access, read-only observer, CLI, and shared utilities | `research/service/`, `observer/`, `orchestrator/`, `utils/` |
-| Fault injection | Future Pumba backend and workload controls | `research/generators/` |
+| Fault injection | Versioned scenario catalog, gated Pumba planner, and future workload controls | `research/generators/` |
 | Agentic AI | LLM via API + tool-calling into observability | `research/agent/` |
 
 ## Why Online Boutique
@@ -48,6 +48,10 @@ python -m research.orchestrator doctor
 
 # 5. Capture a read-only snapshot outside the repository
 python -m research.orchestrator snapshot --output /tmp/research-architecture-snapshot
+
+# 6. Inspect a fault without contacting Docker or creating experiment data
+python -m research.orchestrator fault plan \
+  --scenario research/generators/scenarios/network-05-loss-productcatalog.yaml
 ```
 
 ## Development hardware

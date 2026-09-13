@@ -1,0 +1,15 @@
+schema_version: 1
+scenario_id: FI-RES-CPU-02
+category: resource
+fault_type: cpu_hog
+execution_status: ready_for_pilot
+target_service: checkoutservice
+workload: {generator: loadgenerator, trigger: active checkout traffic}
+parameters: {duration_seconds: 120, cpu_workers: 1, intended_cpu_percent: 80}
+severity: medium
+expected_local_symptoms: ["checkout CPU and orchestration latency increase"]
+expected_propagated_symptoms: ["checkout errors or latency surface at frontend"]
+expected_telemetry_evidence: {metrics: [container_cpu, checkout_latency], logs: [resource_pressure]}
+ground_truth: {root_cause_service: checkoutservice, fault_category: resource, fault_type: cpu_hog}
+expected_remediation: ["investigate checkout CPU work and resource allocation"]
+recovery: "Allow bounded stress to finish; confirm checkout and host CPU return to baseline."

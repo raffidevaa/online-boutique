@@ -34,6 +34,7 @@ fault_type: normalized taxonomy identifier
 target_service: canonical Compose service
 workload: reproducible profile and trigger
 parameters: explicit intensity and duration
+execution_status: ready_for_pilot | experimental_unavailable | deferred_faulty_image
 expected_local_symptoms: []
 expected_propagated_symptoms: []
 expected_telemetry_evidence: {}
@@ -44,6 +45,10 @@ expected_remediation: []
 Cases must be reproducible, observable, non-trivial for RCA, isolated to one primary fault,
 and recoverable. A visible symptom in `frontend` must not automatically be treated as the
 root cause when a downstream dependency is responsible.
+
+The versioned scenario files in `research/generators/scenarios/` are the executable catalog
+contract. Their status is deliberately more precise than the research priority: a catalogued
+case is not automatically safe or available to inject.
 
 ## Service-target guidance
 
@@ -139,20 +144,23 @@ explicit source-change approval exist.
 
 ## Candidate and backlog cases
 
-These cases remain documented for later selection only. They do not expand the initial core
-headline metrics until pilots show distinct RCA value and safe reproducibility.
+These cases are represented in the scenario catalog now, but do not expand the initial core
+headline metrics until pilots show distinct RCA value and safe reproducibility. Disk and socket
+cases are registered as `experimental_unavailable`: neither has an attributable target under
+the current telemetry model. Code-level cases are registered as `deferred_faulty_image` and
+remain unavailable until an approved, reproducible faulty image exists.
 
 | ID | Type | Target | Purpose/status |
 |---|---|---|---|
-| `FI-RES-CPU-02` | `cpu_hog` | `checkoutservice` | Distinguish checkout orchestration saturation from downstream latency; optional resource extension. |
-| `FI-RES-DISK-01` | `disk_stress` | service/host with attributable I/O | Include only if storage telemetry isolates the target; medium priority. |
-| `FI-RES-SOCK-01` | `socket_stress` | suitable connection-heavy service | Optional; distinguish local descriptor exhaustion from network failure. |
-| `FI-NET-DELAY-02` | `network_delay` | `shippingservice` | Paired checkout case to prevent payment-service shortcut reasoning. |
-| `FI-NET-DELAY-03` | `network_delay` | `currencyservice` | Browsing latency with frontend-visible symptoms. |
-| `FI-NET-LOSS-02` | `packet_loss` | `productcatalogservice` | Safe non-critical propagation case. |
-| `FI-CODE-PARAM-01` | `incorrect_parameter` | `checkoutservice` | Malformed downstream request; deferred faulty image. |
-| `FI-CODE-PARAM-02` | `missing_parameter` | `checkoutservice` | Missing required field; deferred faulty image. |
-| `FI-CODE-CALL-01` | `missing_function_call` | `checkoutservice` | Missing business-flow call; deferred faulty image. |
+| `FI-RES-CPU-02` | `cpu_hog` | `checkoutservice` | `ready_for_pilot`; distinguish orchestration saturation from downstream latency. |
+| `FI-RES-DISK-01` | `disk_stress` | target selected after I/O pilot | `experimental_unavailable`; require attributable storage telemetry. |
+| `FI-RES-SOCK-01` | `socket_stress` | target selected after connection pilot | `experimental_unavailable`; require attributable connection telemetry. |
+| `FI-NET-DELAY-02` | `network_delay` | `shippingservice` | `ready_for_pilot`; paired checkout case. |
+| `FI-NET-DELAY-03` | `network_delay` | `currencyservice` | `ready_for_pilot`; frontend-visible browsing symptoms. |
+| `FI-NET-LOSS-02` | `packet_loss` | `productcatalogservice` | `ready_for_pilot`; non-critical first live-pilot target. |
+| `FI-CODE-PARAM-01` | `incorrect_parameter` | `checkoutservice` | `deferred_faulty_image`; malformed downstream request. |
+| `FI-CODE-PARAM-02` | `missing_parameter` | `checkoutservice` | `deferred_faulty_image`; missing required field. |
+| `FI-CODE-CALL-01` | `missing_function_call` | `checkoutservice` | `deferred_faulty_image`; missing business-flow call. |
 
 ## Severity and variation
 
@@ -180,8 +188,9 @@ Report these separately before combining them:
 
 ## Priority roadmap
 
-1. **Core runtime faults:** CPU hog, memory pressure, network delay, and packet loss. Verify
-   injection, telemetry diversity, ground truth, and recovery.
+1. **Runtime pilots:** CPU hog, memory pressure, network delay, and packet loss. Eight
+   catalogued cases are `ready_for_pilot`; verify injection, telemetry diversity, ground
+   truth, and recovery one at a time.
 2. **Deferred application faults:** incorrect return value and missing exception handler. Use
    faulty image variants and test application-level reasoning.
 3. **Optional extensions:** disk stress, socket stress, incorrect/missing parameters, and

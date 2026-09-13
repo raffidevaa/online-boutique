@@ -18,7 +18,9 @@ and structured experiment artifacts.
 2. **Pumba adapter.** Implement it under `research/generators/`; scenarios belong under
    `research/generators/scenarios/` and must use the RCAEval-aligned identifiers in
    `research/docs/FAULT_TAXONOMY.md`, not raw commands.
-3. **Author the initial core set** from `research/docs/FAULT_INJECTION.md`:
+3. **Catalog the documented set** from `research/docs/FAULT_INJECTION.md`. The Pumba-ready
+   subset is CPU hog, memory pressure, network delay, and packet loss; disk/socket scenarios
+   remain unavailable until attribution pilots, and code-level scenarios require faulty images:
    - Resource: `cpu_hog`, `memory_pressure`
    - Network: `network_delay`, `packet_loss`
    - Code-level (deferred): `incorrect_return_value`, `missing_exception_handler`
@@ -34,7 +36,8 @@ and structured experiment artifacts.
 ## Deliverables
 
 - Pumba backend and scenario parser under `research/generators/`
-- One scenario YAML per implemented category under `research/generators/scenarios/`
+- One versioned scenario YAML per documented case under `research/generators/scenarios/`, with
+  a status that prevents unverified cases from running
 - At least one validated run directory per implemented category under `research/experiments/runs/`
   (gitignored — don't commit)
 

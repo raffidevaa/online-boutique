@@ -1,0 +1,15 @@
+schema_version: 1
+scenario_id: FI-NET-LOSS-01
+category: network
+fault_type: packet_loss
+execution_status: ready_for_pilot
+target_service: paymentservice
+workload: {generator: loadgenerator, trigger: active checkout traffic}
+parameters: {duration_seconds: 120, loss_percent: 15}
+severity: medium
+expected_local_symptoms: ["payment RPC failures and retries increase"]
+expected_propagated_symptoms: ["checkout failures or timeouts surface at frontend"]
+expected_telemetry_evidence: {metrics: [payment_error_rate, grpc_retries], logs: [unavailable_or_deadline]}
+ground_truth: {root_cause_service: paymentservice, fault_category: network, fault_type: packet_loss}
+expected_remediation: ["verify connectivity and avoid retry amplification"]
+recovery: "Pumba removes the netem rule at duration end; confirm error rate returns to baseline."

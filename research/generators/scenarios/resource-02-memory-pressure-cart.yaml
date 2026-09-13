@@ -1,0 +1,15 @@
+schema_version: 1
+scenario_id: FI-RES-MEM-01
+category: resource
+fault_type: memory_pressure
+execution_status: ready_for_pilot
+target_service: cartservice
+workload: {generator: loadgenerator, trigger: browse and checkout flows using cart operations}
+parameters: {duration_seconds: 180, memory_workers: 1, memory_mb_per_worker: 64, intended_memory_percent: 50}
+severity: medium
+expected_local_symptoms: ["cart working set and latency increase"]
+expected_propagated_symptoms: ["cart access slows frontend and checkout"]
+expected_telemetry_evidence: {metrics: [container_memory, container_cpu, cart_latency], logs: [oom_or_pressure]}
+ground_truth: {root_cause_service: cartservice, fault_category: resource, fault_type: memory_pressure}
+expected_remediation: ["inspect memory growth, caches, limits, and object lifecycle"]
+recovery: "Allow bounded stress to finish; verify no OOM and memory returns toward baseline."

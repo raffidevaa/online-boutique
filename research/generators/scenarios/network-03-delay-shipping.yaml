@@ -1,0 +1,15 @@
+schema_version: 1
+scenario_id: FI-NET-DELAY-02
+category: network
+fault_type: network_delay
+execution_status: ready_for_pilot
+target_service: shippingservice
+workload: {generator: loadgenerator, trigger: active checkout traffic}
+parameters: {duration_seconds: 120, delay_ms: 300, jitter_ms: 50}
+severity: medium
+expected_local_symptoms: ["shipping RPC latency increases"]
+expected_propagated_symptoms: ["checkout and frontend latency increase"]
+expected_telemetry_evidence: {metrics: [shipping_latency, grpc_deadlines], logs: [deadline_exceeded]}
+ground_truth: {root_cause_service: shippingservice, fault_category: network, fault_type: network_delay}
+expected_remediation: ["inspect network path and timeout/retry configuration"]
+recovery: "Pumba removes the netem rule at duration end; confirm checkout latency recovers."

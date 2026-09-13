@@ -1,0 +1,15 @@
+schema_version: 1
+scenario_id: FI-RES-DISK-01
+category: resource
+fault_type: disk_stress
+execution_status: experimental_unavailable
+target_service: null
+workload: {generator: loadgenerator, trigger: target selected only after storage attribution pilot}
+parameters: {duration_seconds: 120, delivery_requirement: attributable_storage_target}
+severity: medium
+expected_local_symptoms: ["I/O wait and storage latency increase"]
+expected_propagated_symptoms: ["dependent request latency may increase"]
+expected_telemetry_evidence: {metrics: [storage_latency, io_wait], logs: [io_errors]}
+ground_truth: {root_cause_service: null, fault_category: resource, fault_type: disk_stress}
+expected_remediation: ["inspect storage saturation and isolate the responsible volume"]
+recovery: "Unavailable until a pilot selects a target with attributable storage telemetry."

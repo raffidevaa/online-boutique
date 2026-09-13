@@ -1,0 +1,15 @@
+schema_version: 1
+scenario_id: FI-RES-SOCK-01
+category: resource
+fault_type: socket_stress
+execution_status: experimental_unavailable
+target_service: null
+workload: {generator: loadgenerator, trigger: target selected only after connection-attribution pilot}
+parameters: {duration_seconds: 120, delivery_requirement: attributable_connection_target}
+severity: medium
+expected_local_symptoms: ["connection pressure and resets increase"]
+expected_propagated_symptoms: ["dependent requests may fail or time out"]
+expected_telemetry_evidence: {metrics: [connections, resets], logs: [descriptor_or_connection_errors]}
+ground_truth: {root_cause_service: null, fault_category: resource, fault_type: socket_stress}
+expected_remediation: ["inspect connection pools, descriptor limits, and leaks"]
+recovery: "Unavailable until a pilot selects a target with attributable connection telemetry."

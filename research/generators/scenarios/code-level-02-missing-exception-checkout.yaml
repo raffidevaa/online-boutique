@@ -1,0 +1,15 @@
+schema_version: 1
+scenario_id: FI-CODE-EXC-01
+category: code_level
+fault_type: missing_exception_handler
+execution_status: deferred_faulty_image
+target_service: checkoutservice
+workload: {generator: loadgenerator, trigger: checkout traffic with controlled downstream failure}
+parameters: {duration_seconds: 120, delivery_requirement: faulty_image_variant}
+severity: high
+expected_local_symptoms: ["unhandled checkout exception and failed parent span"]
+expected_propagated_symptoms: ["checkout errors surface at frontend"]
+expected_telemetry_evidence: {metrics: [checkout_error_rate], logs: [unhandled_exception]}
+ground_truth: {root_cause_service: checkoutservice, fault_category: code_level, fault_type: missing_exception_handler}
+expected_remediation: ["restore error handling and deploy a corrected image"]
+recovery: "Replace the approved faulty image with the baseline image after the run."

@@ -1,0 +1,15 @@
+schema_version: 1
+scenario_id: FI-CODE-CALL-01
+category: code_level
+fault_type: missing_function_call
+execution_status: deferred_faulty_image
+target_service: checkoutservice
+workload: {generator: loadgenerator, trigger: active checkout traffic}
+parameters: {duration_seconds: 120, delivery_requirement: faulty_image_variant}
+severity: high
+expected_local_symptoms: ["business-flow interaction is absent"]
+expected_propagated_symptoms: ["checkout flow is incomplete or incorrect"]
+expected_telemetry_evidence: {metrics: [missing_interaction], logs: [business_flow_error]}
+ground_truth: {root_cause_service: checkoutservice, fault_category: code_level, fault_type: missing_function_call}
+expected_remediation: ["restore the required call and deploy a corrected image"]
+recovery: "Replace the approved faulty image with the baseline image after the run."

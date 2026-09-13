@@ -1,0 +1,15 @@
+schema_version: 1
+scenario_id: FI-NET-DELAY-03
+category: network
+fault_type: network_delay
+execution_status: ready_for_pilot
+target_service: currencyservice
+workload: {generator: loadgenerator, trigger: browse flows displaying converted prices}
+parameters: {duration_seconds: 120, delay_ms: 300, jitter_ms: 50}
+severity: medium
+expected_local_symptoms: ["currency RPC latency increases"]
+expected_propagated_symptoms: ["frontend browsing latency increases"]
+expected_telemetry_evidence: {metrics: [currency_latency, grpc_deadlines], logs: [deadline_exceeded]}
+ground_truth: {root_cause_service: currencyservice, fault_category: network, fault_type: network_delay}
+expected_remediation: ["inspect network path and timeout/retry configuration"]
+recovery: "Pumba removes the netem rule at duration end; confirm browsing latency recovers."

@@ -17,10 +17,13 @@ class ResearchConfig:
     research_root: Path = RESEARCH_ROOT
     compose_file: Path = RESEARCH_ROOT / "compose" / "docker-compose.yml"
     service_metadata: Path = RESEARCH_ROOT / "service" / "metadata.yaml"
+    scenario_directory: Path = RESEARCH_ROOT / "generators" / "scenarios"
     experiment_runs: Path = RESEARCH_ROOT / "experiments" / "runs"
     prometheus_url: str = "http://127.0.0.1:9090"
     loki_url: str = "http://127.0.0.1:3100"
     telemetry_limit: int = 5_000
+    pumba_image: str = "ghcr.io/alexei-led/pumba:1.2.1"
+    pumba_stress_image: str = "ghcr.io/alexei-led/stress-ng:0.20.01"
 
     @classmethod
     def from_environment(cls) -> "ResearchConfig":
@@ -29,4 +32,8 @@ class ResearchConfig:
             prometheus_url=os.getenv("RESEARCH_PROMETHEUS_URL", cls.prometheus_url),
             loki_url=os.getenv("RESEARCH_LOKI_URL", cls.loki_url),
             telemetry_limit=int(os.getenv("RESEARCH_TELEMETRY_LIMIT", "5000")),
+            pumba_image=os.getenv("RESEARCH_PUMBA_IMAGE", cls.pumba_image),
+            pumba_stress_image=os.getenv(
+                "RESEARCH_PUMBA_STRESS_IMAGE", cls.pumba_stress_image
+            ),
         )

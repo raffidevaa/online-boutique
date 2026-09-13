@@ -8,7 +8,9 @@ import json
 from pathlib import Path
 import sys
 
+from research.generators import ScenarioError, load_scenario
 from research.observer import Observer, ObserverError
+from research.orchestrator.faults import FaultExecutionError, describe_scenario, run_fault
 from research.service import ComposeApplication, ServiceError
 from research.utils import ResearchConfig, write_json
 
@@ -57,11 +59,35 @@ def main() -> int:
         "snapshot", help="Capture a read-only Docker and telemetry snapshot"
     )
     snapshot_parser.add_argument("--output", required=True, type=Path)
+    fault_parser = subcommands.add_parser("fault", help="Plan or execute one controlled fault")
+    fault_commands = fault_parser.add_subparsers(dest="fault_command", required=True)
+    fault_plan_parser = fault_commands.add_parser(
+        "plan", help="Validate and print a non-mutating fault plan"
+    )
+    fault_plan_parser.add_argument("--scenario", required=True, type=Path)
+    fault_run_parser = fault_commands.add_parser(
+        "run", help="Execute one ready scenario after runtime preflight"
+    )
+    fault_run_parser.add_argument("--scenario", required=True, type=Path)
+    fault_run_parser.add_argument(
+        "--execute", action="store_true", help="Required acknowledgement for fault injection"
+    )
     arguments = parser.parse_args()
     config = ResearchConfig.from_environment()
     try:
-        result = doctor(config) if arguments.command == "doctor" else snapshot(config, arguments.output)
-    except (ServiceError, ObserverError, FileExistsError) as error:
+        if arguments.command == "doctor":
+            result = doctor(config)
+        elif arguments.command == "snapshot":
+            result = snapshot(config, arguments.output)
+        else:
+            scenario = load_scenario(arguments.scenario)
+            if arguments.fault_command == "plan":
+                result = describe_scenario(scenario, config)
+            elif not arguments.execute:
+                raise FaultExecutionError("Refusing fault injection without --execute")
+            else:
+                result = run_fault(scenario, config)
+    except (FaultExecutionError, ScenarioError, ServiceError, ObserverError, FileExistsError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
     print(json.dumps(result, indent=2, sort_keys=True))

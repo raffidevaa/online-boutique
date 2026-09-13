@@ -1,0 +1,15 @@
+schema_version: 1
+scenario_id: FI-CODE-PARAM-01
+category: code_level
+fault_type: incorrect_parameter
+execution_status: deferred_faulty_image
+target_service: checkoutservice
+workload: {generator: loadgenerator, trigger: active checkout traffic}
+parameters: {duration_seconds: 120, delivery_requirement: faulty_image_variant}
+severity: high
+expected_local_symptoms: ["malformed downstream request validation errors"]
+expected_propagated_symptoms: ["checkout errors surface at frontend"]
+expected_telemetry_evidence: {metrics: [checkout_error_rate], logs: [invalid_argument]}
+ground_truth: {root_cause_service: checkoutservice, fault_category: code_level, fault_type: incorrect_parameter}
+expected_remediation: ["correct request construction and deploy a corrected image"]
+recovery: "Replace the approved faulty image with the baseline image after the run."

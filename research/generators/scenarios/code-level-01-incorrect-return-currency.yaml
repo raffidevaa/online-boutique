@@ -1,0 +1,15 @@
+schema_version: 1
+scenario_id: FI-CODE-RETURN-01
+category: code_level
+fault_type: incorrect_return_value
+execution_status: deferred_faulty_image
+target_service: currencyservice
+workload: {generator: loadgenerator, trigger: browse flows displaying converted prices}
+parameters: {duration_seconds: 120, delivery_requirement: faulty_image_variant}
+severity: medium
+expected_local_symptoms: ["converted prices are semantically incorrect"]
+expected_propagated_symptoms: ["frontend displays incorrect converted prices"]
+expected_telemetry_evidence: {metrics: [normal_infrastructure_metrics], logs: [successful_requests]}
+ground_truth: {root_cause_service: currencyservice, fault_category: code_level, fault_type: incorrect_return_value}
+expected_remediation: ["validate business logic and deploy a corrected image"]
+recovery: "Replace the approved faulty image with the baseline image after the run."

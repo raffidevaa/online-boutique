@@ -28,8 +28,10 @@ Experiment command -> orchestrator
 
 `research/orchestrator/` has no LLM dependency. `research/service/` is the sole owner of
 low-level Compose and Docker inspection, while `research/observer/` provides read-only
-telemetry access. `research/generators/` currently contains only a tool-neutral fault input:
-no Pumba backend or fault scenario is active during the architecture phase.
+telemetry access. `research/generators/` owns the strict scenario catalog and the allowlisted
+Pumba command planner. The fault runner is explicitly gated by `--execute`, permits only one
+runtime fault at a time, and writes append-only evidence under `research/experiments/runs/`.
+Cataloguing a scenario does not mean it has been run or validated.
 
 Fault methodology is documented separately in `FAULT_INJECTION.md`. It uses RCAEval as the
 taxonomy reference and keeps resource, network, and code-level faults distinct from the
