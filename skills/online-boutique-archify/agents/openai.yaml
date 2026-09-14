@@ -1,0 +1,4 @@
+interface:
+  display_name: "Online Boutique Archify"
+  short_description: "Review the thesis architecture and generate safe Mermaid diagrams"
+  default_prompt: "Use $online-boutique-archify to analyze the current Online Boutique research architecture and identify affected boundaries, invariants, and validation needs."

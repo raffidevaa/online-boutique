@@ -53,7 +53,22 @@ python -m research.orchestrator snapshot --output /tmp/research-architecture-sna
 # 6. Inspect a fault without contacting Docker or creating experiment data
 python -m research.orchestrator fault plan \
   --scenario research/generators/scenarios/network-05-loss-productcatalog.yaml
+
+# 7. Prepare fault-injection images explicitly (only needed before a fault pilot)
+python -m research.orchestrator fault prepare \
+  --scenario research/generators/scenarios/resource-03-cpu-hog-checkout.yaml \
+  --pull
+
+# 8. Execute one controlled fault after preparation
+python -m research.orchestrator fault run \
+  --scenario research/generators/scenarios/resource-03-cpu-hog-checkout.yaml \
+  --execute
 ```
+
+Pumba is an on-demand fault-injection tool, not a permanent Compose service. The prepare
+command explicitly verifies or pulls its pinned image and any scenario-specific helper image;
+the fault runner still uses `--pull never` and will not pull images implicitly during an
+experiment.
 
 ## Development hardware
 

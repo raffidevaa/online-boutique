@@ -19,6 +19,21 @@ normal workload -> baseline telemetry -> one controlled fault
                  -> remediation recommendation -> ground-truth evaluation -> recovery
 ```
 
+Before a pilot, prepare the pinned injector images explicitly:
+
+```bash
+python -m research.orchestrator fault prepare \
+  --scenario research/generators/scenarios/resource-03-cpu-hog-checkout.yaml \
+  --pull
+```
+
+`fault plan` only renders a non-mutating Pumba command. `fault prepare` verifies the required
+images and pulls missing images only when `--pull` is supplied. `fault run --execute` never
+pulls images implicitly and launches Pumba on demand; Pumba is therefore not a permanent
+Docker Compose service. The runner also requires the observability backends to remain ready;
+if baseline telemetry cannot be captured, the run is marked `baseline_failed` and no fault is
+injected.
+
 The RCA agent may receive alerts, metrics, logs, traces when available, service topology,
 service metadata, and approved runbooks. It must not receive the scenario ID, ground truth,
 injection command, or injector output.

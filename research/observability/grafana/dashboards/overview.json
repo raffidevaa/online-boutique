@@ -16,7 +16,7 @@
       "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
       "targets": [
         {
-          "expr": "sum by (service) (rate(container_cpu_usage_seconds_total{service!=\"\"}[1m]))",
+          "expr": "sum by (service) (rate(container_cpu_usage_seconds_total{job=\"cadvisor\",name!=\"\"}[1m]) * on(name) group_left(service) compose_container_info{service!=\"\"})",
           "legendFormat": "{{service}}",
           "datasource": { "type": "prometheus", "uid": "Prometheus" }
         }
@@ -31,7 +31,7 @@
       "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
       "targets": [
         {
-          "expr": "container_memory_usage_bytes{service!=\"\"}",
+          "expr": "sum by (service) (container_memory_working_set_bytes{job=\"cadvisor\",name!=\"\"} * on(name) group_left(service) compose_container_info{service!=\"\"})",
           "legendFormat": "{{service}}",
           "datasource": { "type": "prometheus", "uid": "Prometheus" }
         }

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Iterator
 
 from research.generators import FaultScenario, InjectorError, PumbaInjector
-from research.observer import Observer
+from research.observer import Observer, ObserverError
 from research.service import ComposeApplication, ServiceError
 from research.utils import ResearchConfig, append_event, create_run, write_json
 
@@ -105,10 +105,25 @@ def run_fault(scenario: FaultScenario, config: ResearchConfig) -> dict[str, Any]
         write_json(run_path / "scenario.json", scenario.to_dict())
         write_json(run_path / "injector-plan.json", plan.to_dict())
         baseline_end = datetime.now(UTC)
-        _write_capture(
-            run_path / "baseline",
-            observer.capture(baseline_end - timedelta(minutes=1), baseline_end),
-        )
+        try:
+            baseline = observer.capture(
+                baseline_end - timedelta(minutes=1), baseline_end
+            )
+            _write_capture(run_path / "baseline", baseline)
+        except ObserverError as error:
+            append_event(run_path, "baseline_capture_failed", {"message": str(error)})
+            write_json(
+                run_path / "result.json",
+                {
+                    "schema_version": 1,
+                    "status": "baseline_failed",
+                    "fault_injected": False,
+                    "telemetry_error": str(error),
+                },
+            )
+            raise FaultExecutionError(
+                f"Baseline telemetry capture failed; fault was not injected: {error}"
+            ) from error
         append_event(run_path, "baseline_captured")
         start = datetime.now(UTC)
         try:

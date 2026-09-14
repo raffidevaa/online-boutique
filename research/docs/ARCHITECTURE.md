@@ -120,6 +120,11 @@ Chosen over Sock Shop and TeaStore for one primary reason: **source code transpa
 | Agent orchestration + vector store (optional) | ~0.5-1 GB | |
 | OS + buffer | ~2 GB | |
 
+Jaeger uses bounded in-memory trace storage (`MEMORY_MAX_TRACES=2000`) and restarts when
+the container exits unexpectedly. This keeps the observability stack within the constrained
+host budget; trace retention is intentionally sized for the short baseline, incident, and
+recovery windows used by a single experiment rather than long-term storage.
+
 CPU remains the primary constraint even after the RAM upgrade to 20 GB — see "Research
 limitations" below.
 
@@ -159,6 +164,8 @@ limitations" below.
    docker.sock at all, so its Docker factory fails registration at startup like the
    crio/podman ones already do; point it at `/run/containerd/containerd.sock` with
    `-containerd-namespace=moby` instead. Trade-off: per-container metrics carry `image` and a
-   numeric container-ID `name`, not a `container_label_com_docker_compose_service` label
-   (that enrichment came from docker.sock); Prometheus derives a readable `service` label from
-   `image` via `metric_relabel_configs` instead (see `research/observability/prometheus/prometheus.yml`).
+   numeric container-ID `name`, not a `container_label_com_docker_compose_service` label.
+   A separate `container-metadata-exporter` reads Compose metadata through a restricted
+   Docker socket proxy and exposes `compose_container_info`; Prometheus joins cAdvisor
+   resource metrics to that mapping on the container ID. The exporter is non-root, has no
+   direct Docker socket, and the proxy disables mutating API methods.

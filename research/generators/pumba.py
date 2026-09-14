@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import subprocess
-from typing import Sequence
-
 from research.generators.fault import FaultScenario, ScenarioError
 from research.utils.config import ResearchConfig
 
@@ -146,26 +144,70 @@ class PumbaInjector:
             command=tuple(command),
         )
 
-    def check_images_available(self, scenario: FaultScenario) -> None:
-        """Fail before creating experiment data when a pinned required image is absent."""
+    def required_images(self, scenario: FaultScenario) -> tuple[str, ...]:
+        """Return the pinned images required by a validated runnable scenario."""
+        self.plan(scenario, "<image-preflight>")
         images = [self.config.pumba_image]
         if scenario.fault_type in {"cpu_hog", "memory_pressure"}:
             images.append(self.config.pumba_stress_image)
-        for image in images:
-            try:
-                result = subprocess.run(
-                    ["docker", "image", "inspect", image],
-                    check=False,
-                    capture_output=True,
-                    text=True,
-                )
-            except OSError as error:
-                raise InjectorError(f"Unable to inspect required image {image}: {error}") from error
+        return tuple(images)
+
+    @staticmethod
+    def _inspect_image(image: str) -> subprocess.CompletedProcess[str]:
+        try:
+            return subprocess.run(
+                ["docker", "image", "inspect", image],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+        except OSError as error:
+            raise InjectorError(f"Unable to inspect required image {image}: {error}") from error
+
+    @staticmethod
+    def _missing_image_error(image: str) -> InjectorError:
+        return InjectorError(
+            f"Required image is unavailable locally: {image}. Pull and verify it before "
+            "running a fault; the runner will not pull images implicitly."
+        )
+
+    def check_images_available(self, scenario: FaultScenario) -> None:
+        """Fail before creating experiment data when a pinned required image is absent."""
+        for image in self.required_images(scenario):
+            result = self._inspect_image(image)
             if result.returncode != 0:
-                raise InjectorError(
-                    f"Required image is unavailable locally: {image}. Pull and verify it before "
-                    "running a fault; the runner will not pull images implicitly."
-                )
+                raise self._missing_image_error(image)
+
+    def prepare_images(
+        self, scenario: FaultScenario, *, pull: bool = False
+    ) -> dict[str, object]:
+        """Verify required images, optionally pulling only missing pinned images."""
+        images = self.required_images(scenario)
+        pulled: list[str] = []
+        statuses: list[dict[str, object]] = []
+        for image in images:
+            result = self._inspect_image(image)
+            if result.returncode != 0:
+                if not pull:
+                    raise self._missing_image_error(image)
+                try:
+                    pull_result = subprocess.run(
+                        ["docker", "pull", image],
+                        check=False,
+                        capture_output=True,
+                        text=True,
+                    )
+                except OSError as error:
+                    raise InjectorError(f"Unable to pull required image {image}: {error}") from error
+                if pull_result.returncode != 0:
+                    detail = pull_result.stderr.strip() or "docker pull returned a non-zero status"
+                    raise InjectorError(f"Unable to pull required image {image}: {detail}")
+                pulled.append(image)
+                result = self._inspect_image(image)
+            if result.returncode != 0:
+                raise self._missing_image_error(image)
+            statuses.append({"image": image, "available": True, "pulled": image in pulled})
+        return {"status": "ready", "pulled": pulled, "images": statuses}
 
     @staticmethod
     def execute(plan: PumbaPlan, timeout_seconds: int) -> subprocess.CompletedProcess[str]:

@@ -1,9 +1,10 @@
 from datetime import UTC, datetime, timedelta
+from http.client import RemoteDisconnected
 import json
 import unittest
 from unittest.mock import patch
 
-from research.observer import Observer
+from research.observer import Observer, ObserverError
 from research.utils import ResearchConfig
 
 
@@ -29,6 +30,22 @@ class ObserverTests(unittest.TestCase):
         self.assertEqual(set(captured), {"metrics", "logs", "alerts", "traces"})
         self.assertIn("services_up", captured["metrics"]["queries"])
         self.assertIn("frontend", captured["traces"]["services"])
+
+    @patch("research.observer.telemetry.urlopen")
+    def test_capture_converts_disconnected_trace_backend_to_observer_error(
+        self, mocked_urlopen: object
+    ) -> None:
+        def open_endpoint(url: str, timeout: int) -> FakeResponse:
+            if "/api/traces" in url:
+                raise RemoteDisconnected("Jaeger closed the connection")
+            return FakeResponse()
+
+        assert hasattr(mocked_urlopen, "side_effect")
+        mocked_urlopen.side_effect = open_endpoint
+        observer = Observer(ResearchConfig())
+        end = datetime.now(UTC)
+        with self.assertRaisesRegex(ObserverError, "Unable to query.*api/traces"):
+            observer.capture(end - timedelta(minutes=1), end)
 
 
 if __name__ == "__main__":

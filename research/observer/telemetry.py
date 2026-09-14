@@ -6,7 +6,6 @@ from datetime import UTC, datetime, timedelta
 import json
 from pathlib import Path
 from typing import Any
-from urllib.error import URLError
 from urllib.parse import urlencode
 from urllib.request import urlopen
 
@@ -22,7 +21,7 @@ def _get_json(url: str, params: dict[str, Any] | None = None) -> Any:
     try:
         with urlopen(f"{url}{query}", timeout=10) as response:  # nosec B310: local configuration
             return json.loads(response.read().decode("utf-8"))
-    except (URLError, TimeoutError, json.JSONDecodeError) as error:
+    except (OSError, TimeoutError, json.JSONDecodeError) as error:
         raise ObserverError(f"Unable to query {url}: {error}") from error
 
 
@@ -42,19 +41,54 @@ class Observer:
             with urlopen(url, timeout=10) as response:  # nosec B310: local configuration
                 if response.status != 200:
                     raise ObserverError(f"{name} is not ready")
-        except (URLError, TimeoutError) as error:
+        except (OSError, TimeoutError) as error:
             raise ObserverError(f"{name} is unavailable: {error}") from error
 
-    def check_ready(self) -> None:
+    CONTAINER_CPU_QUERY = (
+        'sum by (service) (rate(container_cpu_usage_seconds_total{job="cadvisor",'
+        'name!=""}[1m]) * on(name) group_left(service) '
+        'compose_container_info{service!=""})'
+    )
+    CONTAINER_MEMORY_QUERY = (
+        'sum by (service) (container_memory_working_set_bytes{job="cadvisor",'
+        'name!=""} * on(name) group_left(service) '
+        'compose_container_info{service!=""})'
+    )
+
+    def check_ready(self) -> dict[str, int]:
         self._check_endpoint(f"{self.prometheus_url}/-/ready", "Prometheus")
         self._check_endpoint(f"{self.loki_url}/ready", "Loki")
         self._check_endpoint(f"{self.jaeger_url}/api/services", "Jaeger")
+        mapping = self._query_instant("compose_container_info{service!=\"\"}")
+        cpu = self._query_instant(self.CONTAINER_CPU_QUERY)
+        memory = self._query_instant(self.CONTAINER_MEMORY_QUERY)
+        counts = {
+            "container_metadata_series": len(mapping),
+            "container_cpu_series": len(cpu),
+            "container_memory_series": len(memory),
+        }
+        if not all(counts.values()):
+            missing = ", ".join(name for name, count in counts.items() if not count)
+            raise ObserverError(f"Container telemetry mapping is not ready: {missing}")
+        return counts
+
+    def _query_instant(self, expression: str) -> list[dict[str, Any]]:
+        result = _get_json(
+            f"{self.prometheus_url}/api/v1/query", {"query": expression}
+        )
+        if result.get("status") != "success":
+            raise ObserverError(f"Prometheus query failed: {expression}")
+        data = result.get("data", {})
+        values = data.get("result", [])
+        if not isinstance(values, list):
+            raise ObserverError(f"Prometheus returned invalid result: {expression}")
+        return values
 
     def capture(self, start: datetime, end: datetime) -> dict[str, Any]:
         metric_queries = {
             "services_up": "up",
-            "container_cpu": "sum by (service) (rate(container_cpu_usage_seconds_total[1m]))",
-            "container_memory": "sum by (service) (container_memory_working_set_bytes)",
+            "container_cpu": self.CONTAINER_CPU_QUERY,
+            "container_memory": self.CONTAINER_MEMORY_QUERY,
             "host_memory_available": "node_memory_MemAvailable_bytes",
         }
         metrics = {

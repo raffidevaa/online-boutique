@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 import sys
 
-from research.generators import ScenarioError, load_scenario
+from research.generators import InjectorError, PumbaInjector, ScenarioError, load_scenario
 from research.observer import Observer, ObserverError
 from research.orchestrator.faults import FaultExecutionError, describe_scenario, run_fault
 from research.service import ComposeApplication, ServiceError
@@ -20,13 +20,14 @@ def doctor(config: ResearchConfig) -> dict[str, object]:
     observer = Observer(config)
     application.validate()
     states = application.validate_readiness()
-    observer.check_ready()
+    telemetry = observer.check_ready()
     return {
         "status": "healthy",
         "services": {name: state.status for name, state in states.items()},
         "prometheus_url": config.prometheus_url,
         "loki_url": config.loki_url,
         "jaeger_url": config.jaeger_url,
+        "telemetry": telemetry,
     }
 
 
@@ -66,6 +67,13 @@ def main() -> int:
         "plan", help="Validate and print a non-mutating fault plan"
     )
     fault_plan_parser.add_argument("--scenario", required=True, type=Path)
+    fault_prepare_parser = fault_commands.add_parser(
+        "prepare", help="Verify or explicitly pull pinned fault-injection images"
+    )
+    fault_prepare_parser.add_argument("--scenario", required=True, type=Path)
+    fault_prepare_parser.add_argument(
+        "--pull", action="store_true", help="Pull missing images before verifying them"
+    )
     fault_run_parser = fault_commands.add_parser(
         "run", help="Execute one ready scenario after runtime preflight"
     )
@@ -84,11 +92,20 @@ def main() -> int:
             scenario = load_scenario(arguments.scenario)
             if arguments.fault_command == "plan":
                 result = describe_scenario(scenario, config)
+            elif arguments.fault_command == "prepare":
+                result = PumbaInjector(config).prepare_images(scenario, pull=arguments.pull)
             elif not arguments.execute:
                 raise FaultExecutionError("Refusing fault injection without --execute")
             else:
                 result = run_fault(scenario, config)
-    except (FaultExecutionError, ScenarioError, ServiceError, ObserverError, FileExistsError) as error:
+    except (
+        FaultExecutionError,
+        InjectorError,
+        ScenarioError,
+        ServiceError,
+        ObserverError,
+        FileExistsError,
+    ) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
     print(json.dumps(result, indent=2, sort_keys=True))

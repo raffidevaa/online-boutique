@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Online Boutique · Architecture Explorer</title>
+  <style>
+    :root { --bg:#0b1220; --panel:#121c2e; --panel2:#18243a; --text:#e7eefb; --muted:#9aabc4; --line:#2e415f; --blue:#65b8ff; --green:#69d3aa; --amber:#f4bf69; --red:#ff8e91; --purple:#b89cff; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:linear-gradient(135deg,#0b1220,#111d31 60%,#17253b); color:var(--text); font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    header { padding:28px 34px 20px; border-bottom:1px solid var(--line); background:rgba(11,18,32,.78); }
+    header h1 { margin:0 0 5px; font-size:clamp(1.55rem,3vw,2.35rem); letter-spacing:-.03em; }
+    header p { margin:0; color:var(--muted); max-width:850px; }
+    .app { display:grid; grid-template-columns:270px minmax(0,1fr) 285px; min-height:calc(100vh - 111px); }
+    aside, .details { padding:22px; background:rgba(13,22,38,.72); }
+    aside { border-right:1px solid var(--line); }
+    .details { border-left:1px solid var(--line); }
+    .eyebrow { color:var(--blue); text-transform:uppercase; font-size:.7rem; font-weight:800; letter-spacing:.12em; margin-bottom:9px; }
+    .nav { display:grid; gap:7px; }
+    button, select, input { font:inherit; color:var(--text); }
+    button { cursor:pointer; border:1px solid transparent; }
+    .nav button { text-align:left; padding:10px 12px; border-radius:9px; background:transparent; color:var(--muted); }
+    .nav button:hover, .nav button.active { background:var(--panel2); color:var(--text); border-color:var(--line); }
+    .controls { display:grid; gap:9px; margin:22px 0; }
+    input, select { width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px; background:var(--panel); outline:none; }
+    input:focus, select:focus { border-color:var(--blue); }
+    .legend { display:grid; gap:7px; color:var(--muted); font-size:.82rem; }
+    .legend span { display:flex; align-items:center; gap:8px; }
+    .swatch { width:23px; height:4px; border-radius:5px; background:var(--blue); display:inline-block; }
+    .swatch.dashed { background:repeating-linear-gradient(90deg,var(--amber) 0 6px,transparent 6px 10px); }
+    .swatch.readonly { background:var(--green); }
+    main { min-width:0; padding:26px; }
+    .toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px; }
+    .toolbar h2 { margin:0; font-size:1.35rem; }
+    .toolbar .actions { display:flex; gap:8px; }
+    .action { padding:8px 12px; border-radius:8px; background:var(--panel2); border-color:var(--line); }
+    .action:hover { border-color:var(--blue); }
+    .canvas { min-height:540px; padding:12px; border:1px solid var(--line); border-radius:14px; background:rgba(10,17,30,.62); overflow:auto; }
+    svg { display:block; width:100%; min-width:820px; height:auto; }
+    .node { fill:var(--panel); stroke:var(--line); stroke-width:2; transition:all .15s ease; }
+    .node:hover, .node.selected { stroke:var(--blue); filter:drop-shadow(0 0 9px rgba(101,184,255,.35)); }
+    .node.future { stroke-dasharray:7 5; stroke:var(--amber); }
+    .node.service { cursor:pointer; }
+    .node.dim, .edge.dim { opacity:.2; }
+    .node-title { fill:var(--text); font-size:16px; font-weight:750; pointer-events:none; }
+    .node-body { fill:var(--muted); font-size:12px; pointer-events:none; }
+    .edge { stroke:var(--blue); stroke-width:2; fill:none; marker-end:url(#arrow); }
+    .edge.future { stroke:var(--amber); stroke-dasharray:8 6; }
+    .edge.readonly { stroke:var(--green); marker-end:url(#arrow-green); }
+    .edge.mutation { stroke:var(--red); marker-end:url(#arrow-red); }
+    .caption { color:var(--muted); font-size:.86rem; margin:13px 3px 0; }
+    .details h3 { margin:0 0 12px; font-size:1.05rem; }
+    .details p { color:var(--muted); margin:0 0 15px; }
+    .detail-card { padding:13px; border:1px solid var(--line); border-radius:10px; background:var(--panel); margin-bottom:11px; }
+    .detail-card strong { display:block; color:var(--text); margin-bottom:4px; }
+    .tag { display:inline-block; padding:3px 7px; border-radius:99px; background:#243552; color:var(--blue); font-size:.72rem; margin:2px 3px 2px 0; }
+    .tag.green { color:var(--green); } .tag.amber { color:var(--amber); } .tag.red { color:var(--red); }
+    .status { margin-top:18px; padding:10px; border-radius:8px; color:var(--muted); background:rgba(24,36,58,.7); font-size:.8rem; }
+    @media (max-width:1100px) { .app { grid-template-columns:220px minmax(0,1fr); } .details { grid-column:1/-1; border-left:0; border-top:1px solid var(--line); } }
+    @media (max-width:700px) { header { padding:21px; } .app { display:block; } aside,main,.details { padding:18px; border:0; border-bottom:1px solid var(--line); } .nav { grid-template-columns:repeat(2,1fr); } .toolbar { align-items:flex-start; flex-direction:column; } }
+    @media print { body { color:#111; background:#fff; } header, aside, .details { background:#fff; color:#111; } aside,.details { display:none; } main { padding:0; } .canvas { border:0; } .caption { color:#444; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Online Boutique · Architecture Explorer</h1>
+    <p>Diagram interaktif untuk thesis research scaffold: service topology, experiment lifecycle, observability, RCA, remediation, dan fault propagation. Buka offline tanpa dependency eksternal.</p>
+  </header>
+  <div class="app">
+    <aside>
+      <div class="eyebrow">Explore</div>
+      <nav class="nav" aria-label="Diagram navigation">
+        <button class="active" data-view="context">System context</button>
+        <button data-view="services">Service topology</button>
+        <button data-view="lifecycle">Experiment lifecycle</button>
+        <button data-view="observability">Observability flow</button>
+        <button data-view="boundary">RCA boundary</button>
+        <button data-view="fault">Fault propagation</button>
+      </nav>
+      <div class="controls">
+        <div class="eyebrow">Filter services</div>
+        <input id="search" type="search" placeholder="Cari service..." aria-label="Cari service">
+        <select id="category" aria-label="Filter fault category">
+          <option value="all">Semua kategori fault</option>
+          <option value="resource">Resource</option>
+          <option value="network">Network</option>
+          <option value="code_level">Code-level</option>
+        </select>
+        <select id="status" aria-label="Filter scenario status">
+          <option value="all">Semua status scenario</option>
+          <option value="ready_for_pilot">Ready for pilot</option>
+          <option value="experimental_unavailable">Experimental unavailable</option>
+          <option value="deferred_faulty_image">Deferred faulty image</option>
+        </select>
+      </div>
+      <div class="eyebrow">Legend</div>
+      <div class="legend">
+        <span><i class="swatch"></i> runtime/control flow</span>
+        <span><i class="swatch readonly"></i> read-only telemetry</span>
+        <span><i class="swatch dashed"></i> future/deferred</span>
+        <span><i class="swatch" style="background:var(--red)"></i> mutation gate</span>
+      </div>
+      <div class="status">Sumber: <code>research/</code> runtime, metadata, scenario catalog, dan architecture docs.</div>
+    </aside>
+    <main>
+      <div class="toolbar">
+        <h2 id="view-title">System context</h2>
+        <div class="actions"><button class="action" id="reset">Reset view</button><button class="action" id="print">Print</button></div>
+      </div>
+      <section class="canvas" aria-live="polite"><svg id="diagram" viewBox="0 0 1200 650" role="img" aria-label="Architecture diagram"></svg></section>
+      <p class="caption" id="caption"></p>
+    </main>
+    <section class="details" aria-live="polite">
+      <div class="eyebrow">Selected detail</div>
+      <h3 id="detail-title">System boundary</h3>
+      <p id="detail-summary">Klik node service atau tahap proses untuk melihat fungsi, dependency, evidence, dan safety gate.</p>
+      <div id="detail-content"></div>
+    </section>
+  </div>
+  <script>
+    const services = [
+      {id:'frontend', role:'public storefront', port:'8080', deps:['productcatalogservice','currencyservice','cartservice','recommendationservice','shippingservice','checkoutservice','adservice'], targets:true},
+      {id:'productcatalogservice', role:'product catalog', port:'3550', deps:[], targets:true},
+      {id:'currencyservice', role:'currency conversion', port:'7000', deps:[], targets:true},
+      {id:'cartservice', role:'shopping cart', port:'7070', deps:['redis-cart'], targets:true},
+      {id:'redis-cart', role:'cart cache', port:'6379', deps:[], targets:true},
+      {id:'recommendationservice', role:'product recommendation', port:'8080', deps:['productcatalogservice'], targets:true},
+      {id:'checkoutservice', role:'checkout orchestrator', port:'5050', deps:['productcatalogservice','shippingservice','paymentservice','emailservice','currencyservice','cartservice'], targets:true},
+      {id:'paymentservice', role:'payment processing', port:'50051', deps:[], targets:true},
+      {id:'shippingservice', role:'shipping quotation', port:'50051', deps:[], targets:true},
+      {id:'emailservice', role:'order confirmation email', port:'8080', deps:[], targets:true},
+      {id:'adservice', role:'advertisement recommendation', port:'9555', deps:[], targets:true, confounder:'JVM startup and garbage-collection CPU spikes'},
+      {id:'loadgenerator', role:'controlled workload generator', port:'—', deps:['frontend'], targets:false},
+      {id:'shoppingassistantservice', role:'optional LLM-backed assistant', port:'80', deps:[], targets:false, deployed:false, confounder:'LLM-generated fallback or error text'}
+    ];
+    const scenarios = [
+      {type:'cpu_hog', category:'resource', status:'ready_for_pilot', target:'recommendationservice'},
+      {type:'memory_pressure', category:'resource', status:'ready_for_pilot', target:'cartservice'},
+      {type:'network_delay', category:'network', status:'ready_for_pilot', target:'paymentservice'},
+      {type:'packet_loss', category:'network', status:'ready_for_pilot', target:'productcatalogservice'},
+      {type:'incorrect_return_value', category:'code_level', status:'deferred_faulty_image', target:'currencyservice'},
+      {type:'missing_exception_handler', category:'code_level', status:'deferred_faulty_image', target:'checkoutservice'},
+      {type:'disk_stress', category:'resource', status:'experimental_unavailable', target:'—'},
+      {type:'socket_stress', category:'resource', status:'experimental_unavailable', target:'—'}
+    ];
+    const steps = [
+      ['startup','Compose startup','Docker Compose','Menjalankan app dan observability stack.'],
+      ['ready','Readiness','orchestrator + observer','doctor memvalidasi Compose, health, Prometheus, Loki, dan Jaeger.'],
+      ['plan','Scenario plan','generators','YAML divalidasi; taxonomy dan execution status menentukan runnable/deferred.'],
+      ['baseline','Baseline','observer + artifacts','Telemetry window disimpan sebelum injection. Baseline failure menghentikan run.'],
+      ['inject','Single fault','Pumba / future adapter','Satu target, satu fault, tokenized command, bounded timeout, explicit --execute.'],
+      ['incident','Incident capture','observer + artifacts','Metrics, logs, traces, alerts direkam selama fault aktif.'],
+      ['recover','Recovery','observer + Compose state','Recovery telemetry, cleanup-state, result, dan event dicatat.'],
+      ['evaluate','RCA + evaluation','future agent + evaluator','Hypothesis/recommendation memakai telemetry; ground truth tetap withheld.']
+    ];
+    const state = {view:'context', selected:null, search:'', category:'all', status:'all'};
+    const titles = {context:'System context', services:'Service topology', lifecycle:'Experiment lifecycle', observability:'Observability flow', boundary:'RCA and remediation boundary', fault:'Fault propagation'};
+    const captions = {context:'Gambaran hubungan runtime, observability, experiment artifacts, dan future AI layer.', services:'Klik service untuk melihat role, dependency, targetability, dan confounder.', lifecycle:'Klik tahap untuk melihat actor, input/output, artifact, dan safety gate.', observability:'Garis hijau menunjukkan jalur observasi read-only; ground truth tidak masuk ke agent.', boundary:'Remediation tetap recommendation-only sampai explicit approval dan allowlist tersedia.', fault:'Contoh network delay: symptom propagated di checkout/frontend bukan otomatis root cause.'};
+    const NS = 'http://www.w3.org/2000/svg';
+    function esc(value){return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function defs(){return '<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#65b8ff"/></marker><marker id="arrow-green" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#69d3aa"/></marker><marker id="arrow-red" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#ff8e91"/></marker></defs>';}
+    function line(x1,y1,x2,y2,klass=''){return `<line class="edge ${klass}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;}
+    function box(id,x,y,w,h,title,body,klass='',click=''){const attrs=click?`data-${click}="${esc(id)}"`:''; return `<g class="node-group" ${attrs}><rect class="node ${klass}" x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/><text class="node-title" x="${x+16}" y="${y+27}">${esc(title)}</text><text class="node-body" x="${x+16}" y="${y+49}">${esc(body)}</text></g>`;}
+    function multiBox(id,x,y,w,h,title,body,klass='',click=''){const attrs=click?`data-${click}="${esc(id)}"`:''; return `<g class="node-group" ${attrs}><rect class="node ${klass}" x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/><text class="node-title" x="${x+16}" y="${y+25}">${esc(title)}</text>${body.map((t,i)=>`<text class="node-body" x="${x+16}" y="${y+47+i*18}">${esc(t)}</text>`).join('')}</g>`;}
+    function visibleService(id){const s=services.find(x=>x.id===id); if(!s)return false; const textMatch=!state.search || `${s.id} ${s.role}`.toLowerCase().includes(state.search.toLowerCase()); const scenarioMatch=state.category==='all'&&state.status==='all'||scenarios.some(x=>x.target===id&&(state.category==='all'||x.category===state.category)&&(state.status==='all'||x.status===state.status)); return textMatch&&scenarioMatch;}
+    function selectedClass(id){return state.selected===id?'selected':'';}
+    function renderContext(){let s=defs(); s+=box('user',45,270,170,70,'Researcher','CLI commands'); s+=box('cli',285,270,190,70,'Orchestrator','doctor / snapshot / fault'); s+=box('runtime',555,90,245,80,'Compose runtime','Online Boutique services'); s+=box('obs',555,270,245,80,'Observability','Prometheus · Loki · Jaeger'); s+=box('evidence',555,450,245,80,'Evidence store','append-only runs'); s+=multiBox('agent',910,165,230,90,'Future AI layer',['RCA agent','remediation + evaluation'],'future'); s+=line(215,305,285,305); s+=line(475,285,555,130); s+=line(475,305,555,305); s+=line(675,170,675,270,'readonly'); s+=line(675,350,675,450,'readonly'); s+=line(800,490,910,220,'future'); s+=line(800,305,910,220,'future'); return s;}
+    function renderServices(){const pos={frontend:[500,65],productcatalogservice:[75,220],currencyservice:[290,220],cartservice:[505,220],recommendationservice:[720,220],adservice:[935,220],checkoutservice:[395,390],paymentservice:[70,530],shippingservice:[285,530],emailservice:[500,530],['redis-cart']:[720,530],loadgenerator:[75,65],shoppingassistantservice:[935,390]}; let s=defs(); const edges=[['loadgenerator','frontend'],['frontend','productcatalogservice'],['frontend','currencyservice'],['frontend','cartservice'],['frontend','recommendationservice'],['frontend','adservice'],['frontend','checkoutservice'],['cartservice','redis-cart'],['recommendationservice','productcatalogservice'],['checkoutservice','productcatalogservice'],['checkoutservice','currencyservice'],['checkoutservice','cartservice'],['checkoutservice','paymentservice'],['checkoutservice','shippingservice'],['checkoutservice','emailservice']]; edges.forEach(([a,b])=>{const p=pos[a],q=pos[b]; s+=line(p[0]+85,p[1]+35,q[0]+85,q[1]+35, state.search && (!visibleService(a)||!visibleService(b))?'dim':'');}); services.forEach(x=>{const p=pos[x.id]; const dim=state.search&&!visibleService(x.id)?'dim':''; const future=x.deployed===false?'future':''; s+=box(x.id,p[0],p[1],170,70,x.id,x.role,`service ${future} ${dim} ${selectedClass(x.id)}`,'service');}); return s;}
+    function renderLifecycle(){let s=defs(); const start=48,w=132,gap=16; steps.forEach((x,i)=>{const xPos=start+i*(w+gap); const row=i<4?150:390; const col=i<4?i:i-4; const y=row; if(i>0){const prevX=start+(i-1)*(w+gap); const prevRow=i-1<4?150:390; if(prevRow===row)s+=line(prevX+w,y+35,xPos,y+35,i===7?'future':''); else s+=line(prevX+w,185,start+3*(w+gap)+w/2,390,'future');} s+=box(x[0],xPos,y,w,70,x[1],x[2],i===7?'future':'','step'); }); s+=line(180,335,180,390,'future'); return s;}
+    function renderObservability(){let s=defs(); s+=box('services',60,90,220,75,'Compose services','metrics · logs · traces'); s+=box('docker',60,300,220,75,'Docker state','containers · health · limits'); s+=box('prom',405,35,210,65,'Prometheus','metrics + alerts'); s+=box('loki',405,145,210,65,'Loki','structured logs'); s+=box('jaeger',405,255,210,65,'Jaeger','distributed traces'); s+=box('meta',405,365,210,65,'Service metadata','roles + dependencies'); s+=multiBox('observer',760,190,220,90,'Observer',['readiness + range queries','read-only'],'',''); s+=multiBox('agent',1010,190,150,90,'RCA agent',['telemetry only','future'],'future'); s+=box('truth',760,400,220,70,'Ground truth','withheld from agent'); s+=line(280,125,405,67,'readonly'); s+=line(280,125,405,177,'readonly'); s+=line(280,125,405,287,'readonly'); s+=line(280,335,760,235,'readonly'); s+=line(615,67,760,220,'readonly'); s+=line(615,177,760,235,'readonly'); s+=line(615,287,760,250,'readonly'); s+=line(615,397,760,270,'readonly'); s+=line(980,235,1010,235,'readonly'); s+=line(980,435,1010,280,'future'); return s;}
+    function renderBoundary(){let s=defs(); s+=multiBox('evidence',45,270,220,90,'Allowed evidence',['metrics · logs · traces','metadata · runbooks']); s+=multiBox('rca',355,270,210,90,'RCA agent',['read-only tools','ranked hypothesis']); s+=multiBox('recommendation',655,270,220,90,'Recommendation',['safe, relevant, actionable','default: no execution']); s+='<polygon points="1015,270 1085,315 1015,360 945,315" fill="#18243a" stroke="#f4bf69" stroke-width="2"/><text class="node-title" x="974" y="311">Explicit</text><text class="node-title" x="965" y="333">approval?</text>'; s+=multiBox('action',925,445,220,80,'Allowlisted action',['Compose-scoped','reversible + audited'],'future'); s+=line(265,315,355,315,'readonly'); s+=line(565,315,655,315,'readonly'); s+=line(875,315,945,315,'future'); s+=line(1015,360,1015,445,'mutation future'); s+=line(1085,315,1145,315,'future'); s+=box('audit',945,150,220,65,'Audit/result artifact','recommendation + outcome','future'); s+=line(1015,445,1055,215,'future'); return s;}
+    function renderFault(){let s=defs(); s+=multiBox('fault',55,280,220,85,'FI-NET-DELAY-01',['paymentservice','network_delay · medium'],'','scenario'); s+=multiBox('local',365,180,220,85,'Local symptom',['payment RPC latency','deadline / timeout']); s+=multiBox('propagated',365,390,220,85,'Propagated symptom',['checkout waits','frontend error/latency']); s+=multiBox('evidence',720,280,220,85,'Correlated evidence',['Prometheus · Loki','Jaeger time window']); s+=multiBox('recovery',1010,280,145,85,'Recovery',['cleanup + capture']); s+=line(275,322,365,222); s+=line(275,322,365,432); s+=line(585,222,720,322,'readonly'); s+=line(585,432,720,322,'readonly'); s+=line(940,322,1010,322,'readonly'); return s;}
+    function render(){let content=state.view==='context'?renderContext():state.view==='services'?renderServices():state.view==='lifecycle'?renderLifecycle():state.view==='observability'?renderObservability():state.view==='boundary'?renderBoundary():renderFault(); const svg=document.getElementById('diagram'); svg.innerHTML=content; document.getElementById('view-title').textContent=titles[state.view]; document.getElementById('caption').textContent=captions[state.view]; document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===state.view)); bindNodes();}
+    function updateDetail(kind,id){const content=document.getElementById('detail-content'); let title='System boundary',summary='Klik node service atau tahap proses untuk melihat detail.'; let cards=[]; if(kind==='service'){const s=services.find(x=>x.id===id); if(!s)return; title=s.id; summary=s.role; const related=scenarios.filter(x=>x.target===id); cards=[['Port',s.port],['Targetability',s.targets?'Boleh menjadi target fault':'Bukan fault target'],['Dependencies',s.deps.length?s.deps.join(', '):'Tidak ada dependency terdaftar']]; if(s.confounder)cards.push(['Confounder',s.confounder]); if(related.length)cards.push(['Fault scenarios',related.map(x=>`${x.type} (${x.status})`).join(' · ')]); } else if(kind==='step'){const x=steps.find(a=>a[0]===id); if(x){title=x[1]; summary=x[3]; cards=[['Aktor/modul',x[2]],['Output','Structured event/artifact atau handoff ke tahap berikutnya'],['Safety','Tahap berhenti jika precondition dan readiness tidak terpenuhi']];}} else if(kind==='scenario'){title='FI-NET-DELAY-01';summary='Network delay pada paymentservice';cards=[['Root cause','paymentservice / network_delay'],['Local evidence','payment RPC/span latency dan deadline symptoms'],['Propagated evidence','checkout menunggu payment; frontend dapat ikut degraded'],['Interpretasi','frontend dan checkout adalah symptom location, bukan otomatis root cause']];} document.getElementById('detail-title').textContent=title; document.getElementById('detail-summary').textContent=summary; content.innerHTML=cards.map(c=>`<div class="detail-card"><strong>${esc(c[0])}</strong>${esc(c[1])}</div>`).join('');}
+    function bindNodes(){document.querySelectorAll('[data-service]').forEach(n=>n.addEventListener('click',()=>{state.selected=n.dataset.service;updateDetail('service',state.selected);render();})); document.querySelectorAll('[data-step]').forEach(n=>n.addEventListener('click',()=>updateDetail('step',n.dataset.step))); document.querySelectorAll('[data-scenario]').forEach(n=>n.addEventListener('click',()=>updateDetail('scenario',n.dataset.scenario))); document.querySelectorAll('.node-group').forEach(n=>{if(n.dataset.service)n.addEventListener('mouseenter',()=>{document.querySelectorAll('.node-group').forEach(x=>x.classList.toggle('dim',x!==n));}); n.addEventListener('mouseleave',()=>document.querySelectorAll('.node-group').forEach(x=>x.classList.remove('dim')));});}
+    document.querySelectorAll('.nav button').forEach(b=>b.addEventListener('click',()=>{state.view=b.dataset.view;state.selected=null;render();}));
+    document.getElementById('search').addEventListener('input',e=>{state.search=e.target.value;render();});
+    document.getElementById('category').addEventListener('change',e=>{state.category=e.target.value;render();});
+    document.getElementById('status').addEventListener('change',e=>{state.status=e.target.value;render();});
+    document.getElementById('reset').addEventListener('click',()=>{state.view='context';state.selected=null;state.search='';state.category='all';state.status='all';document.getElementById('search').value='';document.getElementById('category').value='all';document.getElementById('status').value='all';updateDetail();render();});
+    document.getElementById('print').addEventListener('click',()=>window.print());
+    render();
+  </script>
+</body>
+</html>

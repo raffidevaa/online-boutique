@@ -271,7 +271,7 @@ services:
       - ../observability/opentelemetry/collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
     depends_on:
       jaeger:
-        condition: service_started
+        condition: service_healthy
     networks: [boutique]
 
   jaeger:
@@ -280,9 +280,17 @@ services:
     cpus: 0.2
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
-      MEMORY_MAX_TRACES: "10000"
+      # Jaeger uses in-memory storage; keep retention bounded on the constrained host.
+      MEMORY_MAX_TRACES: "2000"
+    restart: unless-stopped
     ports:
       - "127.0.0.1:16686:16686"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:16686/api/services"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
     networks: [boutique]
 
   # Observability stack
@@ -342,6 +350,46 @@ services:
     depends_on:
       cadvisor:
         condition: service_healthy
+      container-metadata-exporter:
+        condition: service_started
+    networks: [boutique]
+
+  container-metadata-exporter:
+    build:
+      context: ../observability/container-metadata-exporter
+    image: research/container-metadata-exporter:local
+    mem_limit: 64m
+    cpus: 0.05
+    environment:
+      COMPOSE_PROJECT_NAME: "compose"
+      DOCKER_HOST: "docker-socket-proxy:2375"
+      METADATA_REFRESH_SECONDS: "5"
+    expose:
+      - "8081"
+    depends_on:
+      docker-socket-proxy:
+        condition: service_started
+    networks: [boutique]
+
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.3.0
+    mem_limit: 32m
+    cpus: 0.05
+    environment:
+      CONTAINERS: "1"
+      PING: "1"
+      VERSION: "1"
+      POST: "0"
+      EXEC: "0"
+      IMAGES: "0"
+      NETWORKS: "0"
+      SERVICES: "0"
+      SYSTEM: "0"
+      VOLUMES: "0"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    expose:
+      - "2375"
     networks: [boutique]
 
   loki:
