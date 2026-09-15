@@ -1,6 +1,7 @@
 x-grpc-healthcheck-defaults: &grpc-healthcheck-defaults
   interval: 10s
-  timeout: 5s
+  start_period: 30s
+  timeout: 15s
   retries: 5
 
 services:
@@ -33,7 +34,7 @@ services:
       - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
     healthcheck:
       <<: *grpc-healthcheck-defaults
-      test: ["CMD", "/bin/grpc_health_probe", "-addr=:3550"]
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:3550", "-connect-timeout=5s", "-rpc-timeout=5s"]
     depends_on:
       otel-collector:
         condition: service_started
@@ -53,7 +54,7 @@ services:
       - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
     healthcheck:
       <<: *grpc-healthcheck-defaults
-      test: ["CMD", "/bin/grpc_health_probe", "-addr=:7000"]
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:7000", "-connect-timeout=5s", "-rpc-timeout=5s"]
     depends_on:
       otel-collector:
         condition: service_started
@@ -73,7 +74,7 @@ services:
       - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
     healthcheck:
       <<: *grpc-healthcheck-defaults
-      test: ["CMD", "/bin/grpc_health_probe", "-addr=:50051"]
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:50051", "-connect-timeout=5s", "-rpc-timeout=5s"]
     depends_on:
       otel-collector:
         condition: service_started
@@ -90,7 +91,7 @@ services:
       - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
     healthcheck:
       <<: *grpc-healthcheck-defaults
-      test: ["CMD", "/bin/grpc_health_probe", "-addr=:50051"]
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:50051", "-connect-timeout=5s", "-rpc-timeout=5s"]
     networks: [boutique]
 
   emailservice:
@@ -107,7 +108,7 @@ services:
       - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
     healthcheck:
       <<: *grpc-healthcheck-defaults
-      test: ["CMD", "/bin/grpc_health_probe", "-addr=:8080"]
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:8080", "-connect-timeout=5s", "-rpc-timeout=5s"]
     depends_on:
       otel-collector:
         condition: service_started
@@ -122,7 +123,7 @@ services:
     volumes:
       - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
     healthcheck:
-      test: ["CMD", "/bin/grpc_health_probe", "-addr=:9555"]
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:9555", "-connect-timeout=5s", "-rpc-timeout=5s"]
       interval: 15s
       timeout: 5s
       retries: 6
@@ -140,7 +141,7 @@ services:
       - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
     healthcheck:
       <<: *grpc-healthcheck-defaults
-      test: ["CMD", "/bin/grpc_health_probe", "-addr=:7070"]
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:7070", "-connect-timeout=5s", "-rpc-timeout=5s"]
       start_period: 15s
     depends_on:
       redis-cart:
@@ -162,7 +163,7 @@ services:
       - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
     healthcheck:
       <<: *grpc-healthcheck-defaults
-      test: ["CMD", "/bin/grpc_health_probe", "-addr=:8080"]
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:8080", "-connect-timeout=5s", "-rpc-timeout=5s"]
     depends_on:
       productcatalogservice:
         condition: service_healthy
@@ -190,7 +191,7 @@ services:
       - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
     healthcheck:
       <<: *grpc-healthcheck-defaults
-      test: ["CMD", "/bin/grpc_health_probe", "-addr=:5050"]
+      test: ["CMD", "/bin/grpc_health_probe", "-addr=:5050", "-connect-timeout=5s", "-rpc-timeout=5s"]
     depends_on:
       productcatalogservice:
         condition: service_healthy

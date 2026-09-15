@@ -63,12 +63,26 @@ python -m research.orchestrator fault prepare \
 python -m research.orchestrator fault run \
   --scenario research/generators/scenarios/resource-03-cpu-hog-checkout.yaml \
   --execute
+
+# 9. Build one research-owned code-level faulty image
+python -m research.orchestrator fault image build \
+  --scenario research/generators/scenarios/code-level-01-incorrect-return-currency.yaml
+
+# 10. Verify a built code-level image and its explicit Compose override
+python -m research.orchestrator fault image prepare \
+  --scenario research/generators/scenarios/code-level-01-incorrect-return-currency.yaml
 ```
 
 Pumba is an on-demand fault-injection tool, not a permanent Compose service. The prepare
 command explicitly verifies or pulls its pinned image and any scenario-specific helper image;
 the fault runner still uses `--pull never` and will not pull images implicitly during an
 experiment.
+
+Code-level scenarios use research-owned faulty images built from temporary patched copies of
+the upstream service source. The baseline source tree is not edited; each faulty image is
+selected only through its allowlisted scenario-specific Compose override. Code-level runs
+remain gated until the image build, behavior validator, telemetry capture, and baseline
+recovery have all been validated.
 
 ## Development hardware
 

@@ -34,6 +34,24 @@ Docker Compose service. The runner also requires the observability backends to r
 if baseline telemetry cannot be captured, the run is marked `baseline_failed` and no fault is
 injected.
 
+Code-level scenarios use the separate faulty-image path:
+
+```bash
+python -m research.orchestrator fault image plan \
+  --scenario research/generators/scenarios/code-level-01-incorrect-return-currency.yaml
+
+python -m research.orchestrator fault image build \
+  --scenario research/generators/scenarios/code-level-01-incorrect-return-currency.yaml
+
+python -m research.orchestrator fault image prepare \
+  --scenario research/generators/scenarios/code-level-01-incorrect-return-currency.yaml
+```
+
+The build applies one research-owned patch to a temporary Docker build context and tags the
+result under `research/faulty/`. The scenario-specific Compose override may replace only the
+declared target image. A code-level run restores the baseline image in a `finally`-guarded
+cleanup path; semantic behavior evidence can be supplied with `--semantic-observation`.
+
 The RCA agent may receive alerts, metrics, logs, traces when available, service topology,
 service metadata, and approved runbooks. It must not receive the scenario ID, ground truth,
 injection command, or injector output.

@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import time
 from typing import Any, Sequence
 
 import yaml
@@ -113,6 +114,17 @@ class ComposeApplication:
     def _compose(self, *args: str) -> list[str]:
         return ["docker", "compose", "-f", str(self.config.compose_file), *args]
 
+    def _compose_with_override(self, override: Path, *args: str) -> list[str]:
+        return [
+            "docker",
+            "compose",
+            "-f",
+            str(self.config.compose_file),
+            "-f",
+            str(override),
+            *args,
+        ]
+
     @staticmethod
     def _run(command: Sequence[str], check: bool = True) -> CommandResult:
         result = subprocess.run(command, capture_output=True, text=True, check=False)
@@ -192,6 +204,102 @@ class ComposeApplication:
         if unavailable:
             raise ServiceError("Services not ready: " + ", ".join(unavailable))
         return ready
+
+    def wait_for_service_healthy(
+        self,
+        service: str,
+        *,
+        timeout_seconds: float = 90.0,
+        poll_seconds: float = 2.0,
+    ) -> ServiceState:
+        """Wait until one service is running and its configured healthcheck passes."""
+        if timeout_seconds <= 0 or poll_seconds <= 0:
+            raise ValueError("timeout_seconds and poll_seconds must be positive")
+        deadline = time.monotonic() + timeout_seconds
+        last_state: ServiceState | None = None
+        while True:
+            last_state = self.get_service_state(service)
+            if (
+                last_state is not None
+                and last_state.status == "running"
+                and last_state.health in (None, "healthy")
+            ):
+                return last_state
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                if last_state is None:
+                    detail = "container is absent"
+                else:
+                    detail = f"status={last_state.status}, health={last_state.health}"
+                raise ServiceError(
+                    f"Service {service} did not become healthy within "
+                    f"{timeout_seconds:.0f}s ({detail})"
+                )
+            time.sleep(min(poll_seconds, remaining))
+
+    def validate_fault_override(
+        self,
+        override: Path,
+        service: str,
+        expected_image: str,
+        expected_trigger: str | None = None,
+    ) -> None:
+        """Validate that an override changes only the approved target image."""
+        if not override.is_file():
+            raise ServiceError(f"Compose override does not exist: {override}")
+        try:
+            raw = yaml.safe_load(override.read_text(encoding="utf-8")) or {}
+        except (OSError, yaml.YAMLError) as error:
+            raise ServiceError(f"Unable to read Compose override {override}: {error}") from error
+        if not isinstance(raw, dict) or set(raw) - {"services"}:
+            raise ServiceError(f"Invalid Compose override keys: {override}")
+        services = raw.get("services")
+        if not isinstance(services, dict) or set(services) != {service}:
+            raise ServiceError(
+                f"Fault override must contain only target service {service}: {override}"
+            )
+        target = services.get(service)
+        if not isinstance(target, dict):
+            raise ServiceError(f"Invalid target service override: {override}")
+        allowed_keys = {"image"}
+        if expected_trigger is not None:
+            allowed_keys.add("environment")
+        if set(target) != allowed_keys:
+            raise ServiceError(
+                f"Fault override contains unapproved target fields: {override}"
+            )
+        if target.get("image") != expected_image:
+            raise ServiceError(
+                f"Fault override image mismatch for {service}: {target.get('image')}"
+            )
+        if expected_trigger is not None:
+            environment = target.get("environment")
+            if environment != {"RESEARCH_FAULT_TRIGGER": expected_trigger}:
+                raise ServiceError(f"Fault override trigger mismatch for {service}")
+        elif "environment" in target:
+            raise ServiceError(f"Fault override cannot add an environment trigger: {override}")
+        self._run(self._compose_with_override(override, "config", "--quiet"))
+        resolved = self._run(
+            self._compose_with_override(
+                override, "config", "--format", "json", "--no-path-resolution"
+            )
+        )
+        configured = json.loads(resolved.stdout)
+        resolved_service = configured.get("services", {}).get(service, {})
+        if resolved_service.get("image") != expected_image:
+            raise ServiceError(f"Resolved Compose image mismatch for {service}")
+
+    def apply_fault_override(self, override: Path, service: str) -> CommandResult:
+        """Recreate only the target service using an approved faulty image."""
+        return self._run(
+            self._compose_with_override(
+                override, "up", "-d", "--no-deps", "--force-recreate", service
+            )
+        )
+
+    def restore_service(self, service: str) -> CommandResult:
+        """Recreate one service from the baseline Compose file."""
+        return self._run(self._compose("up", "-d", "--no-deps", "--force-recreate", service))
 
     def get_resolved_compose_config(self) -> dict[str, Any]:
         result = self._run(

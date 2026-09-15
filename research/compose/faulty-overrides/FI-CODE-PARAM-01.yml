@@ -1,0 +1,3 @@
+services:
+  checkoutservice:
+    image: research/faulty/checkoutservice:FI-CODE-PARAM-01-v1

@@ -1,0 +1,4 @@
+--- main.go
++++ main.go
+@@ -263 +263,0 @@
+-	_ = cs.emptyUserCart(ctx, req.UserId)

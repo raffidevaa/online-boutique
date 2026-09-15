@@ -1,0 +1,5 @@
+--- main.go
++++ main.go
+@@ -362 +362 @@
+-		ToCode: toCurrency})
++		ToCode: "INVALID"})

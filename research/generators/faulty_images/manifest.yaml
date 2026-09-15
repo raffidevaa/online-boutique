@@ -1,0 +1,53 @@
+schema_version: 1
+images:
+  FI-CODE-RETURN-01:
+    service: currencyservice
+    fault_type: incorrect_return_value
+    image: research/faulty/currencyservice:FI-CODE-RETURN-01-v1
+    baseline_image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/currencyservice:v0.10.6
+    platform: linux/amd64
+    dockerfile: research/generators/faulty_images/Dockerfile.currencyservice
+    patch: research/generators/faulty_images/patches/FI-CODE-RETURN-01.patch
+    override: research/compose/faulty-overrides/FI-CODE-RETURN-01.yml
+    validator: currency_return
+  FI-CODE-EXC-01:
+    service: checkoutservice
+    fault_type: missing_exception_handler
+    image: research/faulty/checkoutservice:FI-CODE-EXC-01-v1
+    baseline_image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/checkoutservice:v0.10.6
+    platform: linux/amd64
+    dockerfile: research/generators/faulty_images/Dockerfile.checkoutservice
+    patch: research/generators/faulty_images/patches/FI-CODE-EXC-01.patch
+    override: research/compose/faulty-overrides/FI-CODE-EXC-01.yml
+    validator: missing_exception
+    trigger: missing_exception_handler
+  FI-CODE-PARAM-01:
+    service: checkoutservice
+    fault_type: incorrect_parameter
+    image: research/faulty/checkoutservice:FI-CODE-PARAM-01-v1
+    baseline_image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/checkoutservice:v0.10.6
+    platform: linux/amd64
+    dockerfile: research/generators/faulty_images/Dockerfile.checkoutservice
+    patch: research/generators/faulty_images/patches/FI-CODE-PARAM-01.patch
+    override: research/compose/faulty-overrides/FI-CODE-PARAM-01.yml
+    validator: incorrect_parameter
+  FI-CODE-PARAM-02:
+    service: checkoutservice
+    fault_type: missing_parameter
+    image: research/faulty/checkoutservice:FI-CODE-PARAM-02-v1
+    baseline_image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/checkoutservice:v0.10.6
+    platform: linux/amd64
+    dockerfile: research/generators/faulty_images/Dockerfile.checkoutservice
+    patch: research/generators/faulty_images/patches/FI-CODE-PARAM-02.patch
+    override: research/compose/faulty-overrides/FI-CODE-PARAM-02.yml
+    validator: missing_parameter
+  FI-CODE-CALL-01:
+    service: checkoutservice
+    fault_type: missing_function_call
+    image: research/faulty/checkoutservice:FI-CODE-CALL-01-v1
+    baseline_image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/checkoutservice:v0.10.6
+    platform: linux/amd64
+    dockerfile: research/generators/faulty_images/Dockerfile.checkoutservice
+    patch: research/generators/faulty_images/patches/FI-CODE-CALL-01.patch
+    override: research/compose/faulty-overrides/FI-CODE-CALL-01.yml
+    validator: missing_function_call

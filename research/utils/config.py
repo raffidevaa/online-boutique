@@ -18,6 +18,7 @@ class ResearchConfig:
     compose_file: Path = RESEARCH_ROOT / "compose" / "docker-compose.yml"
     service_metadata: Path = RESEARCH_ROOT / "service" / "metadata.yaml"
     scenario_directory: Path = RESEARCH_ROOT / "generators" / "scenarios"
+    faulty_image_manifest: Path = RESEARCH_ROOT / "generators" / "faulty_images" / "manifest.yaml"
     experiment_runs: Path = RESEARCH_ROOT / "experiments" / "runs"
     prometheus_url: str = "http://127.0.0.1:9090"
     loki_url: str = "http://127.0.0.1:3100"

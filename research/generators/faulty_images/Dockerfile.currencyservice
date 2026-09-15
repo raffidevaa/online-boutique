@@ -1,0 +1,25 @@
+ARG BUILDPLATFORM=linux/amd64
+
+FROM --platform=$BUILDPLATFORM node:20.20.2-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 AS builder
+
+WORKDIR /usr/src/app
+COPY src/currencyservice/package*.json ./
+# pprof is a native Node addon. Keep the build toolchain in the builder only,
+# matching the upstream currencyservice image requirements.
+RUN apk add --no-cache python3 make g++ patch
+# The official Node image already ships its headers. Use them locally so
+# node-gyp does not depend on a separate headers download during the build.
+ENV npm_config_nodedir=/usr/local
+RUN npm ci --omit=dev
+COPY src/currencyservice/ ./
+COPY research/generators/faulty_images/patches/FI-CODE-RETURN-01.patch /tmp/fault.patch
+RUN patch --batch --forward -p0 < /tmp/fault.patch \
+    && rm /tmp/fault.patch
+
+FROM alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
+RUN apk add --no-cache nodejs
+WORKDIR /usr/src/app
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY --from=builder /usr/src/app ./
+EXPOSE 7000
+ENTRYPOINT ["node", "server.js"]

@@ -1,0 +1,5 @@
+services:
+  checkoutservice:
+    image: research/faulty/checkoutservice:FI-CODE-EXC-01-v1
+    environment:
+      RESEARCH_FAULT_TRIGGER: missing_exception_handler

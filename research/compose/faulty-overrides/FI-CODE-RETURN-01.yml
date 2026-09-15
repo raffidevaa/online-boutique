@@ -1,0 +1,3 @@
+services:
+  currencyservice:
+    image: research/faulty/currencyservice:FI-CODE-RETURN-01-v1

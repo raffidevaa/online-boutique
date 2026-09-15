@@ -1,0 +1,5 @@
+--- server.js
++++ server.js
+@@ -161,0 +162,2 @@
++      // Intentional research fault: keep transport healthy but corrupt the value.
++      result.units += 1;

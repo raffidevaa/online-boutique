@@ -2,6 +2,8 @@
 
 from .fault import FaultScenario, FaultSpec, ScenarioError, load_scenario, load_scenarios
 from .pumba import InjectorError, PumbaInjector, PumbaPlan, plan_pumba
+from .faulty_image import FaultyImageError, FaultyImageInjector, FaultyImagePlan
+from .semantic import SemanticValidationError, SemanticValidationResult, validate_semantic
 
 __all__ = [
     "FaultScenario",
@@ -13,4 +15,10 @@ __all__ = [
     "load_scenario",
     "load_scenarios",
     "plan_pumba",
+    "FaultyImageError",
+    "FaultyImageInjector",
+    "FaultyImagePlan",
+    "SemanticValidationError",
+    "SemanticValidationResult",
+    "validate_semantic",
 ]
