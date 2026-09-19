@@ -114,21 +114,23 @@ services:
         condition: service_started
     networks: [boutique]
 
-  adservice:
-    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/adservice:v0.10.6
-    mem_limit: 300m
-    cpus: 0.3
-    environment:
-      PORT: "9555"
-    volumes:
-      - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
-    healthcheck:
-      test: ["CMD", "/bin/grpc_health_probe", "-addr=:9555", "-connect-timeout=5s", "-rpc-timeout=5s"]
-      interval: 15s
-      timeout: 5s
-      retries: 6
-      start_period: 45s
-    networks: [boutique]
+  # Optional JVM service; disabled for the low-CPU baseline.
+  # Uncomment this block when ad experiments are required.
+  # adservice:
+  #   image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/adservice:v0.10.6
+  #   mem_limit: 300m
+  #   cpus: 0.3
+  #   environment:
+  #     PORT: "9555"
+  #   volumes:
+  #     - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
+  #   healthcheck:
+  #     test: ["CMD", "/bin/grpc_health_probe", "-addr=:9555", "-connect-timeout=5s", "-rpc-timeout=5s"]
+  #     interval: 15s
+  #     timeout: 5s
+  #     retries: 6
+  #     start_period: 45s
+  #   networks: [boutique]
 
   # Tier 2: depends on tier 1
   cartservice:
@@ -148,28 +150,30 @@ services:
         condition: service_healthy
     networks: [boutique]
 
-  recommendationservice:
-    image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/recommendationservice:v0.10.6
-    mem_limit: 450m
-    cpus: 0.2
-    environment:
-      PORT: "8080"
-      PRODUCT_CATALOG_SERVICE_ADDR: "productcatalogservice:3550"
-      DISABLE_PROFILER: "1"
-      ENABLE_TRACING: "1"
-      COLLECTOR_SERVICE_ADDR: "otel-collector:4317"
-      OTEL_SERVICE_NAME: "recommendationservice"
-    volumes:
-      - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
-    healthcheck:
-      <<: *grpc-healthcheck-defaults
-      test: ["CMD", "/bin/grpc_health_probe", "-addr=:8080", "-connect-timeout=5s", "-rpc-timeout=5s"]
-    depends_on:
-      productcatalogservice:
-        condition: service_healthy
-      otel-collector:
-        condition: service_started
-    networks: [boutique]
+  # Optional recommendation service; disabled for the low-CPU baseline.
+  # Uncomment this block when recommendation experiments are required.
+  # recommendationservice:
+  #   image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/recommendationservice:v0.10.6
+  #   mem_limit: 450m
+  #   cpus: 0.2
+  #   environment:
+  #     PORT: "8080"
+  #     PRODUCT_CATALOG_SERVICE_ADDR: "productcatalogservice:3550"
+  #     DISABLE_PROFILER: "1"
+  #     ENABLE_TRACING: "1"
+  #     COLLECTOR_SERVICE_ADDR: "otel-collector:4317"
+  #     OTEL_SERVICE_NAME: "recommendationservice"
+  #   volumes:
+  #     - ./healthcheck/grpc_health_probe:/bin/grpc_health_probe:ro
+  #   healthcheck:
+  #     <<: *grpc-healthcheck-defaults
+  #     test: ["CMD", "/bin/grpc_health_probe", "-addr=:8080", "-connect-timeout=5s", "-rpc-timeout=5s"]
+  #   depends_on:
+  #     productcatalogservice:
+  #       condition: service_healthy
+  #     otel-collector:
+  #       condition: service_started
+  #   networks: [boutique]
 
   # Tier 3: orchestrates tier 1 + 2
   checkoutservice:
@@ -221,10 +225,12 @@ services:
       PRODUCT_CATALOG_SERVICE_ADDR: "productcatalogservice:3550"
       CURRENCY_SERVICE_ADDR: "currencyservice:7000"
       CART_SERVICE_ADDR: "cartservice:7070"
-      RECOMMENDATION_SERVICE_ADDR: "recommendationservice:8080"
+      # Optional service disabled in the baseline; keep the required variable but fail locally.
+      RECOMMENDATION_SERVICE_ADDR: "127.0.0.1:1"
       SHIPPING_SERVICE_ADDR: "shippingservice:50051"
       CHECKOUT_SERVICE_ADDR: "checkoutservice:5050"
-      AD_SERVICE_ADDR: "adservice:9555"
+      # Optional service disabled in the baseline; keep the required variable but fail locally.
+      AD_SERVICE_ADDR: "127.0.0.1:1"
       SHOPPING_ASSISTANT_SERVICE_ADDR: "shoppingassistantservice:80"
       ENABLE_ASSISTANT: "false"
       ENABLE_TRACING: "1"
@@ -237,18 +243,17 @@ services:
         condition: service_healthy
       cartservice:
         condition: service_healthy
-      recommendationservice:
-        condition: service_healthy
+      # recommendationservice is optional and disabled in the baseline.
       shippingservice:
         condition: service_healthy
       checkoutservice:
         condition: service_healthy
-      adservice:
-        condition: service_healthy
+      # adservice is optional and disabled in the baseline.
       otel-collector:
         condition: service_started
     networks: [boutique]
 
+  # Workload generator remains enabled for baseline and fault-injection traffic.
   loadgenerator:
     image: us-central1-docker.pkg.dev/online-boutique-ci/microservices-demo/loadgenerator:v0.10.6
     mem_limit: 512m

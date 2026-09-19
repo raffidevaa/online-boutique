@@ -8,6 +8,8 @@ class CatalogTests(unittest.TestCase):
     def test_catalog_has_known_confounders_and_optional_assistant(self) -> None:
         catalog = ServiceCatalog.load(ResearchConfig().service_metadata)
         self.assertIn("JVM", catalog.get("adservice").confounders[0])
+        self.assertFalse(catalog.get("adservice").deployed)
+        self.assertFalse(catalog.get("recommendationservice").deployed)
         self.assertFalse(catalog.get("shoppingassistantservice").deployed)
         self.assertFalse(catalog.get("loadgenerator").targetable)
 

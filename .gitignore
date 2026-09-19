@@ -49,6 +49,8 @@ research/compose/.env
 research/compose/healthcheck/grpc_health_probe
 research/experiments/runs/*
 !research/experiments/runs/.gitignore
+research/experiments/tmp/*
+!research/experiments/tmp/.gitkeep
 research/agent/.cache/
 research/agent/cache/
 research/agent/local/
