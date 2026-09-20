@@ -20,6 +20,10 @@ class ResearchConfig:
     scenario_directory: Path = RESEARCH_ROOT / "generators" / "scenarios"
     faulty_image_manifest: Path = RESEARCH_ROOT / "generators" / "faulty_images" / "manifest.yaml"
     experiment_runs: Path = RESEARCH_ROOT / "experiments" / "runs"
+    frontend_url: str = "http://127.0.0.1:8080"
+    semantic_probe_stabilization_seconds: float = 5.0
+    semantic_probe_retry_attempts: int = 3
+    semantic_probe_retry_backoff_seconds: float = 1.0
     prometheus_url: str = "http://127.0.0.1:9090"
     loki_url: str = "http://127.0.0.1:3100"
     jaeger_url: str = "http://127.0.0.1:16686"
@@ -41,6 +45,16 @@ class ResearchConfig:
     def from_environment(cls) -> "ResearchConfig":
         """Create configuration with safe endpoint overrides for remote hosts."""
         return cls(
+            frontend_url=os.getenv("RESEARCH_FRONTEND_URL", cls.frontend_url),
+            semantic_probe_stabilization_seconds=float(
+                os.getenv("RESEARCH_SEMANTIC_PROBE_STABILIZATION_SECONDS", "5")
+            ),
+            semantic_probe_retry_attempts=int(
+                os.getenv("RESEARCH_SEMANTIC_PROBE_RETRY_ATTEMPTS", "3")
+            ),
+            semantic_probe_retry_backoff_seconds=float(
+                os.getenv("RESEARCH_SEMANTIC_PROBE_RETRY_BACKOFF_SECONDS", "1")
+            ),
             prometheus_url=os.getenv("RESEARCH_PROMETHEUS_URL", cls.prometheus_url),
             loki_url=os.getenv("RESEARCH_LOKI_URL", cls.loki_url),
             jaeger_url=os.getenv("RESEARCH_JAEGER_URL", cls.jaeger_url),

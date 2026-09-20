@@ -6,6 +6,7 @@ execution_status: deferred_faulty_image
 target_service: checkoutservice
 workload: {generator: loadgenerator, trigger: active checkout traffic}
 parameters: {duration_seconds: 120, delivery_requirement: faulty_image_variant}
+semantic_probe: {type: checkout_flow, product_id: 0PUK6V6EV0, repetitions: 3, timeout_seconds: 15}
 severity: high
 expected_local_symptoms: ["business-flow interaction is absent"]
 expected_propagated_symptoms: ["checkout flow is incomplete or incorrect"]

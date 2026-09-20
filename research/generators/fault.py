@@ -86,6 +86,7 @@ class FaultScenario:
     ground_truth: dict[str, str | None]
     expected_remediation: tuple[str, ...]
     recovery: str
+    semantic_probe: dict[str, Any] | None = None
     source_path: Path | None = None
 
     @property
@@ -113,6 +114,7 @@ class FaultScenario:
             "ground_truth": self.ground_truth,
             "expected_remediation": list(self.expected_remediation),
             "recovery": self.recovery,
+            "semantic_probe": self.semantic_probe,
         }
 
 
@@ -133,6 +135,8 @@ REQUIRED_KEYS = {
     "expected_remediation",
     "recovery",
 }
+
+OPTIONAL_KEYS = {"semantic_probe"}
 
 
 def _require_mapping(value: object, field_name: str) -> dict[str, Any]:
@@ -158,7 +162,7 @@ def load_scenario(path: Path) -> FaultScenario:
     if not isinstance(raw, dict):
         raise ScenarioError(f"Scenario must be a mapping: {path}")
     missing = REQUIRED_KEYS - raw.keys()
-    extra = raw.keys() - REQUIRED_KEYS
+    extra = raw.keys() - REQUIRED_KEYS - OPTIONAL_KEYS
     if missing or extra:
         details = []
         if missing:
@@ -179,6 +183,31 @@ def load_scenario(path: Path) -> FaultScenario:
         raise ScenarioError(f"Unsupported runnable fault type in {path}")
     if status == "deferred_faulty_image" and category != "code_level":
         raise ScenarioError(f"Only code-level faults may require faulty images: {path}")
+    semantic_probe = raw.get("semantic_probe")
+    if category == "code_level":
+        if not isinstance(semantic_probe, dict):
+            raise ScenarioError(f"Code-level scenarios require semantic_probe: {path}")
+        probe_type = semantic_probe.get("type")
+        if probe_type not in {"currency_display", "checkout_flow"}:
+            raise ScenarioError(f"Invalid semantic_probe.type in {path}")
+        product_id = semantic_probe.get("product_id")
+        if not isinstance(product_id, str) or not product_id:
+            raise ScenarioError(f"semantic_probe.product_id must be non-empty: {path}")
+        repetitions = semantic_probe.get("repetitions", 1)
+        timeout_seconds = semantic_probe.get("timeout_seconds", 10)
+        for name, value in (("repetitions", repetitions), ("timeout_seconds", timeout_seconds)):
+            if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+                raise ScenarioError(f"semantic_probe.{name} must be positive: {path}")
+        if repetitions > 10:
+            raise ScenarioError(f"semantic_probe.repetitions cannot exceed 10: {path}")
+        if timeout_seconds > 60:
+            raise ScenarioError(f"semantic_probe.timeout_seconds cannot exceed 60: {path}")
+        if probe_type == "currency_display":
+            currency = semantic_probe.get("currency")
+            if not isinstance(currency, str) or not currency:
+                raise ScenarioError(f"currency probes require semantic_probe.currency: {path}")
+        elif "currency" in semantic_probe:
+            raise ScenarioError(f"checkout probes cannot define semantic_probe.currency: {path}")
     target = raw["target_service"]
     if target is not None and (not isinstance(target, str) or not target):
         raise ScenarioError(f"target_service must be a non-empty string or null: {path}")
@@ -243,6 +272,7 @@ def load_scenario(path: Path) -> FaultScenario:
         ground_truth=ground_truth,
         expected_remediation=_require_strings(raw["expected_remediation"], "expected_remediation"),
         recovery=raw["recovery"],
+        semantic_probe=semantic_probe,
         source_path=path,
     )
 

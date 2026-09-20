@@ -4,6 +4,12 @@ from .fault import FaultScenario, FaultSpec, ScenarioError, load_scenario, load_
 from .pumba import InjectorError, PumbaInjector, PumbaPlan, plan_pumba
 from .faulty_image import FaultyImageError, FaultyImageInjector, FaultyImagePlan
 from .semantic import SemanticValidationError, SemanticValidationResult, validate_semantic
+from .semantic_probe import (
+    ProbePhaseResult,
+    SemanticProbeError,
+    build_semantic_observation,
+    run_semantic_probe,
+)
 
 __all__ = [
     "FaultScenario",
@@ -21,4 +27,8 @@ __all__ = [
     "SemanticValidationError",
     "SemanticValidationResult",
     "validate_semantic",
+    "ProbePhaseResult",
+    "SemanticProbeError",
+    "build_semantic_observation",
+    "run_semantic_probe",
 ]

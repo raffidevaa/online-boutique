@@ -42,7 +42,15 @@ docker compose -f research/compose/docker-compose.yml ps
 # Online Boutique frontend : http://localhost:8080
 # Grafana                  : http://localhost:3000
 # Prometheus               : http://localhost:9090
+# Loki API                 : http://localhost:3100
 # Jaeger UI                : http://localhost:16686
+
+# From another machine connected to the host through Tailscale, replace
+# <tailscale-host> with the host's Tailscale IP or MagicDNS name:
+# Grafana                  : http://<tailscale-host>:3000
+# Prometheus               : http://<tailscale-host>:9090
+# Loki API                 : http://<tailscale-host>:3100
+# Jaeger UI                : http://<tailscale-host>:16686
 
 # 4. Validate the architecture without changing runtime state
 python -m research.orchestrator doctor
@@ -71,6 +79,11 @@ python -m research.orchestrator fault image build \
 # 10. Verify a built code-level image and its explicit Compose override
 python -m research.orchestrator fault image prepare \
   --scenario research/generators/scenarios/code-level-01-incorrect-return-currency.yaml
+
+# 11. Run a code-level fault with automatic semantic evidence
+python -m research.orchestrator fault run \
+  --scenario research/generators/scenarios/code-level-01-incorrect-return-currency.yaml \
+  --execute
 ```
 
 Pumba is an on-demand fault-injection tool, not a permanent Compose service. The prepare
@@ -81,8 +94,10 @@ experiment.
 Code-level scenarios use research-owned faulty images built from temporary patched copies of
 the upstream service source. The baseline source tree is not edited; each faulty image is
 selected only through its allowlisted scenario-specific Compose override. Code-level runs
-remain gated until the image build, behavior validator, telemetry capture, and baseline
-recovery have all been validated.
+remain gated until the image build, semantic probe, behavior validator, telemetry capture, and
+baseline recovery have all been validated. See
+[`docs/SEMANTIC_PROBES.md`](docs/SEMANTIC_PROBES.md) for the implementation and execution
+plan.
 
 ## Development hardware
 

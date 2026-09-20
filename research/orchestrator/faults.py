@@ -15,7 +15,10 @@ from research.generators import (
     FaultyImageInjector,
     InjectorError,
     PumbaInjector,
+    SemanticProbeError,
     SemanticValidationError,
+    build_semantic_observation,
+    run_semantic_probe,
     validate_semantic,
 )
 from research.observer import Observer, ObserverError
@@ -100,10 +103,16 @@ def run_fault(
     scenario: FaultScenario,
     config: ResearchConfig,
     semantic_observation_path: Path | None = None,
+    semantic_probe_mode: str = "off",
 ) -> dict[str, Any]:
     """Execute one ready Pumba scenario and preserve evidence under an ignored run directory."""
     if scenario.category == "code_level":
-        return run_faulty_image(scenario, config, semantic_observation_path)
+        return run_faulty_image(
+            scenario,
+            config,
+            semantic_observation_path,
+            semantic_probe_mode=semantic_probe_mode,
+        )
     if not scenario.runnable:
         raise FaultExecutionError(describe_scenario(scenario, config)["execution_message"])
     if not scenario.target_service:
@@ -198,12 +207,17 @@ def run_faulty_image(
     scenario: FaultScenario,
     config: ResearchConfig,
     semantic_observation_path: Path | None = None,
+    semantic_probe_mode: str = "off",
 ) -> dict[str, Any]:
     """Run one code-level scenario and always attempt baseline restoration."""
     if scenario.category != "code_level":
         raise FaultExecutionError("Faulty-image execution requires a code-level scenario")
     if not scenario.target_service:
         raise FaultExecutionError("Code-level scenario is missing a target")
+    if semantic_probe_mode not in {"auto", "off"}:
+        raise FaultExecutionError(f"Unsupported semantic probe mode: {semantic_probe_mode}")
+    if semantic_observation_path is not None:
+        semantic_probe_mode = "manual"
 
     application = ComposeApplication(config)
     observer = Observer(config)
@@ -255,12 +269,76 @@ def run_faulty_image(
             ) from error
 
         append_event(run_path, "baseline_captured")
+        baseline_probe = None
+        if semantic_probe_mode == "auto":
+            try:
+                baseline_probe = run_semantic_probe(scenario, config, "baseline")
+                append_event(
+                    run_path,
+                    "baseline_semantic_probe_finished",
+                    {
+                        "requests": len(baseline_probe.requests),
+                        "retry_count": int(baseline_probe.normalized.get("retry_count", 0)),
+                    },
+                )
+                if baseline_probe.normalized.get("retry_count", 0):
+                    append_event(
+                        run_path,
+                        "semantic_probe_retry",
+                        {
+                            "phase": "baseline",
+                            "retry_count": int(baseline_probe.normalized["retry_count"]),
+                        },
+                    )
+            except SemanticProbeError as error:
+                message = str(error)
+                append_event(run_path, "baseline_semantic_probe_failed", {"message": message})
+                write_json(
+                    run_path / "semantic-probe.json",
+                    {
+                        "schema_version": 2,
+                        "status": "baseline_failed",
+                        "message": message,
+                        "requests": error.requests,
+                    },
+                )
+                write_json(
+                    run_path / "semantic-validation.json",
+                    {
+                        "schema_version": 2,
+                        "status": "failed",
+                        "validator": plan.definition.validator,
+                        "message": message,
+                    },
+                )
+                write_json(run_path / "cleanup-state.json", application.snapshot())
+                write_json(
+                    run_path / "result.json",
+                    {
+                        "schema_version": 1,
+                        "status": "baseline_semantic_failed",
+                        "fault_injected": False,
+                        "recovery_recorded": False,
+                    },
+                )
+                append_event(run_path, "run_complete", {"status": "baseline_semantic_failed"})
+                return {
+                    "status": "baseline_semantic_failed",
+                    "experiment_id": metadata["experiment_id"],
+                    "run_path": str(run_path),
+                }
+
         applied = False
         start: datetime | None = None
         end: datetime | None = None
         apply_result: dict[str, object] = {}
         restore_error: Exception | None = None
-        semantic_result: dict[str, object]
+        semantic_result: dict[str, object] = {
+            "schema_version": 1,
+            "status": "not_collected",
+            "validator": plan.definition.validator,
+            "message": "Provide --semantic-observation or enable --semantic-probe auto.",
+        }
         try:
             applied_at = datetime.now(UTC)
             result = application.apply_fault_override(
@@ -279,14 +357,126 @@ def run_faulty_image(
                     "health": faulty_state.health,
                 },
             )
+            incident_probe = None
+            incident_probe_error: str | None = None
+            if semantic_probe_mode == "auto":
+                stabilization_seconds = max(
+                    0.0, config.semantic_probe_stabilization_seconds
+                )
+                append_event(
+                    run_path,
+                    "semantic_probe_stabilization_started",
+                    {"seconds": stabilization_seconds},
+                )
+                if stabilization_seconds:
+                    time.sleep(stabilization_seconds)
+                append_event(
+                    run_path,
+                    "semantic_probe_stabilization_finished",
+                    {"seconds": stabilization_seconds},
+                )
+                try:
+                    incident_probe = run_semantic_probe(scenario, config, "incident")
+                    append_event(
+                        run_path,
+                        "incident_semantic_probe_finished",
+                        {
+                            "requests": len(incident_probe.requests),
+                            "retry_count": int(
+                                incident_probe.normalized.get("retry_count", 0)
+                            ),
+                        },
+                    )
+                    if incident_probe.normalized.get("retry_count", 0):
+                        append_event(
+                            run_path,
+                            "semantic_probe_retry",
+                            {
+                                "phase": "incident",
+                                "retry_count": int(
+                                    incident_probe.normalized["retry_count"]
+                                ),
+                            },
+                        )
+                except SemanticProbeError as error:
+                    incident_probe_error = str(error)
+                    append_event(
+                        run_path,
+                        "incident_semantic_probe_failed",
+                        {
+                            "message": incident_probe_error,
+                            "requests": len(error.requests),
+                        },
+                    )
+                    incident_probe_requests = error.requests
+                else:
+                    incident_probe_requests = []
             time.sleep(scenario.duration_seconds)
             end = datetime.now(UTC)
             write_json(run_path / "ground_truth.json", _ground_truth(
                 scenario, metadata["experiment_id"], start, end
             ))
-            _write_capture(run_path / "incident", observer.capture(start, end))
+            incident_capture = observer.capture(start, end)
+            _write_capture(run_path / "incident", incident_capture)
 
-            if semantic_observation_path is None:
+            if semantic_probe_mode == "auto":
+                if baseline_probe is not None and incident_probe is not None:
+                    try:
+                        observation = build_semantic_observation(
+                            scenario, baseline_probe, incident_probe, incident_capture
+                        )
+                    except SemanticProbeError as error:
+                        observation = {
+                            "schema_version": 2,
+                            "scenario_id": scenario.scenario_id,
+                            "status": "failed",
+                            "message": str(error),
+                        }
+                    write_json(run_path / "semantic-observation.json", observation)
+                    write_json(
+                        run_path / "semantic-probe.json",
+                        {"schema_version": 2, "status": "completed", **observation},
+                    )
+                    if observation.get("status") == "failed":
+                        semantic_result = {
+                            "schema_version": 2,
+                            "status": "failed",
+                            "validator": plan.definition.validator,
+                            "message": observation["message"],
+                        }
+                    else:
+                        try:
+                            semantic_result = validate_semantic(
+                                plan.definition.validator, observation
+                            ).to_dict()
+                        except SemanticValidationError as error:
+                            semantic_result = {
+                                "schema_version": 2,
+                                "status": "failed",
+                                "validator": plan.definition.validator,
+                                "message": str(error),
+                            }
+                else:
+                    message = incident_probe_error or "semantic probe did not produce an incident result"
+                    observation = {
+                        "schema_version": 2,
+                        "scenario_id": scenario.scenario_id,
+                        "status": "failed",
+                        "message": message,
+                        "requests": incident_probe_requests,
+                    }
+                    write_json(run_path / "semantic-observation.json", observation)
+                    write_json(
+                        run_path / "semantic-probe.json",
+                        {"schema_version": 2, "status": "failed", **observation},
+                    )
+                    semantic_result = {
+                        "schema_version": 2,
+                        "status": "failed",
+                        "validator": plan.definition.validator,
+                        "message": message,
+                    }
+            elif semantic_observation_path is None:
                 semantic_result = {
                     "schema_version": 1,
                     "status": "not_collected",
@@ -310,8 +500,12 @@ def run_faulty_image(
                     }
             write_json(run_path / "semantic-validation.json", semantic_result)
             append_event(run_path, "semantic_validation", {"status": semantic_result["status"]})
-            apply_result = {"returncode": result.returncode, "stdout": result.stdout, "stderr": result.stderr}
-        except (OSError, json.JSONDecodeError, ObserverError, SemanticValidationError) as error:
+            apply_result = {
+                "returncode": result.returncode,
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+            }
+        except (OSError, json.JSONDecodeError, ObserverError) as error:
             append_event(run_path, "fault_execution_error", {"message": str(error)})
             if start is not None and end is None:
                 end = datetime.now(UTC)

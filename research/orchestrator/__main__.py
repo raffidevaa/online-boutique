@@ -93,7 +93,13 @@ def main() -> int:
     fault_run_parser.add_argument(
         "--semantic-observation",
         type=Path,
-        help="JSON observation for code-level semantic validation",
+        help="Legacy JSON observation for code-level semantic validation",
+    )
+    fault_run_parser.add_argument(
+        "--semantic-probe",
+        choices=("auto", "off"),
+        default="auto",
+        help="Collect code-level semantic evidence automatically (default: auto)",
     )
     image_parser = fault_commands.add_parser("image", help="Build or inspect a faulty image")
     image_commands = image_parser.add_subparsers(dest="image_command", required=True)
@@ -147,7 +153,10 @@ def main() -> int:
                     raise FaultExecutionError("Refusing fault injection without --execute")
                 else:
                     result = run_fault(
-                        scenario, config, semantic_observation_path=arguments.semantic_observation
+                        scenario,
+                        config,
+                        semantic_observation_path=arguments.semantic_observation,
+                        semantic_probe_mode=arguments.semantic_probe,
                     )
     except (
         FaultExecutionError,

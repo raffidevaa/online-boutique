@@ -290,7 +290,7 @@ services:
       MEMORY_MAX_TRACES: "2000"
     restart: unless-stopped
     ports:
-      - "127.0.0.1:16686:16686"
+      - "16686:16686"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:16686/api/services"]
       interval: 10s
@@ -403,7 +403,7 @@ services:
     mem_limit: 512m
     cpus: 0.3
     ports:
-      - "127.0.0.1:3100:3100"
+      - "3100:3100"
     volumes:
       - ../observability/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
       - loki-data:/loki

@@ -6,6 +6,7 @@ execution_status: deferred_faulty_image
 target_service: currencyservice
 workload: {generator: loadgenerator, trigger: browse flows displaying converted prices}
 parameters: {duration_seconds: 120, delivery_requirement: faulty_image_variant}
+semantic_probe: {type: currency_display, product_id: 0PUK6V6EV0, currency: EUR, repetitions: 3, timeout_seconds: 10}
 severity: medium
 expected_local_symptoms: ["converted prices are semantically incorrect"]
 expected_propagated_symptoms: ["frontend displays incorrect converted prices"]

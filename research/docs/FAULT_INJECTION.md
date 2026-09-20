@@ -50,7 +50,19 @@ python -m research.orchestrator fault image prepare \
 The build applies one research-owned patch to a temporary Docker build context and tags the
 result under `research/faulty/`. The scenario-specific Compose override may replace only the
 declared target image. A code-level run restores the baseline image in a `finally`-guarded
-cleanup path; semantic behavior evidence can be supplied with `--semantic-observation`.
+cleanup path. By default, code-level runs use the configured automatic semantic probe and
+write `semantic-observation.json` inside the experiment run directory:
+
+```bash
+python -m research.orchestrator fault run \
+  --scenario research/generators/scenarios/code-level-01-incorrect-return-currency.yaml \
+  --execute
+```
+
+The legacy `--semantic-observation PATH` option remains available for compatibility with
+older manual observations. Use `--semantic-probe off` only for debugging or a deliberately
+unvalidated pilot. The probe design, observation schema, and evidence rules are documented in
+[`SEMANTIC_PROBES.md`](SEMANTIC_PROBES.md).
 
 The RCA agent may receive alerts, metrics, logs, traces when available, service topology,
 service metadata, and approved runbooks. It must not receive the scenario ID, ground truth,
@@ -67,6 +79,7 @@ fault_type: normalized taxonomy identifier
 target_service: canonical Compose service
 workload: reproducible profile and trigger
 parameters: explicit intensity and duration
+semantic_probe: required for code-level scenarios using automatic behavior validation
 execution_status: ready_for_pilot | experimental_unavailable | deferred_faulty_image
 expected_local_symptoms: []
 expected_propagated_symptoms: []
