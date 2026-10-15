@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 import subprocess
 from research.generators.fault import FaultScenario, ScenarioError
 from research.utils.config import ResearchConfig
@@ -30,6 +31,17 @@ class PumbaPlan:
             "target_container_id": self.target_container_id,
             "command": list(self.command),
         }
+
+
+@dataclass
+class RunningInjection:
+    """A bounded Pumba process that can be observed while the fault is active."""
+
+    plan: PumbaPlan
+    process: subprocess.Popen[str]
+    started_at: datetime
+    ended_at: datetime | None = None
+    result: subprocess.CompletedProcess[str] | None = None
 
 
 class PumbaInjector:
@@ -222,6 +234,47 @@ class PumbaInjector:
             )
         except (OSError, subprocess.TimeoutExpired) as error:
             raise InjectorError(f"Pumba execution failed: {error}") from error
+
+    @staticmethod
+    def start(plan: PumbaPlan) -> RunningInjection:
+        """Start a planned command without a shell for integrated live sessions."""
+        try:
+            process = subprocess.Popen(
+                plan.command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+        except OSError as error:
+            raise InjectorError(f"Unable to start Pumba: {error}") from error
+        return RunningInjection(plan=plan, process=process, started_at=datetime.now(UTC))
+
+    @staticmethod
+    def wait(running: RunningInjection, timeout_seconds: int) -> subprocess.CompletedProcess[str]:
+        """Wait for a bounded injection process and retain its evidence."""
+        try:
+            stdout, stderr = running.process.communicate(timeout=timeout_seconds)
+        except subprocess.TimeoutExpired as error:
+            PumbaInjector.stop(running)
+            raise InjectorError(f"Pumba exceeded live timeout: {error}") from error
+        running.ended_at = datetime.now(UTC)
+        running.result = subprocess.CompletedProcess(
+            running.plan.command, running.process.returncode, stdout, stderr
+        )
+        return running.result
+
+    @staticmethod
+    def stop(running: RunningInjection) -> None:
+        """Stop a running injection safely, escalating once if necessary."""
+        if running.process.poll() is not None:
+            return
+        running.process.terminate()
+        try:
+            running.process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            running.process.kill()
+            running.process.wait(timeout=5)
+        running.ended_at = datetime.now(UTC)
 
 
 def plan_pumba(

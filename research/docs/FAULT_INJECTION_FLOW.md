@@ -23,7 +23,7 @@ deployment, experiments, and fault-injection code live exclusively under `resear
 | `observer/` | Read-only Prometheus, Loki, Jaeger, and alert collection. |
 | `utils/` | Central configuration and append-only experiment artifact helpers. |
 | `experiments/runs/` | Immutable per-run evidence; do not edit or delete it after creation. |
-| `agent/` | Future RCA/remediation layer. It receives telemetry evidence, not scenario IDs, injector plans, or ground truth. |
+| `agent/` | AIOpsLab-compatible detection/localization/analysis loop. Replay reads telemetry artifacts; integrated live runs one allowlisted runtime fault while the agent receives live telemetry, never ground truth or injector plans. |
 
 ## Runtime resource and network fault flow
 
