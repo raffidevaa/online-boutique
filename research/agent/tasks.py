@@ -6,6 +6,8 @@ from dataclasses import dataclass
 import json
 from typing import Any, Callable
 
+from research.generators.fault import VALID_FAULT_TYPES
+
 from .environment import ComposeEvidence
 
 
@@ -82,6 +84,11 @@ class DetectionTask(BaseTask):
     def get_instructions(self) -> str:
         return 'Use read-only telemetry actions, then submit("Yes") or submit("No").'
 
+    def get_available_actions(self) -> dict[str, str]:
+        actions = super().get_available_actions()
+        actions["submit"] = 'submit(answer: "Yes" | "No")'
+        return actions
+
     def submit(self, answer: str) -> EnvironmentResponse:
         if answer not in {"Yes", "No"}:
             raise TaskError('Detection submission must be "Yes" or "No"')
@@ -106,6 +113,11 @@ class LocalizationTask(BaseTask):
 
     def get_instructions(self) -> str:
         return 'Submit a JSON object such as submit({"faulty_components": ["service"]}).'
+
+    def get_available_actions(self) -> dict[str, str]:
+        actions = super().get_available_actions()
+        actions["submit"] = 'submit(answer: {"faulty_components": ["service"]})'
+        return actions
 
     def submit(self, answer: dict[str, Any]) -> EnvironmentResponse:
         components = answer.get("faulty_components") if isinstance(answer, dict) else None
@@ -137,10 +149,23 @@ class AnalysisTask(BaseTask):
         return "Perform root-cause analysis and identify category, fault type, and service."
 
     def get_instructions(self) -> str:
+        fault_types = "|".join(VALID_FAULT_TYPES)
         return (
             'Submit JSON: submit({"system_level": "resource|network|code_level", '
-            '"fault_type": "taxonomy type", "faulty_components": ["service"]}).'
+            f'"fault_type": "{fault_types}", '
+            '"faulty_components": ["service"]}). Use only the normalized fault_type '
+            'identifiers listed above.'
         )
+
+    def get_available_actions(self) -> dict[str, str]:
+        actions = super().get_available_actions()
+        fault_types = "|".join(VALID_FAULT_TYPES)
+        actions["submit"] = (
+            'submit(answer: {"system_level": "resource|network|code_level", '
+            f'"fault_type": "{fault_types}", '
+            '"faulty_components": ["service"]})'
+        )
+        return actions
 
     def submit(self, answer: dict[str, Any]) -> EnvironmentResponse:
         if not isinstance(answer, dict):

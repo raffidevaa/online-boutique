@@ -15,6 +15,7 @@ from research.generators import ScenarioError, load_scenario
 
 from .live import LiveIncidentController, LiveIncidentError
 from .orchestrator import AgentRuntimeError, create_orchestrator
+from .providers import ProviderError
 
 
 def _timestamp(value: str) -> datetime:
@@ -74,7 +75,14 @@ def main() -> int:
             result = asyncio.run(
                 orchestrator.start_problem(task, session, max_steps=arguments.max_steps)
             )
-    except (AgentRuntimeError, LiveIncidentError, ScenarioError, OSError, ValueError) as error:
+    except (
+        AgentRuntimeError,
+        LiveIncidentError,
+        ProviderError,
+        ScenarioError,
+        OSError,
+        ValueError,
+    ) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
     print(json.dumps(result, indent=2, sort_keys=True))

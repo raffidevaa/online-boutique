@@ -32,7 +32,9 @@ class LlmAgent:
         action_text = "\n".join(f"- {name}: {description}" for name, description in actions.items())
         system = (
             "You are an autonomous AIOps agent. Return exactly one action in a markdown "
-            "code block per turn. Use only the listed read-only actions and submit when ready.\n\n"
+            "code block per turn. Use only the listed read-only actions and submit when ready. "
+            "You may use Python call syntax such as get_logs(window=\"incident\") or JSON "
+            "syntax such as {\"action\":\"get_logs\",\"window\":\"incident\"}.\n\n"
             f"Problem:\n{problem_description}\n\nAvailable actions:\n{action_text}\n\n"
             f"Instructions:\n{instructions}"
         )

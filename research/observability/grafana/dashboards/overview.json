@@ -3,82 +3,50 @@
   "uid": "research-overview",
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "refresh": "10s",
   "time": { "from": "now-15m", "to": "now" },
+  "links": [{ "title": "Open service detail", "type": "link", "url": "/d/research-service-detail/service-detail?var-service=${service}", "includeTimeRange": true }],
+  "templating": { "list": [{
+    "name": "service", "label": "Application service", "type": "custom", "hide": 0,
+    "query": "frontend,checkoutservice,cartservice,recommendationservice,productcatalogservice,currencyservice,paymentservice,shippingservice,emailservice,adservice,redis-cart,loadgenerator",
+    "includeAll": true, "allValue": "(frontend|checkoutservice|cartservice|recommendationservice|productcatalogservice|currencyservice|paymentservice|shippingservice|emailservice|adservice|redis-cart|loadgenerator)",
+    "multi": false, "current": { "text": "All", "value": "$__all" }
+  }]},
   "panels": [
     {
-      "id": 1,
-      "title": "Per-container CPU usage",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1, "title": "CPU usage by service", "type": "timeseries", "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }, "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "targets": [{ "expr": "sum by (service) (rate(container_cpu_usage_seconds_total{job=\"cadvisor\",name!=\"\"}[1m]) * on(name) group_left(service) compose_container_info{service=~\"$service\"})", "legendFormat": "{{service}}" }]
+    },
+    {
+      "id": 2, "title": "Memory usage by service", "type": "timeseries", "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }, "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "sum by (service) (container_memory_working_set_bytes{job=\"cadvisor\",name!=\"\"} * on(name) group_left(service) compose_container_info{service=~\"$service\"})", "legendFormat": "{{service}}" }]
+    },
+    {
+      "id": 3, "title": "Container state and health", "type": "table", "gridPos": { "h": 7, "w": 12, "x": 0, "y": 8 },
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
       "targets": [
-        {
-          "expr": "sum by (service) (rate(container_cpu_usage_seconds_total{job=\"cadvisor\",name!=\"\"}[1m]) * on(name) group_left(service) compose_container_info{service!=\"\"})",
-          "legendFormat": "{{service}}",
-          "datasource": { "type": "prometheus", "uid": "Prometheus" }
-        }
+        { "expr": "max by (service, state) (compose_container_state{service=~\"$service\"})", "instant": true, "format": "table", "refId": "State" },
+        { "expr": "max by (service, health) (compose_container_health{service=~\"$service\"})", "instant": true, "format": "table", "refId": "Health" },
+        { "expr": "max by (service, image) (compose_container_info{service=~\"$service\"})", "instant": true, "format": "table", "refId": "Image" }
       ]
     },
     {
-      "id": 2,
-      "title": "Per-container memory usage",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
-      "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-      "targets": [
-        {
-          "expr": "sum by (service) (container_memory_working_set_bytes{job=\"cadvisor\",name!=\"\"} * on(name) group_left(service) compose_container_info{service!=\"\"})",
-          "legendFormat": "{{service}}",
-          "datasource": { "type": "prometheus", "uid": "Prometheus" }
-        }
-      ]
+      "id": 4, "title": "Host CPU", "type": "timeseries", "gridPos": { "h": 7, "w": 6, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }, "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
+      "targets": [{ "expr": "1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[1m]))", "legendFormat": "host busy" }]
     },
     {
-      "id": 3,
-      "title": "Host CPU (node-exporter)",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
-      "targets": [
-        {
-          "expr": "1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[1m]))",
-          "legendFormat": "host CPU busy",
-          "datasource": { "type": "prometheus", "uid": "Prometheus" }
-        }
-      ]
+      "id": 5, "title": "Host memory available", "type": "timeseries", "gridPos": { "h": 7, "w": 6, "x": 18, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }, "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "node_memory_MemAvailable_bytes", "legendFormat": "available" }]
     },
     {
-      "id": 4,
-      "title": "Host memory available",
-      "type": "timeseries",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
-      "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
-      "targets": [
-        {
-          "expr": "node_memory_MemAvailable_bytes",
-          "legendFormat": "available",
-          "datasource": { "type": "prometheus", "uid": "Prometheus" }
-        }
-      ]
-    },
-    {
-      "id": 5,
-      "title": "Container logs",
-      "type": "logs",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 16 },
-      "datasource": { "type": "loki", "uid": "Loki" },
-      "targets": [
-        {
-          "expr": "{compose_service=~\".+\"}",
-          "datasource": { "type": "loki", "uid": "Loki" }
-        }
-      ]
+      "id": 6, "title": "Container logs", "type": "logs", "gridPos": { "h": 11, "w": 24, "x": 0, "y": 15 },
+      "datasource": { "type": "loki", "uid": "Loki" }, "targets": [{ "expr": "{compose_service=~\"$service\"}" }],
+      "options": { "showTime": true, "showLabels": true, "wrapLogMessage": true, "sortOrder": "Descending", "dedupStrategy": "none" }
     }
   ]
 }

@@ -112,6 +112,20 @@ Chosen over Sock Shop and TeaStore for one primary reason: **source code transpa
 
 ## Resource allocation (target, homelab 2 core/4 thread, 20 GB RAM)
 
+### Default application baseline
+
+The Compose baseline includes `adservice` and `recommendationservice`; frontend calls both
+through their in-network gRPC addresses. `adservice` retains its explicit 0.3 CPU cap due to
+JVM startup and garbage-collection noise. The `loadgenerator` is excluded from the idle
+baseline and is started only for a planned workload window with:
+
+```bash
+docker compose -f research/compose/docker-compose.yml --profile workload up -d
+```
+
+This separation keeps synthetic traffic out of ordinary health checks and prevents it from
+accidentally confounding a fault experiment.
+
 | Component | RAM | Notes |
 |---|---|---|
 | Online Boutique (12 `src/` services + `loadgenerator`, prebuilt GCR images) | ~3-4 GB | See `research/compose/docker-compose.yml` for per-service limits; `adservice` capped explicitly on CPU |
@@ -167,5 +181,7 @@ limitations" below.
    numeric container-ID `name`, not a `container_label_com_docker_compose_service` label.
    A separate `container-metadata-exporter` reads Compose metadata through a restricted
    Docker socket proxy and exposes `compose_container_info`; Prometheus joins cAdvisor
-   resource metrics to that mapping on the container ID. The exporter is non-root, has no
-   direct Docker socket, and the proxy disables mutating API methods.
+   resource metrics to that mapping on the container ID. It also exposes read-only
+   `compose_container_state` and `compose_container_health` gauges from Docker's container
+   listing for Grafana investigation. The exporter is non-root, has no direct Docker socket,
+   and the proxy disables mutating API methods.

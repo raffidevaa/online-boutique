@@ -14,7 +14,7 @@ from research.service import ComposeApplication, ServiceError
 from research.utils import ResearchConfig, append_event, create_run, write_json
 
 from .orchestrator import AgentOrchestrator
-from .providers import LlmProvider
+from .providers import ProviderError
 
 
 class LiveIncidentError(RuntimeError):
@@ -160,6 +160,7 @@ class LiveIncidentController:
                 InjectorError,
                 FaultExecutionError,
                 ServiceError,
+                ProviderError,
                 OSError,
                 ValueError,
             ) as error:

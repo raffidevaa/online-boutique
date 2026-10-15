@@ -9,6 +9,8 @@ from urllib.request import Request, urlopen
 
 from research.utils import ResearchConfig
 
+from .sanitize import sanitize_messages
+
 
 class ProviderError(RuntimeError):
     """Raised when a configured LLM provider cannot produce a response."""
@@ -27,11 +29,25 @@ class FakeProvider:
 
     name = "fake"
 
-    def __init__(self, action: str = 'submit("No")') -> None:
+    def __init__(self, action: str | None = None) -> None:
         self.action = action
 
     async def complete(self, messages: list[dict[str, str]], actions: dict[str, str]) -> str:
-        return f"```\n{self.action}\n```"
+        action = self.action or self._default_action(actions)
+        return f"```\n{action}\n```"
+
+    @staticmethod
+    def _default_action(actions: dict[str, str]) -> str:
+        """Return a valid, deliberately non-ground-truth submission for smoke tests."""
+        submit = actions.get("submit", "")
+        if "system_level" in submit:
+            return (
+                'submit({"system_level": "resource", "fault_type": "unknown", '
+                '"faulty_components": []})'
+            )
+        if "faulty_components" in submit:
+            return 'submit({"faulty_components": []})'
+        return 'submit("No")'
 
 
 class OpenAICompatibleProvider:
@@ -53,7 +69,7 @@ class OpenAICompatibleProvider:
     def _complete_sync(self, messages: list[dict[str, str]], actions: dict[str, str]) -> str:
         payload = {
             "model": self.model,
-            "messages": messages,
+            "messages": sanitize_messages(messages),
             "temperature": 0,
         }
         request = Request(

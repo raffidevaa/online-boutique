@@ -1,0 +1,78 @@
+{
+  "title": "Service Detail",
+  "uid": "research-service-detail",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-15m", "to": "now" },
+  "templating": { "list": [{
+    "name": "service", "label": "Application service", "type": "custom", "hide": 0,
+    "query": "frontend,checkoutservice,cartservice,recommendationservice,productcatalogservice,currencyservice,paymentservice,shippingservice,emailservice,adservice,redis-cart,loadgenerator",
+    "includeAll": true, "allValue": "(frontend|checkoutservice|cartservice|recommendationservice|productcatalogservice|currencyservice|paymentservice|shippingservice|emailservice|adservice|redis-cart|loadgenerator)",
+    "multi": false, "current": { "text": "frontend", "value": "frontend" }
+  }]},
+  "panels": [
+    {
+      "id": 1, "title": "Docker state", "type": "stat", "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }, "targets": [{ "expr": "max by (state) (compose_container_state{service=~\"$service\"})", "instant": true }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "values": false }, "orientation": "auto", "textMode": "value_and_name" }
+    },
+    {
+      "id": 2, "title": "Docker health", "type": "stat", "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }, "targets": [{ "expr": "max by (health) (compose_container_health{service=~\"$service\"})", "instant": true }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "values": false }, "orientation": "auto", "textMode": "value_and_name" }
+    },
+    {
+      "id": 4, "title": "Container start time", "type": "stat", "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }, "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" }, "overrides": [] },
+      "targets": [{ "expr": "max by (service) (container_start_time_seconds{job=\"cadvisor\",name!=\"\"} * on(name) group_left(service) compose_container_info{service=~\"$service\"})", "instant": true }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "values": false }, "orientation": "auto" }
+    },
+    {
+      "id": 13, "title": "Container image", "type": "stat", "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }, "targets": [{ "expr": "max by (image) (compose_container_info{service=~\"$service\"})", "instant": true }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"], "values": false }, "orientation": "auto", "textMode": "value_and_name" }
+    },
+    {
+      "id": 5, "title": "CPU usage (% of configured limit)", "type": "timeseries", "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }, "fieldConfig": { "defaults": { "unit": "percent", "min": 0 }, "overrides": [] },
+      "targets": [{ "expr": "100 * sum by (service) (rate(container_cpu_usage_seconds_total{job=\"cadvisor\",name!=\"\"}[1m]) * on(name) group_left(service) compose_container_info{service=~\"$service\"}) / on(service) sum by (service) ((container_spec_cpu_quota{job=\"cadvisor\",name!=\"\"} / container_spec_cpu_period{job=\"cadvisor\",name!=\"\"}) * on(name) group_left(service) compose_container_info{service=~\"$service\"})", "legendFormat": "{{service}}" }]
+    },
+    {
+      "id": 6, "title": "Memory usage (% of configured limit)", "type": "timeseries", "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }, "fieldConfig": { "defaults": { "unit": "percent", "min": 0 }, "overrides": [] },
+      "targets": [{ "expr": "100 * sum by (service) (container_memory_working_set_bytes{job=\"cadvisor\",name!=\"\"} * on(name) group_left(service) compose_container_info{service=~\"$service\"}) / on(service) sum by (service) (container_spec_memory_limit_bytes{job=\"cadvisor\",name!=\"\"} * on(name) group_left(service) compose_container_info{service=~\"$service\"})", "legendFormat": "{{service}}" }]
+    },
+    {
+      "id": 7, "title": "CPU usage (cores)", "type": "timeseries", "gridPos": { "h": 7, "w": 8, "x": 0, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }, "fieldConfig": { "defaults": { "unit": "cores" }, "overrides": [] },
+      "targets": [{ "expr": "sum by (service) (rate(container_cpu_usage_seconds_total{job=\"cadvisor\",name!=\"\"}[1m]) * on(name) group_left(service) compose_container_info{service=~\"$service\"})", "legendFormat": "{{service}}" }]
+    },
+    {
+      "id": 8, "title": "Memory working set", "type": "timeseries", "gridPos": { "h": 7, "w": 8, "x": 8, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }, "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "sum by (service) (container_memory_working_set_bytes{job=\"cadvisor\",name!=\"\"} * on(name) group_left(service) compose_container_info{service=~\"$service\"})", "legendFormat": "{{service}}" }]
+    },
+    {
+      "id": 9, "title": "Filesystem usage", "description": "Best-effort cAdvisor filesystem metric; container network data is currently host-only and intentionally omitted.", "type": "timeseries", "gridPos": { "h": 7, "w": 8, "x": 16, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }, "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
+      "targets": [{ "expr": "sum by (service) (container_fs_usage_bytes{job=\"cadvisor\",name!=\"\"} * on(name) group_left(service) compose_container_info{service=~\"$service\"})", "legendFormat": "{{service}}" }]
+    },
+    {
+      "id": 10, "title": "OOM events", "type": "timeseries", "gridPos": { "h": 6, "w": 24, "x": 0, "y": 19 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" }, "fieldConfig": { "defaults": { "unit": "short", "min": 0 }, "overrides": [] },
+      "targets": [{ "expr": "sum by (service) (container_oom_events_total{job=\"cadvisor\",name!=\"\"} * on(name) group_left(service) compose_container_info{service=~\"$service\"})", "legendFormat": "{{service}}" }]
+    },
+    {
+      "id": 11, "title": "Container logs", "type": "logs", "gridPos": { "h": 10, "w": 24, "x": 0, "y": 25 },
+      "datasource": { "type": "loki", "uid": "Loki" }, "targets": [{ "expr": "{compose_service=~\"$service\"}" }],
+      "options": { "showTime": true, "showLabels": true, "wrapLogMessage": true, "sortOrder": "Descending", "dedupStrategy": "none" }
+    },
+    {
+      "id": 12, "title": "Potential error signals", "description": "Heuristic filter for triage; use raw logs above as the source of truth.", "type": "logs", "gridPos": { "h": 10, "w": 24, "x": 0, "y": 35 },
+      "datasource": { "type": "loki", "uid": "Loki" }, "targets": [{ "expr": "{compose_service=~\"$service\"} |~ \"(?i)(error|exception|fatal|panic|fail|timeout|deadline exceeded|unavailable)\"" }],
+      "options": { "showTime": true, "showLabels": true, "wrapLogMessage": true, "sortOrder": "Descending", "dedupStrategy": "none" }
+    }
+  ]
+}

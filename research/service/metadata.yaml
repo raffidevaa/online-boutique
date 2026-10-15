@@ -29,7 +29,7 @@ services:
     role: advertisement recommendation
     port: 9555
     targetable: true
-    deployed: false
+    deployed: true
     confounders:
       - JVM startup and garbage-collection CPU spikes
   cartservice:
@@ -42,7 +42,7 @@ services:
     port: 8080
     dependencies: [productcatalogservice]
     targetable: true
-    deployed: false
+    deployed: true
   checkoutservice:
     role: checkout orchestrator
     port: 5050

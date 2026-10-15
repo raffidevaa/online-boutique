@@ -2,7 +2,9 @@
 
 The cAdvisor containerd integration provides reliable resource metrics on Docker
 Desktop, but does not expose Compose labels. This exporter reads the Docker Engine
-API over a read-only Unix socket and publishes the mapping separately.
+API over a read-only Unix socket and publishes the mapping separately. It also
+exports lightweight runtime state so Grafana can show Docker health alongside
+resource telemetry without granting Grafana Docker access.
 """
 
 from __future__ import annotations
@@ -41,32 +43,41 @@ class UnixHTTPConnection(http.client.HTTPConnection):
         self._unix_socket_path = path
 
 
-def list_containers() -> list[dict[str, Any]]:
-    """Return running Compose containers from the local Docker Engine."""
-    query = urlencode({"all": "false", "label": "com.docker.compose.service"})
+def _connection() -> http.client.HTTPConnection:
     if DOCKER_HOST:
-        connection: http.client.HTTPConnection = http.client.HTTPConnection(
-            DOCKER_HOST, timeout=5
-        )
-    else:
-        connection = UnixHTTPConnection(SOCKET_PATH)
-    connection.request("GET", f"/{API_VERSION}/containers/json?{query}")
+        return http.client.HTTPConnection(DOCKER_HOST, timeout=5)
+    return UnixHTTPConnection(SOCKET_PATH)
+
+
+def _get_json(path: str) -> Any:
+    connection = _connection()
+    connection.request("GET", path)
     response = connection.getresponse()
     body = response.read()
     connection.close()
     if response.status != 200:
         raise RuntimeError(f"Docker API returned HTTP {response.status}")
-    decoded = json.loads(body.decode("utf-8"))
+    return json.loads(body.decode("utf-8"))
+
+
+def list_containers() -> list[dict[str, Any]]:
+    """Return current and stopped Compose containers for runtime status."""
+    query = urlencode({"all": "true", "label": "com.docker.compose.service"})
+    decoded = _get_json(f"/{API_VERSION}/containers/json?{query}")
     if not isinstance(decoded, list):
         raise RuntimeError("Docker API returned an unexpected container list")
     return decoded
 
 
 def render_metrics(containers: list[dict[str, Any]]) -> bytes:
-    """Render one metadata gauge per running container in this Compose project."""
+    """Render Compose mapping and runtime status gauges."""
     lines = [
         "# HELP compose_container_info Docker Compose container to service mapping.",
         "# TYPE compose_container_info gauge",
+        "# HELP compose_container_state Docker container state for a Compose service.",
+        "# TYPE compose_container_state gauge",
+        "# HELP compose_container_health Docker healthcheck status for a Compose service.",
+        "# TYPE compose_container_health gauge",
     ]
     for container in containers:
         labels = container.get("Labels") or {}
@@ -76,11 +87,23 @@ def render_metrics(containers: list[dict[str, Any]]) -> bytes:
         if not service or not container_id or (PROJECT and project != PROJECT):
             continue
         image = container.get("Image", "")
-        lines.append(
-            "compose_container_info{"
-            f'name={_label(container_id)},service={_label(service)},image={_label(image)}'
-            "} 1"
-        )
+        state = str(container.get("State") or "unknown").lower()
+        status = str(container.get("Status") or "").lower()
+        health = "none"
+        for candidate in ("healthy", "unhealthy", "starting"):
+            if f"({candidate})" in status:
+                health = candidate
+                break
+        labels_prefix = f'name={_label(str(container_id))},service={_label(str(service))}'
+        lines.append(f"compose_container_state{{{labels_prefix},state={_label(state)}}} 1")
+        lines.append(f"compose_container_health{{{labels_prefix},health={_label(health)}}} 1")
+        # Preserve the existing running-only mapping: observer resource joins rely on it.
+        if state == "running" or "State" not in container:
+            lines.append(
+                "compose_container_info{"
+                f'{labels_prefix},image={_label(str(image))}'
+                "} 1"
+            )
     return ("\n".join(lines) + "\n").encode("utf-8")
 
 
