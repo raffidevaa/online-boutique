@@ -74,6 +74,10 @@ ground truth, timestamps, telemetry, and evaluation.
 - Combined RCA correct:
 - Detection/localization time:
 - Was ground truth withheld from the agent?:
+- Agent submitted a valid answer?:
+- Session termination reason:
+- Invalid action count:
+- Sanitized external LLM provider used?:
 
 ## Remediation recommendation
 

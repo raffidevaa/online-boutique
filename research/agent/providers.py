@@ -29,11 +29,12 @@ class FakeProvider:
 
     name = "fake"
 
-    def __init__(self, action: str | None = None) -> None:
+    def __init__(self, action: str | None = None, actions: list[str] | None = None) -> None:
         self.action = action
+        self.actions = list(actions or [])
 
     async def complete(self, messages: list[dict[str, str]], actions: dict[str, str]) -> str:
-        action = self.action or self._default_action(actions)
+        action = self.actions.pop(0) if self.actions else (self.action or self._default_action(actions))
         return f"```\n{action}\n```"
 
     @staticmethod

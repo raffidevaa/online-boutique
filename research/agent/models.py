@@ -25,6 +25,9 @@ class AgentSession:
     history: list[SessionItem] = field(default_factory=list)
     solution: Any = None
     results: dict[str, Any] = field(default_factory=dict)
+    submitted: bool = False
+    termination_reason: str | None = None
+    invalid_action_count: int = 0
     start_time: datetime | None = None
     end_time: datetime | None = None
 
@@ -57,6 +60,9 @@ class AgentSession:
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "trace": [item.to_dict() for item in self.history],
             "solution": self.solution,
+            "submitted": self.submitted,
+            "termination_reason": self.termination_reason,
+            "invalid_action_count": self.invalid_action_count,
             "results": self.results,
             "duration_seconds": self.duration_seconds,
         }

@@ -2,9 +2,12 @@ from datetime import UTC, datetime
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
+from unittest.mock import Mock
 
 from research.agent.orchestrator import AgentOrchestrator, LlmAgent
+from research.agent.environment import ComposeEvidence
 from research.agent.parser import ActionParseError, ResponseParser
 from research.agent.providers import FakeProvider
 from research.agent.sanitize import sanitize_text
@@ -89,7 +92,88 @@ class AioAgentTests(unittest.TestCase):
                 end=datetime(2026, 9, 20, 3, 30, tzinfo=UTC),
             )
             self.assertIn("submit", context.actions)
+            self.assertIn("get_incident_summary", context.actions)
+            self.assertIn("get_error_logs", context.actions)
             self.assertIn("submit", orchestrator.agent.messages[0]["content"])
+
+    def test_incident_summary_ranks_cpu_spike_and_error_logs(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            run_dir = root / "run"
+            for phase in ("baseline", "incident"):
+                (run_dir / phase).mkdir(parents=True)
+                metrics = {
+                    "queries": {
+                        "container_cpu": {
+                            "data": {
+                                "result": [
+                                    {
+                                        "metric": {"service": "checkoutservice"},
+                                        "values": [[1, "0.01"]] if phase == "baseline" else [[2, "0.20"]],
+                                    },
+                                    {
+                                        "metric": {"service": "frontend"},
+                                        "values": [[1, "0.02"]] if phase == "baseline" else [[2, "0.03"]],
+                                    },
+                                ]
+                            }
+                        },
+                        "container_memory": {"data": {"result": []}},
+                    }
+                }
+                logs = {
+                    "result": {
+                        "data": {
+                            "result": [
+                                {
+                                    "stream": {
+                                        "compose_service": "checkoutservice",
+                                        "detected_level": "error",
+                                    },
+                                    "values": [["1", "panic: simulated checkout failure"]],
+                                }
+                            ]
+                            if phase == "incident"
+                            else []
+                        }
+                    }
+                }
+                for name, payload in {
+                    "metrics": metrics,
+                    "logs": logs,
+                    "alerts": {"alerts": {"data": {"alerts": []}}},
+                    "traces": {"services": {}},
+                }.items():
+                    (run_dir / phase / f"{name}.json").write_text(
+                        json.dumps(payload), encoding="utf-8"
+                    )
+
+            evidence = ComposeEvidence(
+                ResearchConfig(experiment_runs=root / "experiments"),
+                start=datetime(2026, 9, 20, 3, 30, tzinfo=UTC),
+                end=datetime(2026, 9, 20, 3, 32, tzinfo=UTC),
+                run_dir=run_dir,
+            )
+            summary = json.loads(evidence.get_incident_summary().split(": ", 1)[1])
+            self.assertEqual(summary["top_anomalies"][0]["service"], "checkoutservice")
+            self.assertGreater(summary["top_anomalies"][0]["signals"]["cpu_delta"], 0.1)
+            errors = json.loads(evidence.get_error_logs("checkoutservice").split(": ", 1)[1])
+            self.assertEqual(errors["services"]["checkoutservice"]["count"], 1)
+
+    def test_step_budget_records_submission_and_exhaustion(self) -> None:
+        import asyncio
+
+        orchestrator = AgentOrchestrator(ResearchConfig())
+        orchestrator.register_agent(LlmAgent(FakeProvider("not_allowed()")))
+        _, task, session = orchestrator.init_problem(
+            "FI-RES-CPU-02-detection",
+            start=datetime(2026, 9, 13, 13, 35, tzinfo=UTC),
+            end=datetime(2026, 9, 13, 13, 36, tzinfo=UTC),
+        )
+        result = asyncio.run(orchestrator.start_problem(task, session, max_steps=2, persist=False))
+        self.assertFalse(result["submitted"])
+        self.assertEqual(result["termination_reason"], "step_budget_exhausted")
+        self.assertEqual(result["results"]["termination_reason"], "step_budget_exhausted")
 
     def test_fake_provider_default_submission_is_valid_for_each_task(self) -> None:
         import asyncio
@@ -111,6 +195,51 @@ class AioAgentTests(unittest.TestCase):
         self.assertIn('submit("No")', detection)
         self.assertIn('"faulty_components": []', localization)
         self.assertIn('"system_level": "resource"', analysis)
+
+    def test_fake_provider_can_replay_triage_sequence(self) -> None:
+        import asyncio
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            run_dir = root / "runs" / "EXP-TEST-TRIAGE"
+            for phase in ("baseline", "incident"):
+                (run_dir / phase).mkdir(parents=True)
+                for kind in ("metrics", "logs", "alerts", "traces"):
+                    (run_dir / phase / f"{kind}.json").write_text("{}", encoding="utf-8")
+            (run_dir / "ground_truth.json").write_text(
+                json.dumps(
+                    {
+                        "root_cause_service": "checkoutservice",
+                        "fault_category": "resource",
+                        "fault_type": "cpu_hog",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            config = ResearchConfig(
+                experiment_runs=root / "runs", agent_sessions=root / "sessions"
+            )
+            orchestrator = AgentOrchestrator(config)
+            provider = FakeProvider(
+                actions=[
+                    'get_incident_summary(window="incident")',
+                    'get_error_logs(service="checkoutservice", window="incident")',
+                    'submit({"system_level": "resource", "fault_type": "cpu_hog", '
+                    '"faulty_components": ["checkoutservice"]})',
+                ]
+            )
+            orchestrator.register_agent(LlmAgent(provider), name="triage-agent")
+            _, task, session = orchestrator.init_problem(
+                "FI-RES-CPU-02-analysis",
+                start=datetime(2026, 9, 20, 3, 28, tzinfo=UTC),
+                end=datetime(2026, 9, 20, 3, 30, tzinfo=UTC),
+                run_dir=run_dir,
+            )
+            result = asyncio.run(orchestrator.start_problem(task, session, max_steps=5, persist=False))
+            self.assertTrue(result["submitted"])
+            self.assertEqual(result["termination_reason"], "submitted")
+            self.assertEqual(result["results"]["steps"], 3)
+            self.assertTrue(result["results"]["combined_rca_correct"])
 
     def test_external_provider_sanitizer_redacts_secrets_and_network_identifiers(self) -> None:
         raw = (
@@ -208,6 +337,49 @@ class AioAgentTests(unittest.TestCase):
 
         with self.assertRaisesRegex(LiveIncidentError, "explicit execute"):
             asyncio.run(controller.run(scenario, "analysis"))
+
+    def test_live_failure_cleanup_stops_injection_and_records_recovery(self) -> None:
+        from datetime import timedelta
+
+        scenario = load_scenario(Path("research/generators/scenarios/resource-03-cpu-hog-checkout.yaml"))
+        config = ResearchConfig()
+        controller = LiveIncidentController(config, AgentOrchestrator(config))
+        application = Mock()
+        application.snapshot.return_value = {"checkoutservice": {"status": "running"}}
+        observer = Mock()
+        observer.capture.return_value = {
+            "metrics": {},
+            "logs": {},
+            "alerts": {},
+            "traces": {},
+        }
+        injector = Mock()
+        running = SimpleNamespace(ended_at=None)
+
+        def stop(active: SimpleNamespace) -> None:
+            active.ended_at = datetime.now(UTC)
+
+        injector.stop.side_effect = stop
+        with tempfile.TemporaryDirectory() as temporary:
+            run_path = Path(temporary) / "run"
+            run_path.mkdir()
+            injection_start = datetime.now(UTC) - timedelta(seconds=30)
+            controller._record_failed_run(
+                scenario,
+                application,
+                observer,
+                injector,
+                running,
+                run_path,
+                {"experiment_id": "EXP-TEST-LIVE"},
+                injection_start,
+                RuntimeError("provider failed"),
+            )
+            injector.stop.assert_called_once_with(running)
+            self.assertTrue((run_path / "ground_truth.json").exists())
+            self.assertTrue((run_path / "incident").is_dir())
+            self.assertTrue((run_path / "recovery").is_dir())
+            self.assertEqual(json.loads((run_path / "result.json").read_text())["status"], "failed")
 
 
 if __name__ == "__main__":

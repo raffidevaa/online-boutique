@@ -13,7 +13,7 @@ each one depends on the previous phase's deliverables.
 | 01 | [Experiment architecture foundation](01-experiment-architecture.md) | In progress |
 | 02 | [Fault injection pipeline](01-fault-injection-pipeline.md) | Not started |
 | 03 | [Ground truth dataset collection](02-ground-truth-dataset.md) | Not started |
-| 04 | [RCA agent](03-rca-agent.md) | Not started |
+| 04 | [RCA agent](03-rca-agent.md) | In progress |
 | 05 | [Remediation recommendation](04-remediation-recommendation.md) | Not started |
 | 06 | [Evaluation](05-evaluation.md) | Not started |
 

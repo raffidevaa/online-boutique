@@ -23,7 +23,7 @@ deployment, experiments, and fault-injection code live exclusively under `resear
 | `observer/` | Read-only Prometheus, Loki, Jaeger, and alert collection. |
 | `utils/` | Central configuration and append-only experiment artifact helpers. |
 | `experiments/runs/` | Immutable per-run evidence; do not edit or delete it after creation. |
-| `agent/` | AIOpsLab-compatible detection/localization/analysis loop. Replay reads telemetry artifacts; integrated live runs one allowlisted runtime fault while the agent receives live telemetry, never ground truth or injector plans. |
+| `agent/` | AIOpsLab-compatible detection/localization/analysis loop. Replay reads telemetry artifacts; integrated live runs one allowlisted runtime fault while the agent receives sanitized, read-only telemetry, never ground truth or injector plans. |
 
 ## Runtime resource and network fault flow
 
@@ -95,6 +95,35 @@ research/experiments/runs/EXP-.../
 `workload` in a scenario is currently an experiment contract and documentation field. The
 runner does **not** start `loadgenerator`; establish the intended workload and a stable
 baseline before starting `fault run --execute`.
+
+## Integrated live RCA flow
+
+The agent can run within the same single-fault lifecycle for a ready-for-pilot resource or
+network scenario:
+
+```bash
+python -m research.agent \
+  --live-incident \
+  --scenario research/generators/scenarios/<scenario>.yaml \
+  --task analysis \
+  --execute
+```
+
+The command first performs the same Compose and observability readiness checks as the runtime
+fault runner, captures a one-minute baseline, and starts exactly one allowlisted injector. It
+then waits up to ten seconds for telemetry before opening an agent session. The session starts
+with `get_incident_summary`, which ranks baseline-versus-incident anomalies; follow-up actions
+are read-only and focus on error logs, metrics, or traces for the top candidate services.
+
+Live sessions have a default budget of 15 actions. Their persisted result includes whether the
+agent submitted, why the session ended, invalid action count, duration, and task-specific RCA
+scores. Provider-bound messages are sanitized before transmission. The agent never receives the
+scenario details, injector plan, target service, or ground-truth fields during the action loop.
+
+If the provider, telemetry backend, or session is interrupted after injection starts, the
+controller stops the active injector and attempts to write ground truth, incident telemetry,
+recovery telemetry, cleanup state, and a failed `result.json`. This does not replace normal
+fault-run cleanup; it makes the live-agent path safe to interrupt.
 
 ## Code-level faulty-image flow
 
@@ -268,9 +297,10 @@ recovery telemetry --------------------> recovery/{metrics,logs,alerts,traces}.j
 actual injection timing and identity --> ground_truth.json
 delivery output -----------------------> injector-result.json
 final lifecycle state -----------------> result.json + cleanup-state.json
+agent reasoning session ----------------> research/experiments/agent-sessions/<session_id>.json
 
-telemetry artifacts -------------------> future RCA agent
-scenario ID / injector plan / ground truth -X-> future RCA agent
+telemetry artifacts -------------------> RCA agent
+scenario ID / injector plan / ground truth -X-> RCA agent
 ground truth + RCA output -------------> evaluation
 ```
 

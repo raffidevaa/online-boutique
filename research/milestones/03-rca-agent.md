@@ -3,7 +3,8 @@
 ## Goal
 
 Design and implement the LLM-based agent that performs root cause analysis over an incident
-time window, using the observability stack as its data source.
+time window, using the observability stack as its data source. The core replay and integrated
+live loop is implemented; full multi-scenario evaluation remains pending.
 
 ## Prerequisites
 
@@ -12,40 +13,40 @@ time window, using the observability stack as its data source.
 
 ## Steps
 
-1. **Tool wrappers.** Implement read-only tool-calling wrappers for Prometheus (range
-   queries) and Loki (log queries) under `research/agent/tools/`.
-2. **Centralize config.** Put all observability endpoints/ports in
-   `research/agent/tools/config.py` (or a `.env` file) — never hardcode them in multiple
-   places.
-3. **System prompt(s).** Write the agent's system prompt(s) as files under
-   `research/agent/prompts/` — not as long inline strings in Python code.
-4. **Orchestration entrypoint.** Implement `research/agent/run_rca.py`: takes `--start`/
-   `--end`, pulls metrics + logs for that window via the tool wrappers, calls the LLM via API
-   (see `research/docs/ARCHITECTURE.md` §3 for why API-based, not self-hosted), and outputs a
-   root-cause hypothesis.
-5. **Enforce read-only by default.** Tool-calling must not be able to execute arbitrary
-   commands against containers; any mutating action requires an explicit allowlist (this
-   becomes relevant in phase 04).
-6. **Validate.** Run the agent against ≥1 previously validated core scenario and compare
-   ranked Top-1/Top-3 service and fault hypotheses against the withheld ground truth.
-7. **Confounder awareness.** When testing against `adservice`- or
+1. **Read-only evidence environment (implemented).** `research/agent/environment.py` reads
+   replay artifacts or invokes the central `Observer` configuration for live telemetry. It
+   provides compact incident summaries and focused error-log, metrics, logs, traces, and alert
+   actions.
+2. **Orchestration and provider boundary (implemented).** `python -m research.agent` supports
+   replay, live observation, and `--live-incident`; only the provider receives sanitized
+   messages, while the agent cannot call Docker or shell actions.
+3. **Evidence triage and submission contract (implemented).** Analysis begins with ranked
+   baseline-versus-incident anomalies, uses a 15-step budget, and persists submission/termination
+   metadata with task-specific RCA scores.
+4. **Live lifecycle safety (implemented).** One runtime fault is injected at a time, a telemetry
+   warm-up precedes the agent session, and interrupted runs attempt fault stop plus evidence and
+   recovery capture.
+5. **Validate (in progress).** Continue replay and live tests across the runnable scenario
+   matrix; compare Top-1/Top-3 service and fault hypotheses against withheld ground truth.
+6. **Confounder awareness.** When testing against `adservice`- or
    `shoppingassistantservice`-related incidents, check whether the agent's hypothesis
    correctly accounts for the known confounder (JVM noise / LLM-generated error text) rather
    than misattributing it as a genuine fault signature.
 
 ## Deliverables
 
-- `research/agent/run_rca.py`
-- `research/agent/tools/` (Prometheus/Loki wrappers + `config.py`)
-- `research/agent/prompts/` (system prompt files)
+- `research/agent/run.py`, `orchestrator.py`, `environment.py`, and task contracts
+- Read-only, sanitized provider boundary and persisted agent-session records
 - A documented first validation run (match / no-match against ground truth)
 
 ## Definition of done
 
 - The agent runs end-to-end against a real incident window and produces a root-cause
-  hypothesis.
-- At least one validation run's ranked hypothesis is compared against the withheld ground truth and the
-  result (service/fault match or no-match, and why) is documented.
+  hypothesis. **Met** by the live `FI-RES-MEM-01` pilot: `cartservice` /
+  `memory_pressure` matched withheld ground truth.
+- At least one validation run's ranked hypothesis is compared against withheld ground truth and
+  the result (service/fault match or no-match, and why) is documented. **Met for the pilot**;
+  repeated multi-scenario evaluation remains required before this milestone is complete.
 
 ## References
 

@@ -70,6 +70,7 @@ services:
     role: controlled workload generator
     dependencies: [frontend]
     targetable: false
+    deployed: false
   shoppingassistantservice:
     role: optional LLM-backed shopping assistant
     port: 80

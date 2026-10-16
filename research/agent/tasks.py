@@ -29,6 +29,8 @@ class BaseTask:
         self.evidence = evidence
         self.expected = expected
         self.actions: dict[str, Callable[..., EnvironmentResponse]] = {
+            "get_incident_summary": self.get_incident_summary,
+            "get_error_logs": self.get_error_logs,
             "get_metrics": self.get_metrics,
             "get_logs": self.get_logs,
             "get_traces": self.get_traces,
@@ -37,6 +39,14 @@ class BaseTask:
 
     def get_metrics(self, service: str | None = None, window: str = "incident") -> EnvironmentResponse:
         return EnvironmentResponse(self.evidence.get_metrics(service, window))
+
+    def get_incident_summary(self, window: str = "incident") -> EnvironmentResponse:
+        return EnvironmentResponse(self.evidence.get_incident_summary(window))
+
+    def get_error_logs(
+        self, service: str | None = None, window: str = "incident"
+    ) -> EnvironmentResponse:
+        return EnvironmentResponse(self.evidence.get_error_logs(service, window))
 
     def get_logs(self, service: str | None = None, window: str = "incident") -> EnvironmentResponse:
         return EnvironmentResponse(self.evidence.get_logs(service, window))
@@ -55,6 +65,8 @@ class BaseTask:
 
     def get_available_actions(self) -> dict[str, str]:
         return {
+            "get_incident_summary": 'get_incident_summary(window: str = "incident")',
+            "get_error_logs": 'get_error_logs(service: str | None = None, window: str = "incident")',
             "get_metrics": 'get_metrics(service: str | None = None, window: str = "incident")',
             "get_logs": 'get_logs(service: str | None = None, window: str = "incident")',
             "get_traces": 'get_traces(service: str | None = None, window: str = "incident")',
@@ -82,7 +94,10 @@ class DetectionTask(BaseTask):
         return "Detect whether the supplied telemetry contains an anomaly."
 
     def get_instructions(self) -> str:
-        return 'Use read-only telemetry actions, then submit("Yes") or submit("No").'
+        return (
+            'Start with get_incident_summary(window="incident"), then use at most one focused '
+            'evidence action if needed. Submit "Yes" or "No" before the final step.'
+        )
 
     def get_available_actions(self) -> dict[str, str]:
         actions = super().get_available_actions()
@@ -112,7 +127,11 @@ class LocalizationTask(BaseTask):
         return "Identify the faulty service from the supplied telemetry."
 
     def get_instructions(self) -> str:
-        return 'Submit a JSON object such as submit({"faulty_components": ["service"]}).'
+        return (
+            'Start with get_incident_summary(window="incident"). Focus follow-up evidence on '
+            'the top one or two anomalous services, then submit a JSON object such as '
+            'submit({"faulty_components": ["service"]}) before the final step.'
+        )
 
     def get_available_actions(self) -> dict[str, str]:
         actions = super().get_available_actions()
@@ -151,10 +170,13 @@ class AnalysisTask(BaseTask):
     def get_instructions(self) -> str:
         fault_types = "|".join(VALID_FAULT_TYPES)
         return (
-            'Submit JSON: submit({"system_level": "resource|network|code_level", '
+            'First call get_incident_summary(window="incident"). Then inspect error logs or '
+            'traces for at most two top-ranked anomalous services; do not enumerate healthy '
+            'services. Submit JSON before the final step: '
+            'submit({"system_level": "resource|network|code_level", '
             f'"fault_type": "{fault_types}", '
             '"faulty_components": ["service"]}). Use only the normalized fault_type '
-            'identifiers listed above.'
+            'identifiers listed above and reserve the final step for submission.'
         )
 
     def get_available_actions(self) -> dict[str, str]:

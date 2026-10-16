@@ -23,7 +23,7 @@ Experiment command -> orchestrator
                       -> Compose application service + metadata + Docker state
                       -> observer (Prometheus, Loki, Jaeger traces, alerts)
                       -> append-only experiment artifacts
-                      -> future generators / RCA agent / evaluator
+                      -> RCA agent / evaluator
 ```
 
 `research/orchestrator/` has no LLM dependency. `research/service/` is the sole owner of
@@ -31,7 +31,8 @@ low-level Compose and Docker inspection, while `research/observer/` provides rea
 telemetry access. `research/generators/` owns the strict scenario catalog and the allowlisted
 Pumba command planner. The fault runner is explicitly gated by `--execute`, permits only one
 runtime fault at a time, and writes append-only evidence under `research/experiments/runs/`.
-Cataloguing a scenario does not mean it has been run or validated.
+`research/agent/` provides replay and integrated-live RCA sessions; cataloguing a scenario
+does not mean it has been run or validated.
 
 Fault methodology is documented separately in `FAULT_INJECTION.md`. It uses RCAEval as the
 taxonomy reference and keeps resource, network, and code-level faults distinct from the
@@ -109,6 +110,27 @@ Chosen over Sock Shop and TeaStore for one primary reason: **source code transpa
   the orchestration layer (lightweight, ~100–300 MB RAM).
 - This mirrors the pattern used by the majority of surveyed LLM-agent research for
   RCA/incident response (MicroRCA-Agent, IRCopilot, Intelligent SRE Framework).
+
+### 4. Read-only RCA agent with evidence triage
+
+The implemented agent supports detection, localization, and analysis tasks over recorded
+experiment windows or a single integrated live runtime fault. It exposes only an allowlist of
+read-only observability actions: incident summary, error-focused logs, raw metrics, logs,
+traces, and alerts. It has no Docker, shell, injector-plan, scenario, or ground-truth action.
+
+The initial action is a compact baseline-versus-incident summary. It ranks services using CPU
+and memory changes, error-log counts, and available trace error/latency signals. The agent then
+inspects at most the top anomalous services before submitting a normalized RCA hypothesis. A
+15-step budget, visible to the model on every turn, reserves the final turns for submission and
+records `submitted`, `termination_reason`, and `invalid_action_count` in the agent session.
+
+For integrated live mode, the controller captures a baseline, starts one allowlisted runtime
+fault, waits briefly for telemetry to become observable, then starts the agent. Ground truth is
+written and attached only after the agent session ends, so it cannot leak into the agent prompt
+or observations. Outbound messages for an API-backed provider are sanitized before transmission;
+the provider remains external and requires an explicit approved experiment workflow. A provider
+failure, cancellation, or other lifecycle error stops the active injector and preserves incident,
+recovery, cleanup, and failure artifacts where possible.
 
 ## Resource allocation (target, homelab 2 core/4 thread, 20 GB RAM)
 

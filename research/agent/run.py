@@ -43,7 +43,7 @@ def main() -> int:
     parser.add_argument("--scenario", type=Path, help="Scenario YAML for integrated live")
     parser.add_argument("--task", choices=("detection", "localization", "analysis"))
     parser.add_argument("--execute", action="store_true")
-    parser.add_argument("--max-steps", type=int, default=30)
+    parser.add_argument("--max-steps", type=int, default=15)
     arguments = parser.parse_args()
     modes = int(arguments.run_dir is not None) + int(arguments.live_observe) + int(arguments.live_incident)
     if modes != 1:

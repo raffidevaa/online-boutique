@@ -50,12 +50,77 @@ class LiveIncidentController:
         self.config = config
         self.orchestrator = orchestrator
 
+    def _record_failed_run(
+        self,
+        scenario: FaultScenario,
+        application: ComposeApplication,
+        observer: Observer,
+        injector: PumbaInjector,
+        running: Any,
+        run_path: Path | None,
+        metadata: dict[str, Any] | None,
+        injection_start: datetime | None,
+        error: BaseException,
+    ) -> None:
+        """Stop an active fault and preserve failure/recovery artifacts."""
+        if running is not None:
+            injector.stop(running)
+        if run_path is None or metadata is None:
+            return
+
+        append_event(run_path, "live_run_failed", {"error": str(error)})
+        recovery_recorded = False
+        if injection_start is not None:
+            injection_end = running.ended_at or datetime.now(UTC)
+            try:
+                write_json(
+                    run_path / "ground_truth.json",
+                    _ground_truth(
+                        scenario,
+                        metadata["experiment_id"],
+                        injection_start,
+                        injection_end,
+                    ),
+                )
+                _capture(
+                    run_path / "incident",
+                    observer.capture(injection_start, injection_end),
+                )
+                recovery_end = datetime.now(UTC)
+                _capture(
+                    run_path / "recovery",
+                    observer.capture(recovery_end - timedelta(minutes=1), recovery_end),
+                )
+                recovery_recorded = True
+            except (ObserverError, OSError, ValueError) as capture_error:
+                append_event(
+                    run_path,
+                    "live_cleanup_capture_failed",
+                    {"error": str(capture_error)},
+                )
+        try:
+            write_json(run_path / "cleanup-state.json", application.snapshot())
+        except OSError:
+            pass
+        try:
+            write_json(
+                run_path / "result.json",
+                {
+                    "schema_version": 1,
+                    "status": "failed",
+                    "recovery_recorded": recovery_recorded,
+                    "error": str(error),
+                },
+            )
+        except FileExistsError:
+            pass
+
     async def run(
         self,
         scenario: FaultScenario,
         task_name: str,
         *,
-        max_steps: int = 30,
+        max_steps: int = 15,
         acknowledge_execute: bool = False,
     ) -> dict[str, Any]:
         if not acknowledge_execute:
@@ -72,6 +137,7 @@ class LiveIncidentController:
         injector = PumbaInjector(self.config)
         running = None
         run_path: Path | None = None
+        metadata: dict[str, Any] | None = None
         injection_start: datetime | None = None
         injection_end: datetime | None = None
         with fault_lock():
@@ -98,6 +164,13 @@ class LiveIncidentController:
                 running = injector.start(plan)
                 injection_start = running.started_at
                 append_event(run_path, "live_fault_started", {"injection_start": injection_start.isoformat()})
+                telemetry_warmup = min(10.0, max(1.0, scenario.duration_seconds / 4))
+                await asyncio.sleep(telemetry_warmup)
+                append_event(
+                    run_path,
+                    "telemetry_warmup_complete",
+                    {"seconds": telemetry_warmup},
+                )
                 problem_id = f"{scenario.scenario_id}-{task_name}"
                 _, task, session = self.orchestrator.init_problem(
                     problem_id, start=injection_start, end=None, run_dir=None
@@ -164,55 +237,28 @@ class LiveIncidentController:
                 OSError,
                 ValueError,
             ) as error:
-                if running is not None:
-                    injector.stop(running)
-                if run_path is not None:
-                    append_event(run_path, "live_run_failed", {"error": str(error)})
-                    recovery_recorded = False
-                    if injection_start is not None:
-                        injection_end = injection_end or running.ended_at or datetime.now(UTC)
-                        try:
-                            write_json(
-                                run_path / "ground_truth.json",
-                                _ground_truth(
-                                    scenario,
-                                    metadata["experiment_id"],
-                                    injection_start,
-                                    injection_end,
-                                ),
-                            )
-                            _capture(
-                                run_path / "incident",
-                                observer.capture(injection_start, injection_end),
-                            )
-                            recovery_end = datetime.now(UTC)
-                            _capture(
-                                run_path / "recovery",
-                                observer.capture(recovery_end - timedelta(minutes=1), recovery_end),
-                            )
-                            recovery_recorded = True
-                        except (ObserverError, OSError, ValueError) as capture_error:
-                            append_event(
-                                run_path,
-                                "live_cleanup_capture_failed",
-                                {"error": str(capture_error)},
-                            )
-                    try:
-                        write_json(
-                            run_path / "cleanup-state.json", application.snapshot()
-                        )
-                    except OSError:
-                        pass
-                    try:
-                        write_json(
-                            run_path / "result.json",
-                            {
-                                "schema_version": 1,
-                                "status": "failed",
-                                "recovery_recorded": recovery_recorded,
-                                "error": str(error),
-                            },
-                        )
-                    except FileExistsError:
-                        pass
+                self._record_failed_run(
+                    scenario,
+                    application,
+                    observer,
+                    injector,
+                    running,
+                    run_path,
+                    metadata,
+                    injection_start,
+                    error,
+                )
                 raise LiveIncidentError(str(error)) from error
+            except (KeyboardInterrupt, asyncio.CancelledError) as error:
+                self._record_failed_run(
+                    scenario,
+                    application,
+                    observer,
+                    injector,
+                    running,
+                    run_path,
+                    metadata,
+                    injection_start,
+                    error,
+                )
+                raise
