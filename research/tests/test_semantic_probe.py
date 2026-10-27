@@ -238,7 +238,9 @@ class SemanticProbeTests(unittest.TestCase):
             Path("research/generators/scenarios/code-level-05-missing-function-call-checkout.yaml")
         )
         with tempfile.TemporaryDirectory() as temporary:
-            config = ResearchConfig(experiment_runs=Path(temporary))
+            config = ResearchConfig(
+                experiment_runs=Path(temporary), recovery_observation_seconds=0
+            )
             application = Mock()
             application.catalog = ServiceCatalog.load(config.service_metadata)
             application.validate_readiness.return_value = {

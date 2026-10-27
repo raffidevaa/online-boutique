@@ -29,6 +29,8 @@ class ObserverTests(unittest.TestCase):
         captured = observer.capture(end - timedelta(minutes=1), end)
         self.assertEqual(set(captured), {"metrics", "logs", "alerts", "traces"})
         self.assertIn("services_up", captured["metrics"]["queries"])
+        self.assertIn("host_cpu_utilization", captured["metrics"]["queries"])
+        self.assertIn("host_memory_available", captured["metrics"]["queries"])
         self.assertIn("frontend", captured["traces"]["services"])
 
     @patch("research.observer.telemetry.urlopen")

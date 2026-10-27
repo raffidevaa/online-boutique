@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 import fcntl
 import json
+import math
 from pathlib import Path
 import time
 from typing import Any, Iterator
@@ -79,6 +80,89 @@ def _write_capture(destination: Path, capture: dict[str, Any]) -> None:
     destination.mkdir(parents=True, exist_ok=False)
     for name, payload in capture.items():
         write_json(destination / f"{name}.json", payload)
+
+
+def _metric_samples(capture: dict[str, Any], query_name: str) -> list[float]:
+    """Extract finite Prometheus range values from one captured metric query."""
+    result = (
+        capture.get("metrics", {})
+        .get("queries", {})
+        .get(query_name, {})
+        .get("data", {})
+        .get("result", [])
+    )
+    samples: list[float] = []
+    if not isinstance(result, list):
+        return samples
+    for series in result:
+        if not isinstance(series, dict):
+            continue
+        for sample in series.get("values", []):
+            if not isinstance(sample, list) or len(sample) != 2:
+                continue
+            try:
+                value = float(sample[1])
+            except (TypeError, ValueError):
+                continue
+            if math.isfinite(value):
+                samples.append(value)
+    return samples
+
+
+def build_host_impact(
+    baseline: dict[str, Any], incident: dict[str, Any]
+) -> dict[str, object]:
+    """Classify host CPU contention using captured node-exporter evidence."""
+    baseline_values = _metric_samples(baseline, "host_cpu_utilization")
+    incident_values = _metric_samples(incident, "host_cpu_utilization")
+    thresholds = {
+        "incident_mean_percent": 80.0,
+        "mean_increase_percentage_points": 25.0,
+    }
+    if not baseline_values or not incident_values:
+        return {
+            "schema_version": 1,
+            "status": "unavailable",
+            "host_contention_observed": None,
+            "thresholds": thresholds,
+            "message": "Host CPU samples were missing from baseline or incident telemetry.",
+        }
+
+    baseline_mean = sum(baseline_values) / len(baseline_values)
+    incident_mean = sum(incident_values) / len(incident_values)
+    mean_increase = incident_mean - baseline_mean
+    contention = (
+        incident_mean >= thresholds["incident_mean_percent"]
+        or mean_increase >= thresholds["mean_increase_percentage_points"]
+    )
+    return {
+        "schema_version": 1,
+        "status": "flagged" if contention else "not_flagged",
+        "host_contention_observed": contention,
+        "thresholds": thresholds,
+        "baseline": {
+            "sample_count": len(baseline_values),
+            "mean_percent": round(baseline_mean, 3),
+            "max_percent": round(max(baseline_values), 3),
+        },
+        "incident": {
+            "sample_count": len(incident_values),
+            "mean_percent": round(incident_mean, 3),
+            "max_percent": round(max(incident_values), 3),
+        },
+        "mean_increase_percentage_points": round(mean_increase, 3),
+    }
+
+
+def capture_recovery(
+    observer: Observer, observation_seconds: float
+) -> dict[str, Any]:
+    """Capture a post-fault window that never overlaps the incident window."""
+    recovery_start = datetime.now(UTC)
+    if observation_seconds > 0:
+        time.sleep(observation_seconds)
+    recovery_end = datetime.now(UTC)
+    return observer.capture(recovery_start, recovery_end)
 
 
 def _ground_truth(
@@ -179,12 +263,18 @@ def run_fault(
             },
         )
         append_event(run_path, "injector_finished", {"returncode": result.returncode})
-        _write_capture(run_path / "incident", observer.capture(start, end))
-        recovery_end = datetime.now(UTC)
-        _write_capture(
-            run_path / "recovery",
-            observer.capture(recovery_end - timedelta(minutes=1), recovery_end),
+        incident = observer.capture(start, end)
+        _write_capture(run_path / "incident", incident)
+        if scenario.fault_type == "cpu_hog":
+            write_json(run_path / "host-impact.json", build_host_impact(baseline, incident))
+        append_event(
+            run_path,
+            "recovery_observation_started",
+            {"seconds": config.recovery_observation_seconds},
         )
+        recovery = capture_recovery(observer, config.recovery_observation_seconds)
+        _write_capture(run_path / "recovery", recovery)
+        append_event(run_path, "recovery_observation_finished")
         write_json(run_path / "cleanup-state.json", application.snapshot())
         write_json(
             run_path / "result.json",
@@ -541,11 +631,14 @@ def run_faulty_image(
             )
             raise FaultExecutionError(str(restore_error)) from restore_error
 
-        recovery_end = datetime.now(UTC)
-        _write_capture(
-            run_path / "recovery",
-            observer.capture(recovery_end - timedelta(minutes=1), recovery_end),
+        append_event(
+            run_path,
+            "recovery_observation_started",
+            {"seconds": config.recovery_observation_seconds},
         )
+        recovery = capture_recovery(observer, config.recovery_observation_seconds)
+        _write_capture(run_path / "recovery", recovery)
+        append_event(run_path, "recovery_observation_finished")
         write_json(run_path / "cleanup-state.json", application.snapshot())
         if semantic_result["status"] == "passed":
             final_status = "completed"

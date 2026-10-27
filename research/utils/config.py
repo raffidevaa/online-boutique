@@ -52,6 +52,7 @@ class ResearchConfig:
     semantic_probe_stabilization_seconds: float = 5.0
     semantic_probe_retry_attempts: int = 3
     semantic_probe_retry_backoff_seconds: float = 1.0
+    recovery_observation_seconds: float = 30.0
     prometheus_url: str = "http://127.0.0.1:9090"
     loki_url: str = "http://127.0.0.1:3100"
     jaeger_url: str = "http://127.0.0.1:16686"
@@ -94,6 +95,9 @@ class ResearchConfig:
             ),
             semantic_probe_retry_backoff_seconds=float(
                 env("RESEARCH_SEMANTIC_PROBE_RETRY_BACKOFF_SECONDS", "1")
+            ),
+            recovery_observation_seconds=float(
+                env("RESEARCH_RECOVERY_OBSERVATION_SECONDS", "30")
             ),
             prometheus_url=env("RESEARCH_PROMETHEUS_URL", cls.prometheus_url),
             loki_url=env("RESEARCH_LOKI_URL", cls.loki_url),

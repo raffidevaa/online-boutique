@@ -20,6 +20,8 @@ INDEX_COLUMNS = (
     "severity",
     "run_status",
     "semantic_validation_status",
+    "host_impact_status",
+    "workload_status",
     "baseline_available",
     "incident_available",
     "recovery_available",
@@ -83,12 +85,33 @@ def _string(value: object) -> str:
     return value if isinstance(value, str) else ""
 
 
+def _loadgenerator_observed(metrics: dict[str, Any] | None) -> bool:
+    result = (
+        (metrics or {})
+        .get("queries", {})
+        .get("container_cpu", {})
+        .get("data", {})
+        .get("result", [])
+    )
+    if not isinstance(result, list):
+        return False
+    return any(
+        isinstance(series, dict)
+        and series.get("metric", {}).get("service") == "loadgenerator"
+        for series in result
+    )
+
+
 def index_run(run_path: Path, research_root: Path) -> dict[str, str]:
     """Build one CSV row without changing the experiment directory."""
     metadata, metadata_error = _read_json(run_path / "metadata.json")
     result, result_error = _read_json(run_path / "result.json")
     ground_truth, ground_truth_error = _read_json(run_path / "ground_truth.json")
     semantic, semantic_error = _read_json(run_path / "semantic-validation.json")
+    scenario, scenario_error = _read_json(run_path / "scenario.json")
+    baseline_metrics, baseline_metrics_error = _read_json(
+        run_path / "baseline" / "metrics.json"
+    )
     metadata = metadata or {}
     result = result or {}
     ground_truth = ground_truth or {}
@@ -107,6 +130,7 @@ def index_run(run_path: Path, research_root: Path) -> dict[str, str]:
         or _string(ground_truth.get("root_cause_service"))
     )
     fault_category = _string(ground_truth.get("fault_category"))
+    fault_type = _string(ground_truth.get("fault_type"))
     run_status = _string(result.get("status")) or "incomplete"
     baseline_available = _phase_available(run_path, "baseline")
     incident_available = _phase_available(run_path, "incident")
@@ -116,9 +140,30 @@ def index_run(run_path: Path, research_root: Path) -> dict[str, str]:
         semantic_status = _string((semantic or {}).get("status")) or "missing"
     else:
         semantic_status = "not_required"
+    host_impact, host_impact_error = _read_json(run_path / "host-impact.json")
+    if fault_type == "cpu_hog":
+        host_impact_status = _string((host_impact or {}).get("status")) or "missing"
+    else:
+        host_impact_status = "not_required"
+    workload = (scenario or {}).get("workload", {})
+    workload_generator = workload.get("generator") if isinstance(workload, dict) else None
+    if workload_generator == "loadgenerator":
+        workload_status = (
+            "observed" if _loadgenerator_observed(baseline_metrics) else "missing"
+        )
+    else:
+        workload_status = "not_required"
 
     reasons: list[str] = []
-    for error in (metadata_error, result_error, ground_truth_error, semantic_error):
+    for error in (
+        metadata_error,
+        result_error,
+        ground_truth_error,
+        semantic_error,
+        host_impact_error,
+        scenario_error,
+        baseline_metrics_error,
+    ):
         if error:
             reasons.append(error)
     if not metadata:
@@ -145,6 +190,10 @@ def index_run(run_path: Path, research_root: Path) -> dict[str, str]:
         reasons.append("missing_recovery_telemetry")
     if fault_category == "code_level" and semantic_status != "passed":
         reasons.append(f"semantic_validation:{semantic_status}")
+    if fault_type == "cpu_hog" and host_impact_status not in {"flagged", "not_flagged"}:
+        reasons.append(f"host_impact:{host_impact_status}")
+    if workload_generator == "loadgenerator" and workload_status != "observed":
+        reasons.append(f"workload:{workload_status}")
 
     try:
         relative_path = run_path.relative_to(research_root)
@@ -158,10 +207,12 @@ def index_run(run_path: Path, research_root: Path) -> dict[str, str]:
         "run_path": relative_path.as_posix(),
         "target_service": target_service,
         "fault_category": fault_category,
-        "fault_type": _string(ground_truth.get("fault_type")),
+        "fault_type": fault_type,
         "severity": _string(ground_truth.get("severity")),
         "run_status": run_status,
         "semantic_validation_status": semantic_status,
+        "host_impact_status": host_impact_status,
+        "workload_status": workload_status,
         "baseline_available": str(baseline_available).lower(),
         "incident_available": str(incident_available).lower(),
         "recovery_available": str(recovery_available).lower(),

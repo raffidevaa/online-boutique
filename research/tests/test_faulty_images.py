@@ -203,7 +203,9 @@ class FaultOverrideTests(unittest.TestCase):
                 return None
 
         with tempfile.TemporaryDirectory() as temporary:
-            config = ResearchConfig(experiment_runs=Path(temporary))
+            config = ResearchConfig(
+                experiment_runs=Path(temporary), recovery_observation_seconds=0
+            )
             with (
                 patch("research.orchestrator.faults.ComposeApplication", FakeApplication),
                 patch("research.orchestrator.faults.Observer", FakeObserver),

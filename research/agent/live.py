@@ -9,7 +9,11 @@ from typing import Any
 
 from research.generators import FaultScenario, InjectorError, PumbaInjector
 from research.observer import Observer, ObserverError
-from research.orchestrator.faults import FaultExecutionError, fault_lock
+from research.orchestrator.faults import (
+    FaultExecutionError,
+    build_host_impact,
+    fault_lock,
+)
 from research.service import ComposeApplication, ServiceError
 from research.utils import ResearchConfig, append_event, create_run, write_json
 
@@ -155,10 +159,10 @@ class LiveIncidentController:
                 write_json(run_path / "injector-plan.json", plan.to_dict())
                 append_event(run_path, "live_preflight_complete", {"task": task_name})
                 baseline_end = datetime.now(UTC)
-                _capture(
-                    run_path / "baseline",
-                    observer.capture(baseline_end - timedelta(minutes=1), baseline_end),
+                baseline = observer.capture(
+                    baseline_end - timedelta(minutes=1), baseline_end
                 )
+                _capture(run_path / "baseline", baseline)
                 append_event(run_path, "baseline_captured")
 
                 running = injector.start(plan)
@@ -204,12 +208,27 @@ class LiveIncidentController:
                         "ended_at": injection_end.isoformat(),
                     },
                 )
-                _capture(run_path / "incident", observer.capture(injection_start, injection_end))
+                incident = observer.capture(injection_start, injection_end)
+                _capture(run_path / "incident", incident)
+                if scenario.fault_type == "cpu_hog":
+                    write_json(
+                        run_path / "host-impact.json",
+                        build_host_impact(baseline, incident),
+                    )
+                recovery_start = datetime.now(UTC)
+                append_event(
+                    run_path,
+                    "recovery_observation_started",
+                    {"seconds": self.config.recovery_observation_seconds},
+                )
+                if self.config.recovery_observation_seconds > 0:
+                    await asyncio.sleep(self.config.recovery_observation_seconds)
                 recovery_end = datetime.now(UTC)
                 _capture(
                     run_path / "recovery",
-                    observer.capture(recovery_end - timedelta(minutes=1), recovery_end),
+                    observer.capture(recovery_start, recovery_end),
                 )
+                append_event(run_path, "recovery_observation_finished")
                 write_json(run_path / "cleanup-state.json", application.snapshot())
                 status = "completed" if injector_result.returncode == 0 else "injector_failed"
                 write_json(

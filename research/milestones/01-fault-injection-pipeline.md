@@ -43,10 +43,24 @@ and structured experiment artifacts.
 
 ## Definition of done
 
-- Running the scenario runner against each of the 4 authored scenarios produces a correctly
-  shaped ground truth log entry (matches the schema exactly).
+- Running representative scenarios for all 4 runtime fault types produces a correctly shaped
+  ground truth log entry (matches the schema exactly).
 - The Grafana dashboard visibly reflects each fault's effect during the run.
 - `cpu_hog` runs have host-monitoring notes confirming (or flagging) host-wide impact.
+
+Validated on 2026-10-27 with a low-intensity workload and one fault at a time:
+
+- `FI-NET-LOSS-02` (`EXP-20261027T144602728442Z-123171`) captured product-catalog latency
+  degradation and 329 target traces without an outage.
+- `FI-NET-DELAY-01` (`EXP-20261027T145012506622Z-b4246e`) increased payment span mean from
+  about 2.1 ms to 36.3 ms and maximum from about 39.8 ms to 427.7 ms.
+- `FI-RES-CPU-01` (`EXP-20261027T145436904344Z-4cdd01`) increased recommendation CPU while
+  `host-impact.json` classified host contention as `not_flagged`.
+- `FI-RES-MEM-01` (`EXP-20261027T145858386275Z-a2e7fb`) increased cart memory from about
+  65 MB to 126 MB and returned to about 59 MB in a non-overlapping recovery window.
+
+Grafana provisioned the Research Overview and Service Detail dashboards, every run wrote the
+required structured artifacts, and post-run `doctor` checks returned healthy.
 
 ## References
 

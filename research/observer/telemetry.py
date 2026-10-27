@@ -54,6 +54,11 @@ class Observer:
         'name!=""} * on(name) group_left(service) '
         'compose_container_info{service!=""})'
     )
+    HOST_CPU_QUERY = (
+        '100 * (1 - avg(rate(node_cpu_seconds_total{job="node-exporter",'
+        'mode="idle"}[1m])))'
+    )
+    HOST_MEMORY_AVAILABLE_QUERY = 'node_memory_MemAvailable_bytes{job="node-exporter"}'
 
     def check_ready(self) -> dict[str, int]:
         self._check_endpoint(f"{self.prometheus_url}/-/ready", "Prometheus")
@@ -62,14 +67,18 @@ class Observer:
         mapping = self._query_instant("compose_container_info{service!=\"\"}")
         cpu = self._query_instant(self.CONTAINER_CPU_QUERY)
         memory = self._query_instant(self.CONTAINER_MEMORY_QUERY)
+        host_cpu = self._query_instant(self.HOST_CPU_QUERY)
+        host_memory = self._query_instant(self.HOST_MEMORY_AVAILABLE_QUERY)
         counts = {
             "container_metadata_series": len(mapping),
             "container_cpu_series": len(cpu),
             "container_memory_series": len(memory),
+            "host_cpu_series": len(host_cpu),
+            "host_memory_series": len(host_memory),
         }
         if not all(counts.values()):
             missing = ", ".join(name for name, count in counts.items() if not count)
-            raise ObserverError(f"Container telemetry mapping is not ready: {missing}")
+            raise ObserverError(f"Required telemetry is not ready: {missing}")
         return counts
 
     def _query_instant(self, expression: str) -> list[dict[str, Any]]:
@@ -89,7 +98,8 @@ class Observer:
             "services_up": "up",
             "container_cpu": self.CONTAINER_CPU_QUERY,
             "container_memory": self.CONTAINER_MEMORY_QUERY,
-            "host_memory_available": "node_memory_MemAvailable_bytes",
+            "host_cpu_utilization": self.HOST_CPU_QUERY,
+            "host_memory_available": self.HOST_MEMORY_AVAILABLE_QUERY,
         }
         metrics = {
             "schema_version": 1,

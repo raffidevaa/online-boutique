@@ -260,6 +260,14 @@ baseline/incident/recovery windows, telemetry artifacts, and cleanup status. Use
 `research/experiments/ground-truth.schema.json` as the canonical ground-truth contract;
 this catalog defines the intended future fields.
 
+CPU-hog runs also write `host-impact.json`. It compares node-exporter host CPU between the
+baseline and incident windows and records whether host contention was flagged. A CPU-hog run
+without this evidence is retained in the dataset index but excluded from RCA evaluation.
+
+After the injector stops, the runner waits through a dedicated 30-second recovery observation
+window and captures only that post-fault interval. Recovery telemetry therefore does not reuse
+or overlap the incident window.
+
 ## Remediation evaluation
 
 Do not score recommendations by exact string matching. Score each on:

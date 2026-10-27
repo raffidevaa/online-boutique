@@ -6,12 +6,43 @@ from unittest.mock import patch
 
 from research.generators import InjectorError, PumbaInjector, PumbaPlan, load_scenarios
 from research.observer import ObserverError
-from research.orchestrator.faults import FaultExecutionError, run_fault
+from research.orchestrator.faults import (
+    FaultExecutionError,
+    build_host_impact,
+    run_fault,
+)
 from research.service import ServiceCatalog, ServiceState
 from research.utils import ResearchConfig
 
 
 class FaultCatalogTests(unittest.TestCase):
+    def test_host_impact_flags_large_incident_cpu_increase(self) -> None:
+        def capture(values: list[str]) -> dict[str, object]:
+            return {
+                "metrics": {
+                    "queries": {
+                        "host_cpu_utilization": {
+                            "data": {
+                                "result": [
+                                    {
+                                        "values": [
+                                            [index, value]
+                                            for index, value in enumerate(values)
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            }
+
+        result = build_host_impact(capture(["10", "20"]), capture(["70", "90"]))
+
+        self.assertEqual(result["status"], "flagged")
+        self.assertTrue(result["host_contention_observed"])
+        self.assertEqual(result["mean_increase_percentage_points"], 65.0)
+
     def setUp(self) -> None:
         self.config = ResearchConfig()
         self.scenarios = load_scenarios(self.config.scenario_directory)
@@ -129,7 +160,9 @@ class FaultCatalogTests(unittest.TestCase):
                 return subprocess.CompletedProcess(("noop",), 0, "", "")
 
         with tempfile.TemporaryDirectory() as temporary:
-            config = ResearchConfig(experiment_runs=Path(temporary))
+            config = ResearchConfig(
+                experiment_runs=Path(temporary), recovery_observation_seconds=0
+            )
             with (
                 patch("research.orchestrator.faults.ComposeApplication", FakeApplication),
                 patch("research.orchestrator.faults.Observer", FakeObserver),
@@ -192,7 +225,9 @@ class FaultCatalogTests(unittest.TestCase):
                 raise AssertionError("fault injector must not run after baseline failure")
 
         with tempfile.TemporaryDirectory() as temporary:
-            config = ResearchConfig(experiment_runs=Path(temporary))
+            config = ResearchConfig(
+                experiment_runs=Path(temporary), recovery_observation_seconds=0
+            )
             with (
                 patch("research.orchestrator.faults.ComposeApplication", FakeApplication),
                 patch("research.orchestrator.faults.Observer", FakeObserver),

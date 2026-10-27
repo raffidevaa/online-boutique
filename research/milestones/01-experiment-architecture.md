@@ -17,3 +17,8 @@ Establish the Docker Compose experiment framework before implementing any fault 
 - `python -m research.orchestrator doctor` validates the live runtime without changing it.
 - A read-only snapshot captures Compose configuration, Docker state, metrics, logs, and alerts.
 - No Pumba backend, scenario YAML, or fault command is added or run.
+
+Validated on 2026-10-27: Compose configuration passed, all 21 baseline containers were
+running, `doctor` reported container and host telemetry ready, and a read-only architecture
+snapshot was captured successfully. The later fault-injection layer now builds on this
+completed foundation.
