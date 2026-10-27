@@ -40,6 +40,19 @@ agent will later be evaluated against.
 - The dataset index accurately reflects every file under `research/experiments/`.
 - Confounder-affected runs are clearly flagged and distinguishable from clean runs.
 
+Validated on 2026-10-27 for the complete eight-case `ready_for_pilot` runtime matrix. The
+dataset index contains 26 runs, of which 18 are eligible for evaluation. Each ready runtime
+scenario has at least one eligible run with observed low-intensity workload, complete
+baseline/incident/recovery telemetry, valid ground truth, and successful recovery:
+
+- `FI-RES-CPU-01`, `FI-RES-CPU-02`, `FI-RES-MEM-01`
+- `FI-NET-DELAY-01`, `FI-NET-DELAY-02`, `FI-NET-DELAY-03`
+- `FI-NET-LOSS-01`, `FI-NET-LOSS-02`
+
+`FI-RES-DISK-01` and `FI-RES-SOCK-01` remain excluded as experimental-unavailable cases.
+The generated index records excluded historical and incomplete runs with explicit reasons and
+keeps confounder flags separate from clean runs.
+
 ## References
 
 - `research/docs/EXPERIMENT_LOG.md` — experiment log template.
