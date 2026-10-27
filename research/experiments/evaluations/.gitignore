@@ -1,0 +1,3 @@
+# Evaluation bundles are local research artifacts, separate from source code.
+*
+!.gitignore

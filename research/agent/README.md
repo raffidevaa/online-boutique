@@ -47,3 +47,30 @@ variables take precedence over values in that file. Session JSON is stored under
 `research/experiments/agent-sessions/`.
 Integrated live runs also create a normal append-only experiment under
 `research/experiments/runs/`; the agent itself never receives its ground truth.
+
+## Batch RCA evaluation
+
+Run the Phase 04 replay evaluator against every row marked
+`eligible_for_evaluation=true` in `research/experiments/index.csv`:
+
+```bash
+python3 -m research.agent.evaluate \
+  --output-dir research/experiments/evaluations/phase-04-analysis
+```
+
+The headline run uses the provider configured by `AIOPS_LLM_PROVIDER` and the other
+`AIOPS_LLM_*` values in the repository-root `.env`. A fake-provider smoke replay is
+deliberately limited to one run:
+
+```bash
+python3 -m research.agent.evaluate \
+  --smoke --experiment-id EXP-... \
+  --output-dir /tmp/phase-04-smoke
+```
+
+Each selected run produces one row in `evaluation-results.csv`; failures are retained as
+explicit rows. `evaluation-summary.json` reports valid submission rate, service Top-1 and
+Top-3, category, normalized fault type, combined RCA accuracy, mean TTA, and separate clean
+versus confounder-affected metrics. Session traces are written below `session-traces/`,
+outside the experiment run directories. Ground truth is handed to the task only after the
+agent action loop completes.

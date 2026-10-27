@@ -43,8 +43,8 @@ class FakeProvider:
         submit = actions.get("submit", "")
         if "system_level" in submit:
             return (
-                'submit({"system_level": "resource", "fault_type": "unknown", '
-                '"faulty_components": []})'
+                'submit({"system_level": "resource", "fault_type": "cpu_hog", '
+                '"faulty_components": ["unknown"]})'
             )
         if "faulty_components" in submit:
             return 'submit({"faulty_components": []})'

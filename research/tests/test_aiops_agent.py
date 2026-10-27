@@ -33,6 +33,10 @@ class AioAgentTests(unittest.TestCase):
         parser = ResponseParser()
         self.assertEqual(parser.parse('```\nsubmit("Yes")\n```')[0], "submit")
         self.assertEqual(
+            parser.parse('{"action":"get_alerts","window":"incident"}'),
+            ("get_alerts", [], {"window": "incident"}),
+        )
+        self.assertEqual(
             parser.parse('```json\n{"action":"get_alerts","window":"incident"}\n```'),
             ("get_alerts", [], {"window": "incident"}),
         )
@@ -157,8 +161,143 @@ class AioAgentTests(unittest.TestCase):
             summary = json.loads(evidence.get_incident_summary().split(": ", 1)[1])
             self.assertEqual(summary["top_anomalies"][0]["service"], "checkoutservice")
             self.assertGreater(summary["top_anomalies"][0]["signals"]["cpu_delta"], 0.1)
+            self.assertEqual(
+                summary["top_anomalies"][0]["signals"]["dominant_signal"], "cpu_growth"
+            )
             errors = json.loads(evidence.get_error_logs("checkoutservice").split(": ", 1)[1])
             self.assertEqual(errors["services"]["checkoutservice"]["count"], 1)
+
+    def test_incident_summary_identifies_memory_growth_over_cpu_growth(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            run_dir = root / "run"
+            for phase in ("baseline", "incident"):
+                (run_dir / phase).mkdir(parents=True)
+                metrics = {
+                    "queries": {
+                        "container_cpu": {
+                            "data": {
+                                "result": [
+                                    {
+                                        "metric": {"service": "cartservice"},
+                                        "values": [[1, "0.01"]]
+                                        if phase == "baseline"
+                                        else [[2, "0.03"]],
+                                    }
+                                ]
+                            }
+                        },
+                        "container_memory": {
+                            "data": {
+                                "result": [
+                                    {
+                                        "metric": {"service": "cartservice"},
+                                        "values": [[1, "48000000"]]
+                                        if phase == "baseline"
+                                        else [[2, "120000000"]],
+                                    }
+                                ]
+                            }
+                        },
+                    }
+                }
+                for name, payload in {
+                    "metrics": metrics,
+                    "logs": {"result": {"data": {"result": []}}},
+                    "alerts": {"alerts": {"data": {"alerts": []}}},
+                    "traces": {"services": {}},
+                }.items():
+                    (run_dir / phase / f"{name}.json").write_text(
+                        json.dumps(payload), encoding="utf-8"
+                    )
+            evidence = ComposeEvidence(
+                ResearchConfig(experiment_runs=root / "experiments"),
+                start=datetime(2026, 9, 20, 3, 30, tzinfo=UTC),
+                end=datetime(2026, 9, 20, 3, 32, tzinfo=UTC),
+                run_dir=run_dir,
+            )
+            summary = json.loads(evidence.get_incident_summary().split(": ", 1)[1])
+            signals = summary["top_anomalies"][0]["signals"]
+            self.assertEqual(summary["top_anomalies"][0]["service"], "cartservice")
+            self.assertEqual(signals["dominant_signal"], "memory_growth")
+            self.assertGreater(signals["memory_relative"], signals["cpu_delta"])
+
+    def test_analysis_instructions_include_fault_signature_rules(self) -> None:
+        orchestrator = AgentOrchestrator(ResearchConfig())
+        orchestrator.register_agent(LlmAgent(FakeProvider()), name="test-agent")
+        _, task, _ = orchestrator.init_problem(
+            "FI-RES-MEM-01-analysis",
+            start=datetime(2026, 9, 13, 13, 35, tzinfo=UTC),
+            end=datetime(2026, 9, 13, 13, 36, tzinfo=UTC),
+        )
+        instructions = task.get_instructions()
+        self.assertIn("memory_growth dominant", instructions)
+        self.assertIn("latency dominant", instructions)
+        self.assertIn("packet_loss", instructions)
+
+    def test_incident_summary_excludes_non_targetable_workload_services(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            run_dir = root / "run"
+            for phase in ("baseline", "incident"):
+                (run_dir / phase).mkdir(parents=True)
+                metrics = {
+                    "queries": {
+                        "container_cpu": {
+                            "data": {
+                                "result": [
+                                    {
+                                        "metric": {"service": "checkoutservice"},
+                                        "values": [[1, "0.01"]]
+                                        if phase == "baseline"
+                                        else [[2, "0.20"]],
+                                    },
+                                    {
+                                        "metric": {"service": "loadgenerator"},
+                                        "values": [[1, "0.01"]],
+                                    },
+                                ]
+                            }
+                        },
+                        "container_memory": {"data": {"result": []}},
+                    }
+                }
+                logs = {
+                    "result": {
+                        "data": {
+                            "result": [
+                                {
+                                    "stream": {
+                                        "compose_service": "loadgenerator",
+                                        "detected_level": "error",
+                                    },
+                                    "values": [[str(index), "error"] for index in range(30)]
+                                    if phase == "incident"
+                                    else [],
+                                }
+                            ]
+                        }
+                    }
+                }
+                for name, payload in {
+                    "metrics": metrics,
+                    "logs": logs,
+                    "alerts": {"alerts": {"data": {"alerts": []}}},
+                    "traces": {"services": {}},
+                }.items():
+                    (run_dir / phase / f"{name}.json").write_text(
+                        json.dumps(payload), encoding="utf-8"
+                    )
+            evidence = ComposeEvidence(
+                ResearchConfig(experiment_runs=root / "experiments"),
+                start=datetime(2026, 9, 20, 3, 30, tzinfo=UTC),
+                end=datetime(2026, 9, 20, 3, 32, tzinfo=UTC),
+                run_dir=run_dir,
+            )
+            summary = json.loads(evidence.get_incident_summary().split(": ", 1)[1])
+            services = [item["service"] for item in summary["top_anomalies"]]
+            self.assertIn("checkoutservice", services)
+            self.assertNotIn("loadgenerator", services)
 
     def test_step_budget_records_submission_and_exhaustion(self) -> None:
         import asyncio

@@ -169,14 +169,27 @@ class AnalysisTask(BaseTask):
 
     def get_instructions(self) -> str:
         fault_types = "|".join(VALID_FAULT_TYPES)
+        taxonomy = (
+            "resource=[cpu_hog,memory_pressure,disk_stress,socket_stress]; "
+            "network=[network_delay,packet_loss]; "
+            "code_level=[incorrect_return_value,missing_exception_handler,"
+            "incorrect_parameter,missing_parameter,missing_function_call]"
+        )
         return (
             'First call get_incident_summary(window="incident"). Then inspect error logs or '
             'traces for at most two top-ranked anomalous services; do not enumerate healthy '
-            'services. Submit JSON before the final step: '
+            'services or infrastructure/workload services. Distinguish the root-cause service '
+            'from propagated frontend errors. Submit JSON before the final step with up to three '
+            'services ordered by confidence: '
             'submit({"system_level": "resource|network|code_level", '
             f'"fault_type": "{fault_types}", '
-            '"faulty_components": ["service"]}). Use only the normalized fault_type '
-            'identifiers listed above and reserve the final step for submission.'
+            '"faulty_components": ["service1", "service2"]}). Taxonomy mapping: '
+            f'{taxonomy}. Use only the normalized fault_type '
+            'identifiers. Diagnostic rules: memory_growth dominant with CPU not dominant '
+            'supports memory_pressure; cpu_growth dominant supports cpu_hog; latency dominant '
+            'network_symptoms or latency dominant supports network_delay; error_rate or trace_errors dominant with connection or '
+            'RPC failures supports packet_loss. These are evidence rules, not labels. '
+            'Reserve the final step for submission.'
         )
 
     def get_available_actions(self) -> dict[str, str]:
@@ -185,7 +198,7 @@ class AnalysisTask(BaseTask):
         actions["submit"] = (
             'submit(answer: {"system_level": "resource|network|code_level", '
             f'"fault_type": "{fault_types}", '
-            '"faulty_components": ["service"]})'
+            '"faulty_components": ["service1", "service2", "service3"]})'
         )
         return actions
 
@@ -195,8 +208,20 @@ class AnalysisTask(BaseTask):
         required = {"system_level", "fault_type", "faulty_components"}
         if not required.issubset(answer):
             raise TaskError(f"Analysis submission requires: {', '.join(sorted(required))}")
-        if not isinstance(answer["faulty_components"], list):
-            raise TaskError("faulty_components must be a list")
+        if answer["system_level"] not in {"resource", "network", "code_level"}:
+            raise TaskError("system_level must be resource, network, or code_level")
+        fault_type = answer["fault_type"]
+        if fault_type not in VALID_FAULT_TYPES:
+            raise TaskError("fault_type must use a normalized taxonomy identifier")
+        if VALID_FAULT_TYPES[fault_type] != answer["system_level"]:
+            raise TaskError("fault_type does not belong to system_level")
+        components = answer["faulty_components"]
+        if not isinstance(components, list) or not components or len(components) > 3:
+            raise TaskError("faulty_components must contain one to three services")
+        if not all(isinstance(item, str) and item for item in components):
+            raise TaskError("faulty_components must contain service names")
+        if len(set(components)) != len(components):
+            raise TaskError("faulty_components must not contain duplicates")
         return EnvironmentResponse("VALID_SUBMISSION", True, answer)
 
     def eval(self, solution: Any, trace: list[Any], duration: float) -> dict[str, Any]:

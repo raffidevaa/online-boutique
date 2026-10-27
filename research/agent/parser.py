@@ -19,7 +19,19 @@ class ResponseParser:
     )
 
     def parse(self, response: str) -> tuple[str, list[Any], dict[str, Any]]:
+        stripped = response.strip()
         blocks = self._BLOCK.findall(response)
+        if not blocks:
+            # Some OpenAI-compatible models follow the JSON action schema but omit the
+            # requested markdown fence.  Accept exactly one raw JSON object, while still
+            # rejecting prose, multiple actions, and arbitrary executable content.
+            try:
+                action = json.loads(stripped)
+            except json.JSONDecodeError as error:
+                raise ActionParseError(
+                    "Response must contain exactly one markdown action block or raw JSON action"
+                ) from error
+            return self._action_from_json_object(action)
         if len(blocks) != 1:
             raise ActionParseError("Response must contain exactly one markdown action block")
         language, body = blocks[0]
@@ -49,6 +61,10 @@ class ResponseParser:
             action = json.loads(body)
         except json.JSONDecodeError as error:
             raise ActionParseError("JSON action is not valid JSON") from error
+        return ResponseParser._action_from_json_object(action)
+
+    @staticmethod
+    def _action_from_json_object(action: Any) -> tuple[str, list[Any], dict[str, Any]]:
         if not isinstance(action, dict) or not isinstance(action.get("action"), str):
             raise ActionParseError('JSON action must be an object with a string "action" field')
         name = action["action"]

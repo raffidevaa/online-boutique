@@ -8,6 +8,8 @@ from pathlib import Path
 import re
 from typing import Any
 
+import yaml
+
 from research.observer import Observer, ObserverError
 from research.utils import ResearchConfig
 
@@ -31,6 +33,30 @@ class ComposeEvidence:
         self.end = end
         self.run_dir = run_dir
         self._live: dict[str, Any] | None = None
+        self._targetable_services_cache: set[str] | None = None
+
+    def _targetable_services(self) -> set[str]:
+        """Return application services that are valid root-cause candidates."""
+        if self._targetable_services_cache is not None:
+            return self._targetable_services_cache
+        try:
+            raw = yaml.safe_load(self.config.service_metadata.read_text(encoding="utf-8"))
+        except (OSError, yaml.YAMLError) as error:
+            raise EnvironmentError(
+                f"Unable to read service metadata: {self.config.service_metadata}"
+            ) from error
+        services = raw.get("services", {}) if isinstance(raw, dict) else {}
+        if not isinstance(services, dict):
+            raise EnvironmentError("Service metadata must contain a services mapping")
+        targetable = {
+            str(name)
+            for name, metadata in services.items()
+            if isinstance(metadata, dict) and metadata.get("targetable") is True
+        }
+        if not targetable:
+            raise EnvironmentError("Service metadata contains no targetable services")
+        self._targetable_services_cache = targetable
+        return targetable
 
     def _payload(self, kind: str, window: str) -> dict[str, Any]:
         return self._capture_window(window)[kind]
@@ -213,7 +239,8 @@ class ComposeEvidence:
             | set(incident_traces)
             | set(baseline_traces)
         )
-        anomalies: list[dict[str, Any]] = []
+        services &= self._targetable_services()
+        measurements: dict[str, dict[str, Any]] = {}
         for service in services:
             cpu_i = cpu_incident.get(service, [])
             cpu_b = cpu_baseline.get(service, [])
@@ -233,9 +260,74 @@ class ComposeEvidence:
             trace_error_delta = max(
                 0, traces_i.get("error_count", 0) - traces_b.get("error_count", 0)
             )
+            cpu_relative = cpu_delta / max(cpu_max_b, 0.01) if cpu_b else cpu_delta
             memory_score = memory_delta / memory_max_b if memory_b and memory_max_b else 0.0
-            score = cpu_delta + memory_score
-            score += min(error_delta, 10) * 0.5 + min(trace_error_delta, 10) * 0.5
+            latency_score = min(traces_i.get("max_latency_ms", 0.0) / 1000.0, 5.0)
+            error_signal = min(error_delta, 10) * 0.1
+            trace_error_signal = min(trace_error_delta, 10) * 0.25
+            network_signal = latency_score + error_signal + trace_error_signal
+            measurements[service] = {
+                "cpu_max_i": cpu_max_i,
+                "cpu_max_b": cpu_max_b,
+                "memory_max_i": memory_max_i,
+                "memory_max_b": memory_max_b,
+                "errors_i": errors_i,
+                "errors_b": errors_b,
+                "traces_i": traces_i,
+                "traces_b": traces_b,
+                "cpu_delta": cpu_delta,
+                "memory_score": memory_score,
+                "error_delta": error_delta,
+                "trace_error_delta": trace_error_delta,
+                "cpu_relative": cpu_relative,
+                "latency_score": latency_score,
+                "error_signal": error_signal,
+                "trace_error_signal": trace_error_signal,
+                "network_signal": network_signal,
+            }
+        anomalies: list[dict[str, Any]] = []
+        for service in services:
+            measurement = measurements[service]
+            cpu_max_i = measurement["cpu_max_i"]
+            cpu_max_b = measurement["cpu_max_b"]
+            memory_max_i = measurement["memory_max_i"]
+            memory_max_b = measurement["memory_max_b"]
+            errors_i = measurement["errors_i"]
+            errors_b = measurement["errors_b"]
+            traces_i = measurement["traces_i"]
+            traces_b = measurement["traces_b"]
+            cpu_delta = measurement["cpu_delta"]
+            memory_score = measurement["memory_score"]
+            error_delta = measurement["error_delta"]
+            trace_error_delta = measurement["trace_error_delta"]
+            cpu_relative = measurement["cpu_relative"]
+            latency_score = measurement["latency_score"]
+            network_signal = measurement["network_signal"]
+            signal_strengths = {
+                "cpu_growth": round(cpu_delta, 6),
+                "memory_growth": round(memory_score, 6),
+                "latency": round(latency_score, 6),
+                "error_rate": round(min(error_delta, 10) * 0.1, 6),
+                "trace_errors": round(min(trace_error_delta, 10) * 0.25, 6),
+                "network_symptoms": round(network_signal, 6),
+            }
+            dominant_signal = (
+                "mixed"
+                if max(signal_strengths.values(), default=0.0) <= 0.0
+                else max(signal_strengths, key=signal_strengths.get)
+            )
+            # Resource deltas are stronger root-cause evidence than raw log volume.
+            # Log and trace errors remain useful, but propagated/workload noise must not
+            # dominate the ranking.
+            # Keep CPU in its observed delta units: a small CPU baseline can otherwise
+            # turn an ordinary rate change into an artificial high relative score and
+            # hide a much stronger memory-growth signal.
+            resource_score = cpu_delta + (2.0 * memory_score)
+            # Keep network symptoms available to the agent without globally boosting
+            # propagated latency across every upstream service in the dependency graph.
+            score = resource_score + min(error_delta, 10) * 0.1
+            score += min(trace_error_delta, 10) * 0.25
+            score += latency_score * 0.1
             anomalies.append(
                 {
                     "service": service,
@@ -244,8 +336,12 @@ class ComposeEvidence:
                         "cpu_baseline_max": round(cpu_max_b, 6),
                         "cpu_incident_max": round(cpu_max_i, 6),
                         "cpu_delta": round(cpu_delta, 6),
+                        "cpu_relative": round(cpu_relative, 6),
                         "memory_baseline_max": round(memory_max_b, 3),
                         "memory_incident_max": round(memory_max_i, 3),
+                        "memory_relative": round(memory_score, 6),
+                        "dominant_signal": dominant_signal,
+                        "signal_strengths": signal_strengths,
                         "error_baseline_count": errors_b,
                         "error_incident_count": errors_i,
                         "trace_error_baseline_count": traces_b.get("error_count", 0),

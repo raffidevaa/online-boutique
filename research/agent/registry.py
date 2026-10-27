@@ -63,6 +63,7 @@ class ComposeProblemRegistry:
         start: datetime,
         end: datetime | None,
         run_dir: Path | None = None,
+        withhold_ground_truth: bool = False,
     ) -> tuple[BaseTask, FaultScenario, dict[str, Any]]:
         scenario, task_name = self._split_problem_id(problem_id)
         if run_dir is not None:
@@ -73,6 +74,9 @@ class ComposeProblemRegistry:
                 raise ProblemError("Replay run must be under research/experiments/runs") from error
             run_dir = resolved
         evidence = ComposeEvidence(self.config, start, end, run_dir)
-        expected = self._expected(scenario, run_dir)
+        # Replay needs the run directory for telemetry, but the agent must not receive
+        # evaluator labels during its action loop.  The evaluator hands the labels to
+        # ``finalize_session`` only after the loop has ended.
+        expected = {} if withhold_ground_truth else self._expected(scenario, run_dir)
         task = TASKS[task_name](evidence, expected)
         return task, scenario, expected

@@ -32,8 +32,9 @@ class LlmAgent:
         self.actions = actions
         action_text = "\n".join(f"- {name}: {description}" for name, description in actions.items())
         system = (
-            "You are an autonomous AIOps agent. Return exactly one action in a markdown "
-            "code block per turn. Use only the listed read-only actions and submit when ready. "
+            "You are an autonomous AIOps agent. Return exactly one action per turn, either "
+            "as a markdown code block or as one raw JSON object. Use only the listed "
+            "read-only actions and submit when ready. "
             "Follow the step budget included in each user message; reserve the final two "
             "steps for submission and avoid broad service-by-service enumeration. "
             "You may use Python call syntax such as get_logs(window=\"incident\") or JSON "
@@ -74,12 +75,17 @@ class AgentOrchestrator:
         start: datetime,
         end: datetime | None,
         run_dir: Path | None = None,
+        withhold_ground_truth: bool = False,
     ) -> tuple[ProblemContext, Any, AgentSession]:
         if self.agent is None:
             raise AgentRuntimeError("Register an agent before initializing a problem")
         try:
             task, scenario, _ = self.registry.create(
-                problem_id, start=start, end=end, run_dir=run_dir
+                problem_id,
+                start=start,
+                end=end,
+                run_dir=run_dir,
+                withhold_ground_truth=withhold_ground_truth,
             )
         except (ProblemError, OSError) as error:
             raise AgentRuntimeError(str(error)) from error
