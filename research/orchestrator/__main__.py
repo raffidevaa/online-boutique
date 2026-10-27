@@ -19,6 +19,7 @@ from research.generators import (
     validate_semantic,
 )
 from research.observer import Observer, ObserverError
+from research.orchestrator.dataset import write_dataset_index
 from research.orchestrator.faults import FaultExecutionError, describe_scenario, run_fault
 from research.service import ComposeApplication, ServiceError
 from research.utils import ResearchConfig, write_json
@@ -66,6 +67,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Research architecture diagnostics")
     subcommands = parser.add_subparsers(dest="command", required=True)
     subcommands.add_parser("doctor", help="Validate Compose, runtime state, and telemetry")
+    index_parser = subcommands.add_parser(
+        "index", help="Generate the derived experiment dataset index"
+    )
+    index_parser.add_argument(
+        "--output",
+        type=Path,
+        help="CSV destination (default: research/experiments/index.csv)",
+    )
     snapshot_parser = subcommands.add_parser(
         "snapshot", help="Capture a read-only Docker and telemetry snapshot"
     )
@@ -124,6 +133,12 @@ def main() -> int:
     try:
         if arguments.command == "doctor":
             result = doctor(config)
+        elif arguments.command == "index":
+            result = write_dataset_index(
+                config.experiment_runs,
+                config.research_root,
+                arguments.output or config.experiment_index,
+            ).to_dict()
         elif arguments.command == "snapshot":
             result = snapshot(config, arguments.output)
         else:

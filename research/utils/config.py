@@ -46,6 +46,7 @@ class ResearchConfig:
     scenario_directory: Path = RESEARCH_ROOT / "generators" / "scenarios"
     faulty_image_manifest: Path = RESEARCH_ROOT / "generators" / "faulty_images" / "manifest.yaml"
     experiment_runs: Path = RESEARCH_ROOT / "experiments" / "runs"
+    experiment_index: Path = RESEARCH_ROOT / "experiments" / "index.csv"
     agent_sessions: Path = RESEARCH_ROOT / "experiments" / "agent-sessions"
     frontend_url: str = "http://127.0.0.1:8080"
     semantic_probe_stabilization_seconds: float = 5.0

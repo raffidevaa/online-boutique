@@ -84,6 +84,9 @@ python -m research.orchestrator fault image prepare \
 python -m research.orchestrator fault run \
   --scenario research/generators/scenarios/code-level-01-incorrect-return-currency.yaml \
   --execute
+
+# 12. Rebuild the derived dataset index from append-only run artifacts
+python -m research.orchestrator index
 ```
 
 Pumba is an on-demand fault-injection tool, not a permanent Compose service. The prepare
@@ -98,6 +101,11 @@ remain gated until the image build, semantic probe, behavior validator, telemetr
 baseline recovery have all been validated. See
 [`docs/SEMANTIC_PROBES.md`](docs/SEMANTIC_PROBES.md) for the implementation and execution
 plan.
+
+`research/experiments/index.csv` is a generated inventory, not a source-of-truth artifact.
+Regenerating it never edits a run directory. Runtime faults are eligible when completed with
+baseline, incident, recovery, and complete ground truth; code-level faults additionally need
+passed semantic validation. Incomplete and failed runs remain visible with an exclusion reason.
 
 ## Development hardware
 
