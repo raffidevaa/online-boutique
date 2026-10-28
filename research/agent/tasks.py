@@ -9,6 +9,10 @@ from typing import Any, Callable
 from research.generators.fault import VALID_FAULT_TYPES
 
 from .environment import ComposeEvidence
+from .remediation import (
+    REMEDIATION_ACTION_TYPES,
+    validate_remediation,
+)
 
 
 @dataclass(frozen=True)
@@ -246,4 +250,80 @@ class AnalysisTask(BaseTask):
             "combined_rca_correct": service_match and category_match and type_match,
             "TTA": duration,
         })
+        return results
+
+
+class RemediationTask(BaseTask):
+    """Produce a reviewable remediation plan without an execution capability."""
+
+    task_name = "remediation"
+
+    def __init__(
+        self,
+        evidence: ComposeEvidence,
+        expected: dict[str, Any],
+        rca_solution: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(evidence, expected)
+        self.rca_solution = rca_solution if isinstance(rca_solution, dict) else {}
+        self.actions["submit"] = self.submit
+
+    def get_task_description(self) -> str:
+        return "Recommend a safe, reviewable remediation action for the RCA hypothesis."
+
+    def get_instructions(self) -> str:
+        action_types = "|".join(REMEDIATION_ACTION_TYPES)
+        rca = json.dumps(self.rca_solution, sort_keys=True, separators=(",", ":"))
+        return (
+            "You are in the remediation recommendation stage after an RCA analysis. "
+            "Use only read-only evidence actions and do not execute or propose an arbitrary "
+            "shell, Docker, Compose, or injector command. The previous RCA submission was: "
+            f"{rca}. Verify the mechanism with incident evidence before submitting one "
+            "reviewable action plan. Choose an action_type from "
+            f"{action_types}. Include one to five evidence statements, expected effect, "
+            "risk, and a reversible rollback_plan. Always set requires_approval=true and "
+            "execution_allowed=false. If evidence is insufficient, use manual_investigation "
+            "or escalate rather than inventing a configuration change. Submit JSON before "
+            "the final step."
+        )
+
+    def get_available_actions(self) -> dict[str, str]:
+        actions = super().get_available_actions()
+        action_types = "|".join(REMEDIATION_ACTION_TYPES)
+        actions["submit"] = (
+            'submit(answer: {"action_type": "' + action_types + '", '
+            '"target_service": "service", "rationale": "...", '
+            '"evidence": ["..."], "expected_effect": "...", '
+            '"risk": "low|medium|high", "rollback_plan": "...", '
+            '"requires_approval": true, "execution_allowed": false})'
+        )
+        return actions
+
+    def submit(self, answer: dict[str, Any]) -> EnvironmentResponse:
+        try:
+            validated = validate_remediation(
+                answer,
+                self.evidence.get_targetable_services(),
+            )
+        except ValueError as error:
+            raise TaskError(str(error)) from error
+        return EnvironmentResponse("VALID_REMEDIATION_SUBMISSION", True, validated)
+
+    def eval(self, solution: Any, trace: list[Any], duration: float) -> dict[str, Any]:
+        results = super().eval(solution, trace, duration)
+        valid = False
+        if isinstance(solution, dict):
+            try:
+                validate_remediation(solution, self.evidence.get_targetable_services())
+                valid = True
+            except ValueError:
+                pass
+        results.update(
+            {
+                "task": self.task_name,
+                "recommendation_valid": valid,
+                "recommendation_complete": valid,
+                "TTA": duration,
+            }
+        )
         return results

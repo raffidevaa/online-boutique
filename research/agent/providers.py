@@ -46,6 +46,15 @@ class FakeProvider:
                 'submit({"system_level": "resource", "fault_type": "cpu_hog", '
                 '"faulty_components": ["unknown"]})'
             )
+        if "action_type" in submit:
+            return (
+                'submit({"action_type": "manual_investigation", '
+                '"target_service": "unknown", "rationale": "Collect more evidence", '
+                '"evidence": ["Incident summary requires review"], '
+                '"expected_effect": "Clarify the causal mechanism", "risk": "low", '
+                '"rollback_plan": "No runtime change is made", '
+                '"requires_approval": True, "execution_allowed": False})'
+            )
         if "faulty_components" in submit:
             return 'submit({"faulty_components": []})'
         return 'submit("No")'

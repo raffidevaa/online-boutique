@@ -74,3 +74,17 @@ Top-3, category, normalized fault type, combined RCA accuracy, mean TTA, and sep
 versus confounder-affected metrics. Session traces are written below `session-traces/`,
 outside the experiment run directories. Ground truth is handed to the task only after the
 agent action loop completes.
+
+## Phase 05 remediation evaluation
+
+The recommendation stage runs after RCA and remains recommendation-only:
+
+```bash
+python3 -m research.agent.remediation_evaluate \
+  --output-dir research/experiments/evaluations/phase-05-remediation-v1
+```
+
+It produces separate analysis/remediation traces, structured recommendation results, and a
+pending `remediation-review.csv` rubric template. The recommendation contract always requires
+human approval and sets `execution_allowed=false`; no Docker or shell action is exposed to the
+agent.

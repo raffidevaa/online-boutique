@@ -11,14 +11,25 @@ from research.generators import FaultScenario, load_scenario
 from research.utils import ResearchConfig
 
 from .environment import ComposeEvidence
-from .tasks import AnalysisTask, BaseTask, DetectionTask, LocalizationTask
+from .tasks import (
+    AnalysisTask,
+    BaseTask,
+    DetectionTask,
+    LocalizationTask,
+    RemediationTask,
+)
 
 
 class ProblemError(ValueError):
     """Raised when a problem ID or evidence source is invalid."""
 
 
-TASKS = {"detection": DetectionTask, "localization": LocalizationTask, "analysis": AnalysisTask}
+TASKS = {
+    "detection": DetectionTask,
+    "localization": LocalizationTask,
+    "analysis": AnalysisTask,
+    "remediation": RemediationTask,
+}
 
 
 class ComposeProblemRegistry:
@@ -64,6 +75,7 @@ class ComposeProblemRegistry:
         end: datetime | None,
         run_dir: Path | None = None,
         withhold_ground_truth: bool = False,
+        rca_solution: dict[str, Any] | None = None,
     ) -> tuple[BaseTask, FaultScenario, dict[str, Any]]:
         scenario, task_name = self._split_problem_id(problem_id)
         if run_dir is not None:
@@ -78,5 +90,8 @@ class ComposeProblemRegistry:
         # evaluator labels during its action loop.  The evaluator hands the labels to
         # ``finalize_session`` only after the loop has ended.
         expected = {} if withhold_ground_truth else self._expected(scenario, run_dir)
-        task = TASKS[task_name](evidence, expected)
+        if task_name == "remediation":
+            task = RemediationTask(evidence, expected, rca_solution=rca_solution)
+        else:
+            task = TASKS[task_name](evidence, expected)
         return task, scenario, expected

@@ -76,6 +76,7 @@ class AgentOrchestrator:
         end: datetime | None,
         run_dir: Path | None = None,
         withhold_ground_truth: bool = False,
+        rca_solution: dict[str, Any] | None = None,
     ) -> tuple[ProblemContext, Any, AgentSession]:
         if self.agent is None:
             raise AgentRuntimeError("Register an agent before initializing a problem")
@@ -86,6 +87,7 @@ class AgentOrchestrator:
                 end=end,
                 run_dir=run_dir,
                 withhold_ground_truth=withhold_ground_truth,
+                rca_solution=rca_solution,
             )
         except (ProblemError, OSError) as error:
             raise AgentRuntimeError(str(error)) from error

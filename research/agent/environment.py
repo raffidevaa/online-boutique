@@ -59,6 +59,10 @@ class ComposeEvidence:
         self._targetable_services_cache = targetable
         return targetable
 
+    def get_targetable_services(self) -> set[str]:
+        """Return application services that may be named in a recommendation."""
+        return set(self._targetable_services())
+
     def _targetable_service_ports(self) -> dict[str, set[str]]:
         """Return targetable services and their configured endpoint ports."""
         if self._targetable_service_ports_cache is not None:
