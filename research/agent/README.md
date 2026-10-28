@@ -88,3 +88,20 @@ It produces separate analysis/remediation traces, structured recommendation resu
 pending `remediation-review.csv` rubric template. The recommendation contract always requires
 human approval and sets `execution_allowed=false`; no Docker or shell action is exposed to the
 agent.
+
+## Phase 06 final aggregation
+
+After the Phase 04 and Phase 05 canonical bundles have been reviewed, aggregate the final
+headline metrics without replaying the LLM:
+
+```bash
+python3 -m research.agent.evaluate_final \
+  --output-dir research/experiments/evaluations/phase-06-final
+```
+
+The aggregator processes every eligible index row, retains missing joins as explicit failures,
+and writes `final-results.csv`, `final-summary.json`, `final-report.md`, and
+`metric-validation.json`. Runtime metrics are split into clean and confounder-affected runs;
+code-level runs are reported separately. New session traces include `submitted_at` so exact MTTD
+and recommendation MTTR can be computed. Legacy canonical traces without that field use stage TTA
+as a clearly labelled proxy; actual recovery MTTR is unavailable while execution is disabled.

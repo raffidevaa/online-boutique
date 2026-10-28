@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -134,6 +134,11 @@ class AgentOrchestrator:
                 if env_response.submitted:
                     session.solution = env_response.solution
                     session.submitted = True
+                    session.submitted_at = datetime.now(UTC)
+                    if session.start_time is not None:
+                        session.submission_elapsed_seconds = (
+                            session.submitted_at - session.start_time
+                        ).total_seconds()
                     session.termination_reason = "submitted"
                     break
                 if step < max_steps:

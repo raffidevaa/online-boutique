@@ -9,6 +9,7 @@ ground truth dataset.
 
 - Phase 03 done — full ground truth dataset collected.
 - Phase 04 done — agent produces RCA + remediation pairs.
+- Phase 05 done — recommendation results have completed manual rubric review.
 
 ## Steps
 
@@ -17,10 +18,11 @@ ground truth dataset.
    - MTTD (mean time to detection) — time from fault start to agent's hypothesis.
    - MTTR (mean time to remediation) — time from fault start to a remediation recommendation
      (or to actual recovery, if phase 04's execution path is enabled).
-2. **Build an evaluation script** that reads the phase-03 dataset index +
-   `research/experiments/runs/*`, runs the agent against each recorded incident window, and
-   computes the metrics above.
-3. **Run the full evaluation** across the dataset.
+2. **Build an evaluation script** that reads the phase-03 dataset index and aggregates the
+   canonical Phase 04/05 bundles. It must process every eligible row, keep missing joins as
+   explicit failures, and never pass ground truth to the agent.
+3. **Run the full evaluation** across the dataset and write the final CSV, JSON, and Markdown
+   report under `research/experiments/evaluations/phase-06-final/`.
 4. **Separate confounder-affected runs.** Report `adservice`/`shoppingassistantservice`
    -flagged runs separately from the clean set, per the flags set in phase 03 — don't let
    known confounders silently skew the headline accuracy number.
@@ -29,13 +31,17 @@ ground truth dataset.
 
 ## Deliverables
 
-- Evaluation script
-- A results summary (metrics, clean vs. confounder-affected breakdown)
+- `research/agent/final_evaluator.py` and `research/agent/evaluate_final.py`
+- `research/experiments/evaluations/phase-06-final/final-results.csv`
+- `research/experiments/evaluations/phase-06-final/final-summary.json`
+- `research/experiments/evaluations/phase-06-final/final-report.md`
 
 ## Definition of done
 
-- Metrics computed across the entire phase-03 dataset.
-- Results summary clearly separates confounder-affected runs from clean runs.
+- Metrics computed across all eligible Phase 03 rows, with ineligible rows excluded explicitly.
+- Results summary clearly separates runtime clean, runtime confounder-affected, and code-level runs.
+- Valid submission, service Top-1/Top-3, category, fault type, combined RCA, recommendation,
+  end-to-end, and timing metrics are present.
 
 ## References
 

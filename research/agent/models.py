@@ -30,6 +30,8 @@ class AgentSession:
     invalid_action_count: int = 0
     start_time: datetime | None = None
     end_time: datetime | None = None
+    submitted_at: datetime | None = None
+    submission_elapsed_seconds: float | None = None
 
     def add(self, role: str, content: Any) -> None:
         if content is None:
@@ -52,12 +54,14 @@ class AgentSession:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "schema_version": 1,
+            "schema_version": 2,
             "session_id": self.session_id,
             "problem_id": self.problem_id,
             "agent_name": self.agent_name,
             "start_time": self.start_time.isoformat() if self.start_time else None,
             "end_time": self.end_time.isoformat() if self.end_time else None,
+            "submitted_at": self.submitted_at.isoformat() if self.submitted_at else None,
+            "submission_elapsed_seconds": self.submission_elapsed_seconds,
             "trace": [item.to_dict() for item in self.history],
             "solution": self.solution,
             "submitted": self.submitted,

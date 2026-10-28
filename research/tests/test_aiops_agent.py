@@ -83,6 +83,8 @@ class AioAgentTests(unittest.TestCase):
 
             result = asyncio.run(orchestrator.start_problem(task, session, max_steps=2))
             self.assertTrue(result["results"]["localization_exact"])
+            self.assertIsNotNone(result["submitted_at"])
+            self.assertIsNotNone(result["submission_elapsed_seconds"])
             self.assertNotIn('"root_cause_service"', json.dumps(result["trace"]))
             self.assertEqual(len(list((root / "sessions").glob("*.json"))), 1)
 
