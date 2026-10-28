@@ -3,8 +3,8 @@
 ## Goal
 
 Design and implement the LLM-based agent that performs root cause analysis over an incident
-time window, using the observability stack as its data source. The core replay and integrated
-live loop is implemented; full multi-scenario evaluation remains pending.
+time window, using the observability stack as its data source. The core replay, integrated live
+loop, and multi-scenario runtime validation are implemented.
 
 ## Prerequisites
 
@@ -26,8 +26,9 @@ live loop is implemented; full multi-scenario evaluation remains pending.
 4. **Live lifecycle safety (implemented).** One runtime fault is injected at a time, a telemetry
    warm-up precedes the agent session, and interrupted runs attempt fault stop plus evidence and
    recovery capture.
-5. **Validate (in progress).** Continue replay and live tests across the runnable scenario
-   matrix; compare Top-1/Top-3 service and fault hypotheses against withheld ground truth.
+5. **Validate (done).** Replay all eligible runs; compare service Top-1/Top-3 and fault
+   hypotheses against withheld ground truth. Runtime faults are the headline scope; code-level
+   faults remain an exploratory, separately reported scope.
 6. **Confounder awareness.** When testing against `adservice`- or
    `shoppingassistantservice`-related incidents, check whether the agent's hypothesis
    correctly accounts for the known confounder (JVM noise / LLM-generated error text) rather
@@ -45,8 +46,9 @@ live loop is implemented; full multi-scenario evaluation remains pending.
   hypothesis. **Met** by the live `FI-RES-MEM-01` pilot: `cartservice` /
   `memory_pressure` matched withheld ground truth.
 - At least one validation run's ranked hypothesis is compared against withheld ground truth and
-  the result (service/fault match or no-match, and why) is documented. **Met for the pilot**;
-  repeated multi-scenario evaluation remains required before this milestone is complete.
+  the result (service/fault match or no-match, and why) is documented. **Met**; repeated
+  multi-scenario evaluation is complete for the current eligible dataset. The final bundle is
+  `research/experiments/evaluations/phase-04-analysis-final-v5/`.
 
 ## References
 

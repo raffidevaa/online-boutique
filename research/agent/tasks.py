@@ -188,7 +188,14 @@ class AnalysisTask(BaseTask):
             'identifiers. Diagnostic rules: memory_growth dominant with CPU not dominant '
             'supports memory_pressure; cpu_growth dominant supports cpu_hog; latency dominant '
             'network_symptoms or latency dominant supports network_delay; error_rate or trace_errors dominant with connection or '
-            'RPC failures supports packet_loss. These are evidence rules, not labels. '
+            'RPC failures supports packet_loss. In network_evidence, a large incident median '
+            'latency shift with most calls slow supports network_delay; a near-baseline median '
+            'with sparse latency outliers or new RPC errors supports packet_loss. Treat the '
+            'peer_service in network_evidence as the likely affected service, and the caller '
+            'as propagated context. For resource faults, absolute memory growth of roughly '
+            '32 MB or more supports memory_pressure; CPU growth of 0.1 or more with less than '
+            '32 MB memory growth supports cpu_hog, even when a small baseline makes the '
+            'relative memory percentage look large. These are evidence rules, not labels. '
             'Reserve the final step for submission.'
         )
 

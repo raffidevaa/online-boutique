@@ -221,6 +221,119 @@ class AioAgentTests(unittest.TestCase):
             self.assertEqual(summary["top_anomalies"][0]["service"], "cartservice")
             self.assertEqual(signals["dominant_signal"], "memory_growth")
             self.assertGreater(signals["memory_relative"], signals["cpu_delta"])
+            self.assertEqual(signals["resource_signature"], "memory_pressure")
+            self.assertGreater(signals["memory_growth_mb"], 32.0)
+
+    def test_trace_summary_resolves_actual_service_and_rpc_peer(self) -> None:
+        payload = {
+            "services": {
+                "checkoutservice": {
+                    "data": [
+                        {
+                            "traceID": "trace-1",
+                            "processes": {
+                                "p1": {"serviceName": "frontend"},
+                            },
+                            "spans": [
+                                {
+                                    "spanID": "span-1",
+                                    "processID": "p1",
+                                    "operationName": "hipstershop.PaymentService/Charge",
+                                    "duration": 300000,
+                                    "tags": [
+                                        {"key": "span.kind", "value": "client"},
+                                        {"key": "rpc.method", "value": "Charge"},
+                                        {"key": "server.port", "value": 50051},
+                                    ],
+                                }
+                            ],
+                        }
+                    ]
+                }
+            }
+        }
+        summary = ComposeEvidence._trace_summary(
+            payload,
+            {"frontend": {"8080"}, "paymentservice": {"50051"}},
+        )
+        self.assertEqual(summary["services"]["frontend"]["span_count"], 1)
+        self.assertEqual(summary["network_edges"][0]["peer_service"], "paymentservice")
+        self.assertEqual(summary["network_edges"][0]["p50_latency_ms"], 300.0)
+
+    def test_network_evidence_separates_delay_from_sparse_loss_outliers(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            run_dir = root / "run"
+            for phase, durations in (
+                ("baseline", [2000, 2200, 2100]),
+                ("incident", [300000, 320000, 280000]),
+            ):
+                (run_dir / phase).mkdir(parents=True)
+                trace = {
+                    "services": {
+                        "frontend": {
+                            "data": [
+                                {
+                                    "traceID": f"{phase}-trace",
+                                    "processes": {"p1": {"serviceName": "frontend"}},
+                                    "spans": [
+                                        {
+                                            "spanID": f"{phase}-{index}",
+                                            "processID": "p1",
+                                            "operationName": "hipstershop.PaymentService/Charge",
+                                            "duration": duration,
+                                            "tags": [
+                                                {"key": "span.kind", "value": "client"},
+                                                {"key": "rpc.method", "value": "Charge"},
+                                                {"key": "server.port", "value": 50051},
+                                            ],
+                                        }
+                                    ],
+                                }
+                                for index, duration in enumerate(durations)
+                            ]
+                        }
+                    }
+                }
+                metrics = {
+                    "queries": {
+                        "container_cpu": {"data": {"result": []}},
+                        "container_memory": {"data": {"result": []}},
+                    }
+                }
+                for name, payload in {
+                    "metrics": metrics,
+                    "logs": {"result": {"data": {"result": []}}},
+                    "alerts": {"alerts": {"data": {"alerts": []}}},
+                    "traces": trace,
+                }.items():
+                    (run_dir / phase / f"{name}.json").write_text(
+                        json.dumps(payload), encoding="utf-8"
+                    )
+            evidence = ComposeEvidence(
+                ResearchConfig(experiment_runs=root / "experiments"),
+                start=datetime(2026, 9, 20, 3, 30, tzinfo=UTC),
+                end=datetime(2026, 9, 20, 3, 32, tzinfo=UTC),
+                run_dir=run_dir,
+            )
+            summary = json.loads(evidence.get_incident_summary().split(": ", 1)[1])
+            evidence_row = next(
+                item
+                for item in summary["network_evidence"]
+                if item["peer_service"] == "paymentservice"
+            )
+            self.assertEqual(evidence_row["inferred_signature"], "network_delay")
+            self.assertGreater(evidence_row["latency_shift_ms"], 100.0)
+            signature, delay_score, loss_score = ComposeEvidence._network_signature(
+                incident_p50=3.0,
+                baseline_p50=2.0,
+                error_delta=0,
+                outlier_rate=0.125,
+                incident_max=220.0,
+            )
+            self.assertEqual(signature, "packet_loss")
+            self.assertLess(delay_score, 1.0)
+            self.assertGreater(loss_score, 0.0)
 
     def test_analysis_instructions_include_fault_signature_rules(self) -> None:
         orchestrator = AgentOrchestrator(ResearchConfig())
