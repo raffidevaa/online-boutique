@@ -75,6 +75,9 @@ class ResearchConfig:
     aiops_llm_api_key: str = ""
     aiops_llm_model: str = ""
     aiops_llm_timeout_seconds: float = 60.0
+    gui_host: str = "0.0.0.0"
+    gui_port: int = 8000
+    gui_auth_token: str = ""
 
     @classmethod
     def from_environment(cls) -> "ResearchConfig":
@@ -114,4 +117,7 @@ class ResearchConfig:
             aiops_llm_timeout_seconds=float(
                 env("AIOPS_LLM_TIMEOUT_SECONDS", str(cls.aiops_llm_timeout_seconds))
             ),
+            gui_host=env("RESEARCH_GUI_HOST", cls.gui_host),
+            gui_port=int(env("RESEARCH_GUI_PORT", str(cls.gui_port))),
+            gui_auth_token=env("RESEARCH_GUI_AUTH_TOKEN", cls.gui_auth_token),
         )

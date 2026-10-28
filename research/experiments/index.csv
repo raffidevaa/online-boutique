@@ -25,3 +25,4 @@ EXP-20261027T151143927535Z-2fa6a3,FI-NET-LOSS-01,experiments/runs/EXP-20261027T1
 EXP-20261027T151523032185Z-ad3004,FI-NET-DELAY-02,experiments/runs/EXP-20261027T151523032185Z-ad3004,shippingservice,network,network_delay,medium,completed,not_required,not_required,observed,true,true,true,false,true,
 EXP-20261027T151905839396Z-8b4bea,FI-NET-DELAY-03,experiments/runs/EXP-20261027T151905839396Z-8b4bea,currencyservice,network,network_delay,medium,completed,not_required,not_required,observed,true,true,true,false,true,
 EXP-20261027T152238060272Z-0fa686,FI-RES-CPU-02,experiments/runs/EXP-20261027T152238060272Z-0fa686,checkoutservice,resource,cpu_hog,medium,completed,not_required,not_flagged,observed,true,true,true,false,true,
+EXP-20261028T094259559840Z-93fd7e,FI-RES-CPU-01,experiments/runs/EXP-20261028T094259559840Z-93fd7e,recommendationservice,resource,cpu_hog,medium,completed,not_required,not_flagged,observed,true,true,true,false,true,

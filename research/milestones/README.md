@@ -16,6 +16,7 @@ each one depends on the previous phase's deliverables.
 | 04 | [RCA agent](03-rca-agent.md) | Done |
 | 05 | [Remediation recommendation](04-remediation-recommendation.md) | Done |
 | 06 | [Evaluation](05-evaluation.md) | Done |
+| 07 | [Web RCA dashboard and experiment control](06-web-dashboard.md) | In progress |
 
 Update the **Status** column as work progresses (`Not started` / `In progress` / `Done`) —
 this is the single place tracking overall thesis progress; don't duplicate it elsewhere.

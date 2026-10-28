@@ -151,6 +151,26 @@ class ComposeApplication:
         result = self._run(self._compose("config", "--services"))
         return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
+    def start_workload(self) -> CommandResult:
+        """Start only the allowlisted Compose workload-generator profile."""
+        return self._run(
+            self._compose(
+                "--profile",
+                "workload",
+                "up",
+                "-d",
+                "--pull",
+                "never",
+                "loadgenerator",
+            )
+        )
+
+    def stop_workload(self) -> CommandResult:
+        """Stop only the allowlisted Compose workload-generator service."""
+        return self._run(
+            self._compose("--profile", "workload", "stop", "loadgenerator")
+        )
+
     def _container_id(self, service: str) -> str | None:
         result = self._run(self._compose("ps", "-q", service), check=False)
         container_id = result.stdout.strip()

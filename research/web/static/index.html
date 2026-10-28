@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Online Boutique RCA Lab</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">SRE RESEARCH CONSOLE</p>
+      <h1>Online Boutique RCA Lab</h1>
+    </div>
+    <div class="connection">
+      <span id="health-dot" class="dot"></span>
+      <span id="health-text">Connecting…</span>
+      <button id="refresh" class="secondary">Refresh</button>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section id="notice" class="notice hidden"></section>
+
+    <section class="hero-grid">
+      <div class="hero-card">
+        <p class="eyebrow">CONTROLLED EXPERIMENTS</p>
+        <h2>Observe the agent. Run one bounded fault.</h2>
+        <p>Select an allowlisted runtime scenario, review its preflight plan, and confirm before execution. The agent receives telemetry only; ground truth is revealed after submission.</p>
+      </div>
+      <div class="kpi-grid" id="kpis"></div>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="overview">Overview</button>
+      <button class="tab" data-tab="scenarios">Run fault</button>
+      <button class="tab" data-tab="jobs">Live jobs</button>
+      <button class="tab" data-tab="history">History</button>
+    </nav>
+
+    <section class="tab-panel active" id="tab-overview">
+      <div class="section-heading"><div><p class="eyebrow">PHASE 06</p><h2>Performance overview</h2></div><span id="summary-source" class="muted"></span></div>
+      <div id="metric-panels" class="metric-panels"></div>
+    </section>
+
+    <section class="tab-panel" id="tab-scenarios">
+      <div class="section-heading"><div><p class="eyebrow">FAULT CATALOG</p><h2>Choose a scenario</h2></div><span class="muted">Runtime execution is single-flight</span></div>
+      <div id="scenario-list" class="scenario-list"></div>
+    </section>
+
+    <section class="tab-panel" id="tab-jobs">
+      <div class="section-heading"><div><p class="eyebrow">ACTION STREAM</p><h2>Agent activity</h2></div><span class="muted">Sanitized trace · SSE</span></div>
+      <div id="job-list" class="job-list"></div>
+      <div id="job-detail" class="job-detail empty">Prepare a scenario to see the live RCA trace.</div>
+    </section>
+
+    <section class="tab-panel" id="tab-history">
+      <div class="section-heading"><div><p class="eyebrow">RECORDED RUNS</p><h2>History and evidence</h2></div><div class="heading-actions"><button id="reload-history" class="secondary">Reload</button></div></div>
+      <div class="history-toolbar"><input id="history-filter" type="search" placeholder="Filter experiment or scenario…"><span id="history-count" class="muted"></span></div>
+      <div class="table-wrap"><table><thead><tr><th>Experiment</th><th>Scenario</th><th>Scope</th><th>RCA</th><th>Recommendation</th><th>TTA</th><th></th></tr></thead><tbody id="history-body"></tbody></table></div>
+      <div id="run-detail" class="run-detail hidden"></div>
+    </section>
+  </main>
+
+  <dialog id="confirm-dialog">
+    <form method="dialog" class="dialog-card">
+      <p class="eyebrow">EXPLICIT CONFIRMATION</p>
+      <h2>Start this fault experiment?</h2>
+      <p id="confirm-copy"></p>
+      <div id="confirm-plan" class="code-block"></div>
+      <div class="dialog-actions"><button value="cancel" class="secondary">Cancel</button><button value="confirm" class="danger">Start fault</button></div>
+    </form>
+  </dialog>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

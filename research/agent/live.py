@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from research.generators import FaultScenario, InjectorError, PumbaInjector
 from research.observer import Observer, ObserverError
@@ -50,9 +50,19 @@ def _ground_truth(scenario: FaultScenario, experiment_id: str, start: datetime, 
 class LiveIncidentController:
     """Run one allowlisted fault while an agent interacts with live telemetry."""
 
-    def __init__(self, config: ResearchConfig, orchestrator: AgentOrchestrator) -> None:
+    def __init__(
+        self,
+        config: ResearchConfig,
+        orchestrator: AgentOrchestrator,
+        event_sink: Callable[[dict[str, Any]], None] | None = None,
+    ) -> None:
         self.config = config
         self.orchestrator = orchestrator
+        self.event_sink = event_sink
+
+    def _emit(self, kind: str, **details: Any) -> None:
+        if self.event_sink is not None:
+            self.event_sink({"kind": kind, **details})
 
     def _record_failed_run(
         self,
@@ -146,6 +156,7 @@ class LiveIncidentController:
         injection_end: datetime | None = None
         with fault_lock():
             try:
+                self._emit("preflight_started", scenario_id=scenario.scenario_id)
                 application.validate()
                 states = application.validate_readiness()
                 target_state = states.get(scenario.target_service)
@@ -154,20 +165,34 @@ class LiveIncidentController:
                 observer.check_ready()
                 plan = injector.plan(scenario, target_state.container_id)
                 injector.check_images_available(scenario)
+                workload_generator = scenario.workload.get("generator")
+                if workload_generator == "loadgenerator":
+                    workload_state = application.get_service_state("loadgenerator")
+                    if workload_state is None or workload_state.status != "running":
+                        raise LiveIncidentError(
+                            "loadgenerator preparation did not leave the workload running"
+                        )
                 run_path, metadata = create_run(self.config.experiment_runs, scenario.scenario_id)
                 write_json(run_path / "scenario.json", scenario.to_dict())
                 write_json(run_path / "injector-plan.json", plan.to_dict())
                 append_event(run_path, "live_preflight_complete", {"task": task_name})
+                self._emit(
+                    "preflight_complete",
+                    scenario_id=scenario.scenario_id,
+                    target_service=scenario.target_service,
+                )
                 baseline_end = datetime.now(UTC)
                 baseline = observer.capture(
                     baseline_end - timedelta(minutes=1), baseline_end
                 )
                 _capture(run_path / "baseline", baseline)
                 append_event(run_path, "baseline_captured")
+                self._emit("baseline_captured")
 
                 running = injector.start(plan)
                 injection_start = running.started_at
                 append_event(run_path, "live_fault_started", {"injection_start": injection_start.isoformat()})
+                self._emit("fault_started", injection_start=injection_start.isoformat())
                 telemetry_warmup = min(10.0, max(1.0, scenario.duration_seconds / 4))
                 await asyncio.sleep(telemetry_warmup)
                 append_event(
@@ -175,6 +200,7 @@ class LiveIncidentController:
                     "telemetry_warmup_complete",
                     {"seconds": telemetry_warmup},
                 )
+                self._emit("telemetry_warmup_complete", seconds=telemetry_warmup)
                 problem_id = f"{scenario.scenario_id}-{task_name}"
                 _, task, session = self.orchestrator.init_problem(
                     problem_id, start=injection_start, end=None, run_dir=None
@@ -185,6 +211,7 @@ class LiveIncidentController:
                     max_steps=max_steps,
                     evaluate=False,
                     persist=False,
+                    event_sink=self.event_sink,
                 )
                 injector_result = await asyncio.to_thread(
                     injector.wait, running, scenario.duration_seconds + 60
@@ -196,6 +223,12 @@ class LiveIncidentController:
                 write_json(run_path / "ground_truth.json", ground_truth)
                 session_result = self.orchestrator.finalize_session(
                     task, session, expected=ground_truth
+                )
+                write_json(run_path / "agent-session.json", session_result)
+                self._emit(
+                    "agent_evaluation_complete",
+                    submitted=session_result.get("submitted", False),
+                    termination_reason=session_result.get("termination_reason"),
                 )
                 write_json(
                     run_path / "injector-result.json",
@@ -210,6 +243,7 @@ class LiveIncidentController:
                 )
                 incident = observer.capture(injection_start, injection_end)
                 _capture(run_path / "incident", incident)
+                self._emit("incident_captured", injection_end=injection_end.isoformat())
                 if scenario.fault_type == "cpu_hog":
                     write_json(
                         run_path / "host-impact.json",
@@ -221,6 +255,10 @@ class LiveIncidentController:
                     "recovery_observation_started",
                     {"seconds": self.config.recovery_observation_seconds},
                 )
+                self._emit(
+                    "recovery_observation_started",
+                    seconds=self.config.recovery_observation_seconds,
+                )
                 if self.config.recovery_observation_seconds > 0:
                     await asyncio.sleep(self.config.recovery_observation_seconds)
                 recovery_end = datetime.now(UTC)
@@ -229,6 +267,7 @@ class LiveIncidentController:
                     observer.capture(recovery_start, recovery_end),
                 )
                 append_event(run_path, "recovery_observation_finished")
+                self._emit("recovery_observation_finished")
                 write_json(run_path / "cleanup-state.json", application.snapshot())
                 status = "completed" if injector_result.returncode == 0 else "injector_failed"
                 write_json(
@@ -241,6 +280,7 @@ class LiveIncidentController:
                     },
                 )
                 append_event(run_path, "live_run_complete", {"status": status})
+                self._emit("run_complete", status=status, experiment_id=metadata["experiment_id"])
                 return {
                     "status": status,
                     "experiment_id": metadata["experiment_id"],

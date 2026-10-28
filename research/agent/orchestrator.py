@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from research.utils import ResearchConfig, write_json
 
@@ -111,26 +111,57 @@ class AgentOrchestrator:
         max_steps: int = 15,
         evaluate: bool = True,
         persist: bool = True,
+        event_sink: Callable[[dict[str, Any]], None] | None = None,
     ) -> dict[str, Any]:
         if self.agent is None:
             raise AgentRuntimeError("Register an agent before starting a problem")
         if max_steps < 1:
             raise AgentRuntimeError("max_steps must be positive")
         session.start()
+        if event_sink is not None:
+            event_sink({"kind": "session_started", "problem_id": session.problem_id})
         observation = f"Step 1 of {max_steps}. Start with the recommended triage action."
         try:
             for step in range(1, max_steps + 1):
                 response = await self.agent.get_action(observation)
                 session.add("assistant", response)
+                if event_sink is not None:
+                    event_sink({
+                        "kind": "agent_response",
+                        "step": step,
+                        "content": response,
+                    })
                 try:
                     action_name, args, kwargs = self.parser.parse(response)
+                    if event_sink is not None:
+                        event_sink({
+                            "kind": "action_parsed",
+                            "step": step,
+                            "action": action_name,
+                            "args": list(args),
+                            "kwargs": kwargs,
+                        })
                     env_response: EnvironmentResponse = task.perform_action(action_name, *args, **kwargs)
                     observation = env_response.content
                 except (ActionParseError, EnvironmentError, TaskError, TypeError, ValueError) as error:
                     observation = f"Action error: {error}"
                     env_response = EnvironmentResponse(observation)
                     session.invalid_action_count += 1
+                    if event_sink is not None:
+                        event_sink({
+                            "kind": "invalid_action",
+                            "step": step,
+                            "error": str(error),
+                            "invalid_action_count": session.invalid_action_count,
+                        })
                 session.add("env", observation)
+                if event_sink is not None:
+                    event_sink({
+                        "kind": "observation",
+                        "step": step,
+                        "content": observation,
+                        "submitted": env_response.submitted,
+                    })
                 if env_response.submitted:
                     session.solution = env_response.solution
                     session.submitted = True
@@ -140,6 +171,13 @@ class AgentOrchestrator:
                             session.submitted_at - session.start_time
                         ).total_seconds()
                     session.termination_reason = "submitted"
+                    if event_sink is not None:
+                        event_sink({
+                            "kind": "submitted",
+                            "step": step,
+                            "submitted_at": session.submitted_at.isoformat()
+                            if session.submitted_at else None,
+                        })
                     break
                 if step < max_steps:
                     remaining = max_steps - step
@@ -148,6 +186,13 @@ class AgentOrchestrator:
             else:
                 session.termination_reason = "step_budget_exhausted"
             session.end()
+            if event_sink is not None:
+                event_sink({
+                    "kind": "session_finished",
+                    "submitted": session.submitted,
+                    "termination_reason": session.termination_reason,
+                    "duration_seconds": session.duration_seconds,
+                })
             if evaluate:
                 return self.finalize_session(task, session, persist=persist)
             return session.to_dict()

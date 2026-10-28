@@ -44,6 +44,7 @@ docker compose -f research/compose/docker-compose.yml ps
 # Prometheus               : http://localhost:9090
 # Loki API                 : http://localhost:3100
 # Jaeger UI                : http://localhost:16686
+# RCA GUI                  : http://localhost:8000
 
 # From another machine connected to the host through Tailscale, replace
 # <tailscale-host> with the host's Tailscale IP or MagicDNS name:
@@ -51,6 +52,7 @@ docker compose -f research/compose/docker-compose.yml ps
 # Prometheus               : http://<tailscale-host>:9090
 # Loki API                 : http://<tailscale-host>:3100
 # Jaeger UI                : http://<tailscale-host>:16686
+# RCA GUI                  : http://<tailscale-host>:8000
 
 # 4. Validate the architecture without changing runtime state
 python -m research.orchestrator doctor
@@ -87,6 +89,10 @@ python -m research.orchestrator fault run \
 
 # 12. Rebuild the derived dataset index from append-only run artifacts
 python -m research.orchestrator index
+
+# 13. Start the RCA web dashboard on the host port
+source .venv/bin/activate
+python -m research.web --host 0.0.0.0 --port 8000
 ```
 
 Pumba is an on-demand fault-injection tool, not a permanent Compose service. The prepare
