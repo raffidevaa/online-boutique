@@ -55,6 +55,14 @@ class AioAgentTests(unittest.TestCase):
                 'restore_service("productcatalogservice")',
                 'submit()',
             ])
+            prompts = []
+            original_complete = provider.complete
+
+            async def capture_prompt(messages, actions):
+                prompts.append([dict(message) for message in messages])
+                return await original_complete(messages, actions)
+
+            provider.complete = capture_prompt
             orchestrator = AgentOrchestrator(config)
             orchestrator.register_agent(LlmAgent(provider))
             application = Mock()
@@ -79,6 +87,14 @@ class AioAgentTests(unittest.TestCase):
             self.assertEqual(result["status"], "completed")
             self.assertEqual(injector.start.call_count, 1)
             self.assertEqual(set(result["stages"]), {"detection", "localization", "analysis", "remediation", "mitigation"})
+            stage_prompts = [messages[0]["content"] for messages in prompts]
+            self.assertIn('"stage":"detection"', stage_prompts[1])
+            self.assertIn('"solution":"Yes"', stage_prompts[1])
+            self.assertIn('"stage":"localization"', stage_prompts[2])
+            self.assertIn('"stage":"remediation"', stage_prompts[-2])
+            self.assertIn("Use the previous stage findings", prompts[1][1]["content"])
+            self.assertIn("call restore_service now", prompts[-2][1]["content"])
+            self.assertNotIn("root_cause_service", stage_prompts[2])
             for name in ("detection-session.json", "localization-session.json", "agent-session.json", "remediation-session.json", "mitigation-session.json"):
                 self.assertTrue((run_path / name).is_file(), name)
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable
@@ -52,6 +53,26 @@ def _ground_truth(scenario: FaultScenario, experiment_id: str, start: datetime, 
         "injection_end": end.isoformat(),
         "severity": scenario.severity,
     }
+
+
+def _prior_stage_context(records: dict[str, tuple[Any, AgentSession]]) -> str | None:
+    """Carry agent findings and bounded observations, never evaluator labels."""
+    if not records:
+        return None
+    stages = []
+    for name, (_, session) in records.items():
+        observations = [
+            item.content[:3000] for item in session.history
+            if item.role == "env" and item.content != "VALID_SUBMISSION"
+            and item.content != "VALID_REMEDIATION_SUBMISSION"
+        ]
+        stages.append({
+            "stage": name,
+            "submitted": session.submitted,
+            "solution": session.solution if session.submitted else None,
+            "observations": observations[:8],
+        })
+    return json.dumps(stages, ensure_ascii=False, separators=(",", ":"))
 
 
 class LiveIncidentController:
@@ -242,6 +263,7 @@ class LiveIncidentController:
                             application, scenario.target_service, injector, running
                         )
                     self._emit("stage_started", stage=stage)
+                    prior_context = _prior_stage_context(stage_records) if task_name == "full" else None
                     _, current_task, current_session = self.orchestrator.init_problem(
                         f"{scenario.scenario_id}-{stage}",
                         start=injection_start,
@@ -250,6 +272,7 @@ class LiveIncidentController:
                         mitigation_actions=mitigation_actions if stage == "mitigation" else None,
                         rca_solution=rca_solution if stage == "remediation" else None,
                         rca_trace=rca_trace if stage == "remediation" else None,
+                        prior_context=prior_context,
                     )
                     session = current_session
                     await self.orchestrator.start_problem(
@@ -258,6 +281,15 @@ class LiveIncidentController:
                         max_steps=max_steps,
                         evaluate=False,
                         persist=False,
+                        initial_observation=(
+                            f"Step 1 of {max_steps}. Use the previous stage findings. "
+                            + (
+                                "If restoration is justified, call restore_service now; verify afterward."
+                                if stage == "mitigation" else
+                                "Submit if they already support this task; request only missing evidence."
+                            )
+                            if prior_context else None
+                        ),
                         event_sink=(
                             lambda event, active_stage=stage: self.event_sink(
                                 {**event, "stage": active_stage}

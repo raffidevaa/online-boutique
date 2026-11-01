@@ -35,3 +35,7 @@ Align the problem lifecycle, agent contract, sessions, actions, and evaluation f
 - Live `FI-NET-LOSS-02-mitigation` on productcatalogservice: completed, the agent stopped the fault and restored the target; 22 containers were running with no unhealthy state afterward.
 - An earlier validation run exposed a Pumba network-namespace error when the target was recreated before stopping the fault. Its experiment artifact remains append-only with `injector_failed`; the action order was fixed and the subsequent run completed.
 - Replay comparison against the previously validated data is unavailable because the old experiment data was removed at the user's request. The new live runs are retained under `research/experiments/runs/`.
+
+## Follow-up: context handoff
+
+See [AGENT_STAGE_CONTEXT.md](AGENT_STAGE_CONTEXT.md) for the current context reset between full-pipeline stages and the proposed structured handoff.

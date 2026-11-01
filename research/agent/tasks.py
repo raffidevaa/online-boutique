@@ -133,7 +133,8 @@ class LocalizationTask(BaseTask):
 
     def get_instructions(self) -> str:
         return (
-            'Start with get_incident_summary(window="incident"). Focus follow-up evidence on '
+            'If prior stage findings are supplied, use them first; otherwise start with '
+            'get_incident_summary(window="incident"). Focus follow-up evidence on '
             'the top one or two anomalous services, then call '
             'submit(faulty_components=["service"]) before the final step.'
         )
@@ -189,7 +190,8 @@ class AnalysisTask(BaseTask):
             "incorrect_parameter,missing_parameter,missing_function_call]"
         )
         return (
-            'First call get_incident_summary(window="incident"). Then inspect error logs or '
+            'Use supplied prior stage findings first. If none are supplied, call '
+            'get_incident_summary(window="incident"). Then inspect error logs or '
             'traces for at most two top-ranked anomalous services; do not enumerate healthy '
             'services or infrastructure/workload services. Distinguish the root-cause service '
             'from propagated frontend errors. Submit JSON before the final step with up to three '
@@ -284,7 +286,8 @@ class MitigationTask(BaseTask):
 
     def get_instructions(self) -> str:
         return (
-            "Inspect telemetry, restore only the faulted service if justified, then submit(). "
+            "Use prior stage findings to decide whether restoration is justified. "
+            "Inspect only missing or stale telemetry, restore only the faulted service if justified, then submit(). "
             "The restore_service action recreates the target container."
         )
 
