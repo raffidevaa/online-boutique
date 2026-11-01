@@ -48,7 +48,7 @@ variables take precedence over values in that file. Session JSON is stored under
 Integrated live runs also create a normal append-only experiment under
 `research/experiments/runs/`; the agent itself never receives its ground truth.
 
-## Batch RCA evaluation
+## Batch RCA evaluation (legacy command)
 
 Run the Phase 04 replay evaluator against every row marked
 `eligible_for_evaluation=true` in `research/experiments/index.csv`:
@@ -75,13 +75,16 @@ versus confounder-affected metrics. Session traces are written below `session-tr
 outside the experiment run directories. Ground truth is handed to the task only after the
 agent action loop completes.
 
-## Phase 05 remediation evaluation
+## Unified RCA and remediation evaluation
 
-The recommendation stage runs after RCA and remains recommendation-only:
+The recommendation stage receives the RCA submission and its action/observation trace.
+It has only the recommendation submission action, so it does not query telemetry again.
+For new integrated live runs, both session artifacts are stored under the same run and
+the batch evaluator reuses them without calling the provider again:
 
 ```bash
 python3 -m research.agent.remediation_evaluate \
-  --output-dir research/experiments/evaluations/phase-05-remediation-v1
+  --output-dir research/experiments/evaluations/<new-bundle-name>
 ```
 
 It produces separate analysis/remediation traces, structured recommendation results, and a
@@ -90,6 +93,10 @@ human approval and sets `execution_allowed=false`; no Docker or shell action is 
 agent.
 
 ## Phase 06 final aggregation
+
+This is a legacy command for the retired Phase 04/05 bundles. The new campaign uses
+the unified remediation evaluator's RCA accuracy and recommendation metrics from the
+same pair of sessions; do not use Phase 06 aggregation for new runs.
 
 After the Phase 04 and Phase 05 canonical bundles have been reviewed, aggregate the final
 headline metrics without replaying the LLM:

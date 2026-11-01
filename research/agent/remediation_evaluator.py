@@ -13,9 +13,11 @@ import sys
 from typing import Any, Callable, Iterable
 
 from research.utils import ResearchConfig, write_json
+from research.service import ServiceCatalog
 
 from .evaluator import EvaluationRun, _bool, _timestamp, _truth, read_eligible_runs
 from .models import AgentSession
+from .remediation import validate_remediation
 from .orchestrator import AgentOrchestrator, LlmAgent
 from .providers import FakeProvider, LlmProvider, ProviderError, build_provider
 from .remediation_review import write_review_template
@@ -32,6 +34,10 @@ RESULT_COLUMNS = (
     "rca_predicted_services",
     "rca_predicted_category",
     "rca_predicted_fault_type",
+    "rca_service_correct",
+    "rca_category_correct",
+    "rca_fault_type_correct",
+    "combined_rca_correct",
     "action_type",
     "target_service",
     "recommendation_json",
@@ -100,6 +106,7 @@ def _result_from_sessions(
     analysis_session: AgentSession,
     remediation_session: AgentSession,
     evaluated: dict[str, Any],
+    targetable_services: set[str],
 ) -> dict[str, Any]:
     services, category, fault_type = _rca_prediction(analysis_session.solution)
     recommendation = (
@@ -107,9 +114,13 @@ def _result_from_sessions(
         if isinstance(remediation_session.solution, dict)
         else {}
     )
-    recommendation_valid = bool(
-        evaluated.get("results", {}).get("recommendation_valid")
-    )
+    try:
+        validate_remediation(recommendation, targetable_services)
+        recommendation_valid = bool(
+            evaluated.get("results", {}).get("recommendation_valid")
+        )
+    except ValueError:
+        recommendation_valid = False
     result: dict[str, Any] = {column: "" for column in RESULT_COLUMNS}
     result.update(
         {
@@ -127,6 +138,14 @@ def _result_from_sessions(
             "rca_predicted_services": json.dumps(services, separators=(",", ":")),
             "rca_predicted_category": category,
             "rca_predicted_fault_type": fault_type,
+            "rca_service_correct": truth.get("root_cause_service") in services,
+            "rca_category_correct": category == truth.get("fault_category"),
+            "rca_fault_type_correct": fault_type == truth.get("fault_type"),
+            "combined_rca_correct": (
+                truth.get("root_cause_service") in services
+                and category == truth.get("fault_category")
+                and fault_type == truth.get("fault_type")
+            ),
             "action_type": recommendation.get("action_type", ""),
             "target_service": recommendation.get("target_service", ""),
             "recommendation_json": json.dumps(recommendation, sort_keys=True),
@@ -148,6 +167,23 @@ def _result_from_sessions(
     return result
 
 
+def _stored_session(path: Path) -> AgentSession | None:
+    if not path.is_file():
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    session = AgentSession(problem_id=str(payload.get("problem_id", "")))
+    session.solution = payload.get("solution")
+    session.submitted = bool(payload.get("submitted"))
+    session.termination_reason = payload.get("termination_reason")
+    session.invalid_action_count = int(payload.get("invalid_action_count", 0))
+    session.results = payload.get("results") or {}
+    for field in ("start_time", "end_time"):
+        value = payload.get(field)
+        if value:
+            setattr(session, field, datetime.fromisoformat(value.replace("Z", "+00:00")))
+    return session
+
+
 def _recommendation_metrics(rows: list[dict[str, Any]]) -> dict[str, Any]:
     total = len(rows)
     valid = sum(bool(row["recommendation_valid"]) for row in rows)
@@ -156,6 +192,10 @@ def _recommendation_metrics(rows: list[dict[str, Any]]) -> dict[str, Any]:
     tta = [float(row["tta_seconds"]) for row in rows if row["tta_seconds"] not in ("", None)]
     return {
         "run_count": total,
+        "combined_rca_accuracy": (
+            sum(bool(row.get("combined_rca_correct")) for row in rows) / total
+            if total else 0.0
+        ),
         "valid_recommendation_count": valid,
         "valid_recommendation_rate": valid / total if total else 0.0,
         "submitted_count": submitted,
@@ -203,6 +243,7 @@ class RemediationBatchEvaluator:
         run_dir: Path,
         *,
         rca_solution: dict[str, Any] | None = None,
+        rca_trace: list[dict[str, str]] | None = None,
     ) -> tuple[AgentSession, Any]:
         provider = self.provider_factory(run_config)
         orchestrator = AgentOrchestrator(run_config)
@@ -214,6 +255,7 @@ class RemediationBatchEvaluator:
             run_dir=run_dir,
             withhold_ground_truth=True,
             rca_solution=rca_solution,
+            rca_trace=rca_trace,
         )
         await orchestrator.start_problem(
             task,
@@ -235,6 +277,29 @@ class RemediationBatchEvaluator:
         analysis_task: Any = None
         remediation_task: Any = None
         try:
+            stored_analysis = _stored_session(item.run_dir / "agent-session.json")
+            stored_remediation = _stored_session(item.run_dir / "remediation-session.json")
+            if stored_analysis is not None:
+                self._write_trace(
+                    item,
+                    "analysis",
+                    json.loads((item.run_dir / "agent-session.json").read_text(encoding="utf-8")),
+                )
+                if stored_remediation is None:
+                    return _blank_result(item, "stored RCA has no remediation session")
+                self._write_trace(
+                    item,
+                    "remediation",
+                    json.loads((item.run_dir / "remediation-session.json").read_text(encoding="utf-8")),
+                )
+                return _result_from_sessions(
+                    item,
+                    truth,
+                    stored_analysis,
+                    stored_remediation,
+                    {"results": stored_remediation.results},
+                    self._targetable_services(),
+                )
             analysis_session, analysis_task = await self._stage(
                 run_config,
                 f"{scenario_id}-analysis",
@@ -254,6 +319,9 @@ class RemediationBatchEvaluator:
                 if isinstance(analysis_session.solution, dict)
                 else {}
             )
+            if not analysis_session.submitted or not rca_solution:
+                self._write_trace(item, "analysis", analysis_evaluated)
+                return _blank_result(item, "RCA did not submit; remediation skipped")
             remediation_session, remediation_task = await self._stage(
                 run_config,
                 f"{scenario_id}-remediation",
@@ -261,6 +329,11 @@ class RemediationBatchEvaluator:
                 end,
                 item.run_dir,
                 rca_solution=rca_solution,
+                rca_trace=[
+                    entry.to_dict()
+                    for entry in analysis_session.history
+                    if entry.role in {"assistant", "env"}
+                ],
             )
             remediation_orchestrator = AgentOrchestrator(run_config)
             remediation_evaluated = remediation_orchestrator.finalize_session(
@@ -277,6 +350,7 @@ class RemediationBatchEvaluator:
                 analysis_session,
                 remediation_session,
                 remediation_evaluated,
+                self._targetable_services(),
             )
         except Exception as error:
             if analysis_session is not None:
@@ -297,6 +371,10 @@ class RemediationBatchEvaluator:
         trace_dir = self.output_dir / "session-traces"
         trace_dir.mkdir(parents=True, exist_ok=True)
         write_json(trace_dir / f"{item.experiment_id}-{stage}.json", payload)
+
+    def _targetable_services(self) -> set[str]:
+        catalog = ServiceCatalog.load(self.config.service_metadata)
+        return {name for name, service in catalog.services.items() if service.targetable}
 
     def evaluate(self, runs: Iterable[EvaluationRun]) -> dict[str, Any]:
         selected = list(runs)

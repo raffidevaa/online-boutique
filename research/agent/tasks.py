@@ -263,9 +263,20 @@ class RemediationTask(BaseTask):
         evidence: ComposeEvidence,
         expected: dict[str, Any],
         rca_solution: dict[str, Any] | None = None,
+        rca_trace: list[dict[str, str]] | None = None,
     ) -> None:
         super().__init__(evidence, expected)
         self.rca_solution = rca_solution if isinstance(rca_solution, dict) else {}
+        self.rca_trace = [
+            {"role": item["role"], "content": item["content"]}
+            for item in (rca_trace or [])
+            if isinstance(item, dict)
+            and item.get("role") in {"assistant", "env"}
+            and isinstance(item.get("content"), str)
+        ]
+        # Recommendation is generated only from the RCA record. It must not
+        # start a second round of telemetry queries.
+        self.actions = {}
         self.actions["submit"] = self.submit
 
     def get_task_description(self) -> str:
@@ -274,30 +285,36 @@ class RemediationTask(BaseTask):
     def get_instructions(self) -> str:
         action_types = "|".join(REMEDIATION_ACTION_TYPES)
         rca = json.dumps(self.rca_solution, sort_keys=True, separators=(",", ":"))
+        rca_trace = json.dumps(self.rca_trace, ensure_ascii=False, separators=(",", ":"))
         return (
             "You are in the remediation recommendation stage after an RCA analysis. "
-            "Use only read-only evidence actions and do not execute or propose an arbitrary "
-            "shell, Docker, Compose, or injector command. The previous RCA submission was: "
-            f"{rca}. Verify the mechanism with incident evidence before submitting one "
+            "Use only the RCA result and its recorded observations below; do not request "
+            "telemetry again, execute, or propose an arbitrary "
+            "shell, Docker, Compose, or injector command. "
+            "This system runs on Docker Compose, not Kubernetes: never mention pods, "
+            "kubectl, Helm, or Kubernetes manifests. Any rollback must describe a "
+            "manual Compose-compatible action. The RCA submission was: "
+            f"{rca}. The RCA action and observation trace is: {rca_trace}. "
+            "Base the recommendation on these existing observations. If they do not "
+            "support a safe change, use manual_investigation or escalate rather than "
+            "inventing evidence or a configuration change. Submit one "
             "reviewable action plan. Choose an action_type from "
             f"{action_types}. Include one to five evidence statements, expected effect, "
             "risk, and a reversible rollback_plan. Always set requires_approval=true and "
-            "execution_allowed=false. If evidence is insufficient, use manual_investigation "
-            "or escalate rather than inventing a configuration change. Submit JSON before "
-            "the final step."
+            "execution_allowed=false. Submit JSON."
         )
 
     def get_available_actions(self) -> dict[str, str]:
-        actions = super().get_available_actions()
         action_types = "|".join(REMEDIATION_ACTION_TYPES)
-        actions["submit"] = (
-            'submit(answer: {"action_type": "' + action_types + '", '
-            '"target_service": "service", "rationale": "...", '
-            '"evidence": ["..."], "expected_effect": "...", '
-            '"risk": "low|medium|high", "rollback_plan": "...", '
-            '"requires_approval": true, "execution_allowed": false})'
-        )
-        return actions
+        return {
+            "submit": (
+                'submit(answer: {"action_type": "' + action_types + '", '
+                '"target_service": "service", "rationale": "...", '
+                '"evidence": ["..."], "expected_effect": "...", '
+                '"risk": "low|medium|high", "rollback_plan": "...", '
+                '"requires_approval": true, "execution_allowed": false})'
+            )
+        }
 
     def submit(self, answer: dict[str, Any]) -> EnvironmentResponse:
         try:

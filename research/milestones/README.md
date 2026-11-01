@@ -15,7 +15,7 @@ each one depends on the previous phase's deliverables.
 | 03 | [Ground truth dataset collection](02-ground-truth-dataset.md) | Done |
 | 04 | [RCA agent](03-rca-agent.md) | Done |
 | 05 | [Remediation recommendation](04-remediation-recommendation.md) | Done |
-| 06 | [Evaluation](05-evaluation.md) | Done |
+| 06 | [Evaluation](05-evaluation.md) | In progress |
 | 07 | [Web RCA dashboard and experiment control](06-web-dashboard.md) | In progress |
 
 Update the **Status** column as work progresses (`Not started` / `In progress` / `Done`) —

@@ -1,8 +1,9 @@
 # Phase 05 — Remediation recommendation
 
-Phase 05 adds a second, recommendation-only stage after RCA. The agent may inspect the
-same read-only telemetry, but it has no Docker, shell, Compose, Pumba, or arbitrary command
-action.
+The workflow produces two separately evaluated outputs from one evidence-gathering pass:
+an RCA result and a remediation recommendation. Recommendation receives the RCA submission
+and its recorded action/observation trace. It does not have telemetry actions, so it cannot
+repeat evidence queries. It has no Docker, shell, Compose, Pumba, or arbitrary command action.
 
 ## Action taxonomy
 
@@ -68,6 +69,8 @@ python3 -m research.agent.remediation_evaluate \
   --output-dir research/experiments/evaluations/phase-05-remediation-v1
 ```
 
-The evaluator runs `analysis` and `remediation` sequentially, stores separate session
-traces, withholds ground truth until both action loops finish, and reports runtime and
-code-level scopes separately.
+The evaluator runs `analysis` and `remediation` sequentially, or reuses the pair already
+stored by an integrated live run. The recommendation stage receives the analysis session's
+action/observation trace and can only submit a recommendation. Ground truth is withheld until
+both action loops finish. The older Phase 04–06
+bundles were retired at the dataset reset and are not inputs to the new campaign.

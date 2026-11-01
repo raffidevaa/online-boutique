@@ -141,6 +141,7 @@ def index_run(run_path: Path, research_root: Path) -> dict[str, str]:
     else:
         semantic_status = "not_required"
     host_impact, host_impact_error = _read_json(run_path / "host-impact.json")
+    pilot_assessment, _ = _read_json(run_path / "pilot-assessment.json")
     if fault_type == "cpu_hog":
         host_impact_status = _string((host_impact or {}).get("status")) or "missing"
     else:
@@ -194,6 +195,8 @@ def index_run(run_path: Path, research_root: Path) -> dict[str, str]:
         reasons.append(f"host_impact:{host_impact_status}")
     if workload_generator == "loadgenerator" and workload_status != "observed":
         reasons.append(f"workload:{workload_status}")
+    if pilot_assessment is not None and pilot_assessment.get("accepted") is False:
+        reasons.append("pilot_assessment:not_accepted")
 
     try:
         relative_path = run_path.relative_to(research_root)

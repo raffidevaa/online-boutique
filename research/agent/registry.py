@@ -76,6 +76,7 @@ class ComposeProblemRegistry:
         run_dir: Path | None = None,
         withhold_ground_truth: bool = False,
         rca_solution: dict[str, Any] | None = None,
+        rca_trace: list[dict[str, str]] | None = None,
     ) -> tuple[BaseTask, FaultScenario, dict[str, Any]]:
         scenario, task_name = self._split_problem_id(problem_id)
         if run_dir is not None:
@@ -91,7 +92,12 @@ class ComposeProblemRegistry:
         # ``finalize_session`` only after the loop has ended.
         expected = {} if withhold_ground_truth else self._expected(scenario, run_dir)
         if task_name == "remediation":
-            task = RemediationTask(evidence, expected, rca_solution=rca_solution)
+            task = RemediationTask(
+                evidence,
+                expected,
+                rca_solution=rca_solution,
+                rca_trace=rca_trace,
+            )
         else:
             task = TASKS[task_name](evidence, expected)
         return task, scenario, expected

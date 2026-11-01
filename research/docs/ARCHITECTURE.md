@@ -124,6 +124,11 @@ inspects at most the top anomalous services before submitting a normalized RCA h
 15-step budget, visible to the model on every turn, reserves the final turns for submission and
 records `submitted`, `termination_reason`, and `invalid_action_count` in the agent session.
 
+The remediation recommendation is a separate output for evaluation, but it reuses the RCA
+submission and RCA action/observation trace. Its action allowlist contains submission only,
+so it cannot repeat telemetry queries. Ground truth remains withheld until both outputs are
+complete.
+
 For integrated live mode, the controller captures a baseline, starts one allowlisted runtime
 fault, waits briefly for telemetry to become observable, then starts the agent. Ground truth is
 written and attached only after the agent session ends, so it cannot leak into the agent prompt

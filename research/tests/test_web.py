@@ -49,11 +49,90 @@ class WebDashboardTests(unittest.IsolatedAsyncioTestCase):
                 transport=httpx.ASGITransport(app=app), base_url="http://test"
             ) as client:
                 page = await client.get("/")
+                detail_page = await client.get("/runs/EXP-TEST")
                 script = await client.get("/static/app.js")
             self.assertEqual(page.status_code, 200)
-            self.assertIn("Online Boutique RCA Lab", page.text)
+            self.assertIn("RCA Lab · Online Boutique", page.text)
+            self.assertEqual(detail_page.status_code, 200)
+            self.assertIn('id="run-page"', detail_page.text)
             self.assertEqual(script.status_code, 200)
-            self.assertIn("loadMetrics", script.text)
+            self.assertIn("recommendationMarkup", script.text)
+            self.assertNotIn('data-tab="overview"', page.text)
+
+    async def test_history_detail_shows_single_rca_and_remediation(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            config = self._config(Path(temporary))
+            run = config.experiment_runs / "EXP-TEST-01"
+            run.mkdir(parents=True)
+            (run / "metadata.json").write_text(
+                json.dumps({"experiment_id": run.name, "scenario_id": "FI-NET-DELAY-01"}),
+                encoding="utf-8",
+            )
+            for name, solution in (
+                ("agent-session.json", {"faulty_components": ["paymentservice"]}),
+                ("remediation-session.json", {"action_type": "manual_investigation"}),
+            ):
+                (run / name).write_text(
+                    json.dumps({
+                        "trace": [
+                            {"role": "assistant", "content": '{"action":"get_metrics"}'},
+                            {"role": "env", "content": "Bearer abc123 password=secret"},
+                        ],
+                        "solution": solution,
+                    }),
+                    encoding="utf-8",
+                )
+            app = create_app(config)
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                listed = await client.get("/api/runs")
+                detail = await client.get(f"/api/runs/{run.name}")
+            self.assertEqual(listed.status_code, 200)
+            self.assertTrue(listed.json()["runs"][0]["has_remediation_recommendation"])
+            self.assertEqual(detail.status_code, 200)
+            self.assertEqual(
+                set(detail.json()["agent_sessions"]),
+                {"live_rca", "remediation_recommendation"},
+            )
+            self.assertNotIn("ground_truth", detail.json())
+            self.assertNotIn("abc123", detail.text)
+            self.assertNotIn("secret", detail.text)
+            self.assertIn("get_metrics", detail.text)
+
+    async def test_live_run_detail_retains_legacy_session_and_withholds_truth_until_done(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            config = self._config(Path(temporary))
+            run = config.experiment_runs / "EXP-LIVE"
+            run.mkdir(parents=True)
+            (run / "agent-session.json").write_text(
+                json.dumps({"trace": [{"role": "assistant", "content": "submit"}]}),
+                encoding="utf-8",
+            )
+            (run / "ground_truth.json").write_text(
+                json.dumps({"root_cause_service": "paymentservice"}),
+                encoding="utf-8",
+            )
+            (run / "result.json").write_text('{"status":"running"}', encoding="utf-8")
+            app = create_app(config)
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                detail = await client.get("/api/runs/EXP-LIVE")
+            self.assertEqual(detail.status_code, 200)
+            self.assertEqual(detail.json()["agent_sessions"]["live_rca"], detail.json()["agent_session"])
+            self.assertNotIn("ground_truth", detail.json())
+            listed = app.state.jobs.list_runs()
+            self.assertFalse(listed[0]["has_remediation_recommendation"])
+            (run / "result.json").write_text('{"status":"completed"}', encoding="utf-8")
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                completed = await client.get("/api/runs/EXP-LIVE")
+            self.assertEqual(
+                completed.json()["ground_truth"]["root_cause_service"],
+                "paymentservice",
+            )
 
     async def test_authentication_is_required_when_configured(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

@@ -62,6 +62,11 @@ class RemediationTests(unittest.TestCase):
             validate_remediation({**answer, "execution_allowed": True}, {"cartservice"})
         with self.assertRaises(ValueError):
             validate_remediation({**answer, "action_type": "run_shell"}, {"cartservice"})
+        with self.assertRaisesRegex(ValueError, "Docker Compose terminology"):
+            validate_remediation(
+                {**answer, "rollback_plan": "Use kubectl to restart the pod."},
+                {"cartservice"},
+            )
 
     def test_two_stage_evaluator_withholds_truth_and_writes_review_template(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -118,6 +123,55 @@ class RemediationTests(unittest.TestCase):
             metrics = validate_review_rows([row], {"EXP-1"})
             self.assertEqual(metrics["reviewed_count"], 1)
             self.assertEqual(metrics["mean_safety"], 5.0)
+
+    def test_batch_reuses_stored_live_sessions_without_calling_provider(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._make_run(root, "EXP-STORED")
+            run = root / "experiments" / "runs" / "EXP-STORED"
+            common = {
+                "submitted": True,
+                "start_time": "2026-01-01T00:00:00+00:00",
+                "end_time": "2026-01-01T00:00:10+00:00",
+                "trace": [{"role": "assistant", "content": "submit"}],
+            }
+            self._write_json(run / "agent-session.json", {
+                **common,
+                "solution": {
+                    "system_level": "resource",
+                    "fault_type": "memory_pressure",
+                    "faulty_components": ["cartservice"],
+                },
+            })
+            self._write_json(run / "remediation-session.json", {
+                **common,
+                "solution": {
+                    "action_type": "manual_investigation",
+                    "target_service": "cartservice",
+                    "execution_allowed": False,
+                },
+                "results": {"recommendation_valid": True},
+            })
+            index = root / "experiments" / "index.csv"
+            index.write_text(
+                "experiment_id,scenario_id,run_path,confounder_affected,eligible_for_evaluation\n"
+                "EXP-STORED,FI-RES-MEM-01,experiments/runs/EXP-STORED,false,true\n",
+                encoding="utf-8",
+            )
+            config = self._config(root)
+
+            def unexpected_provider(_: ResearchConfig) -> object:
+                raise AssertionError("provider must not be called for stored sessions")
+
+            output = root / "evaluation"
+            result = RemediationBatchEvaluator(
+                config,
+                output_dir=output,
+                provider_factory=unexpected_provider,
+            ).evaluate(read_eligible_runs(index, config))
+            self.assertEqual(result["failed_run_count"], 0)
+            self.assertTrue((output / "session-traces" / "EXP-STORED-analysis.json").exists())
+            self.assertTrue((output / "session-traces" / "EXP-STORED-remediation.json").exists())
 
 
 if __name__ == "__main__":

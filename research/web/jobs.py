@@ -199,7 +199,7 @@ class JobManager:
             "warnings": [
                 "Fault injection is bounded to one scenario and one target.",
                 "The required loadgenerator is started during preparation when it is not already running.",
-                "RCA runs with ground truth withheld until the agent submits.",
+                "Ground truth is withheld until RCA and recommendation have ended.",
             ],
             "workload_started": workload_started,
         }
@@ -363,28 +363,6 @@ class JobManager:
 
     def list_runs(self) -> list[dict[str, Any]]:
         rows: dict[str, dict[str, Any]] = {}
-        final_path = self.config.evaluations_dir / "phase-06-final" / "final-results.csv"
-        phase04_path = self.config.evaluations_dir / "phase-04-analysis-final-v5" / "evaluation-results.csv"
-        phase04_rows = {row.get("experiment_id", ""): row for row in _read_csv(phase04_path)}
-        for row in _read_csv(final_path):
-            phase04 = phase04_rows.get(row.get("experiment_id", ""), {})
-            rows[row.get("experiment_id", "")] = {
-                "source": "phase-06",
-                "experiment_id": row.get("experiment_id", ""),
-                "scenario_id": row.get("scenario_id", ""),
-                "scope": row.get("evaluation_scope", ""),
-                "evaluation_status": row.get("evaluation_status", ""),
-                "predicted_service": phase04.get("predicted_service", row.get("predicted_service", "")),
-                "predicted_category": phase04.get("predicted_category", row.get("predicted_category", "")),
-                "predicted_fault_type": phase04.get("predicted_fault_type", row.get("predicted_fault_type", "")),
-                "valid_submission": phase04.get("valid_submission", row.get("rca_valid_submission", "")),
-                "termination_reason": phase04.get("termination_reason", ""),
-                "invalid_action_count": phase04.get("invalid_action_count", ""),
-                "combined_rca_correct": row.get("combined_rca_correct", ""),
-                "recommendation_acceptable": row.get("recommendation_acceptable", ""),
-                "mttd_proxy_tta_seconds": row.get("mttd_proxy_tta_seconds", ""),
-                "mttr_proxy_tta_seconds": row.get("mttr_proxy_tta_seconds", ""),
-            }
         if self.config.experiment_runs.is_dir():
             for run_path in self.config.experiment_runs.iterdir():
                 if not run_path.is_dir():
@@ -408,42 +386,31 @@ class JobManager:
                     "mttd_proxy_tta_seconds": session.get("duration_seconds", ""),
                     "mttr_proxy_tta_seconds": "",
                 })
+        for experiment_id, row in rows.items():
+            remediation = _read_json(
+                self.config.experiment_runs / experiment_id / "remediation-session.json"
+            ) or {}
+            row["has_remediation_recommendation"] = bool(remediation.get("solution"))
         return sorted(rows.values(), key=lambda row: row.get("experiment_id", ""), reverse=True)
 
     def run_detail(self, experiment_id: str) -> dict[str, Any]:
-        if not experiment_id or Path(experiment_id).name != experiment_id:
+        if not experiment_id or experiment_id in {".", ".."} or Path(experiment_id).name != experiment_id:
             raise GuiJobError("Invalid experiment_id")
         run_path = self.config.experiment_runs / experiment_id
-        evaluation: dict[str, Any] = {}
-        for name, path in (
-            ("final", self.config.evaluations_dir / "phase-06-final" / "final-results.csv"),
-            ("rca", self.config.evaluations_dir / "phase-04-analysis-final-v5" / "evaluation-results.csv"),
-            ("remediation", self.config.evaluations_dir / "phase-05-remediation-v1" / "remediation-results.csv"),
-        ):
-            row = next((row for row in _read_csv(path) if row.get("experiment_id") == experiment_id), None)
-            if row is not None:
-                evaluation[name] = row
-        if not run_path.is_dir() and not evaluation:
-            raise GuiJobError("Experiment not found")
         if not run_path.is_dir():
-            return {
-                "experiment_id": experiment_id,
-                "metadata": {},
-                "scenario": {},
-                "result": {},
-                "events": [],
-                "agent_session": None,
-                "evaluation": _json_safe(evaluation),
-            }
+            raise GuiJobError("Experiment not found")
+        sessions: dict[str, Any] = {}
         result = _read_json(run_path / "result.json") or {}
         detail: dict[str, Any] = {
             "experiment_id": experiment_id,
             "metadata": _json_safe(_read_json(run_path / "metadata.json") or {}),
             "scenario": _json_safe(_read_json(run_path / "scenario.json") or {}),
             "result": _json_safe(result),
-            "evaluation": _json_safe(evaluation),
             "events": [],
             "agent_session": None,
+            "agent_sessions": sessions,
+            "agent_evaluation": _json_safe(_read_json(run_path / "agent-evaluation.json") or {}),
+            "pilot_assessment": _json_safe(_read_json(run_path / "pilot-assessment.json") or {}),
         }
         events_path = run_path / "events.jsonl"
         if events_path.is_file():
@@ -455,6 +422,10 @@ class JobManager:
         session = _read_json(run_path / "agent-session.json")
         if session is not None:
             detail["agent_session"] = _json_safe(session)
+            detail["agent_sessions"]["live_rca"] = _json_safe(session)
+        remediation_session = _read_json(run_path / "remediation-session.json")
+        if remediation_session is not None:
+            detail["agent_sessions"]["remediation_recommendation"] = _json_safe(remediation_session)
         if result.get("status") in {"completed", "injector_failed", "failed"}:
             detail["ground_truth"] = _json_safe(
                 _read_json(run_path / "ground_truth.json") or {}, hide_labels=False

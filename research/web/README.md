@@ -39,3 +39,9 @@ unavailable scenarios remain visible for context but cannot be executed from the
 The live trace is sanitized before it is streamed to the browser. Ground truth is not sent to
 the agent and is only available in a completed run detail. Agent session events and GUI job events
 are stored as append-only local research artifacts.
+
+History links open `/runs/<experiment_id>` and can be bookmarked. Each new run stores one
+RCA session and, after a valid RCA submission, one remediation recommendation session. The
+detail page pairs each agent action with its recorded observation; long inputs and outputs
+expand on demand. The recommendation summary appears near the top. If RCA did not submit,
+the recommendation stage is skipped and the detail explains that no recommendation exists.

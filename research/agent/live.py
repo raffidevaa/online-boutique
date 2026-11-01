@@ -205,7 +205,7 @@ class LiveIncidentController:
                 _, task, session = self.orchestrator.init_problem(
                     problem_id, start=injection_start, end=None, run_dir=None
                 )
-                session_result = await self.orchestrator.start_problem(
+                await self.orchestrator.start_problem(
                     task,
                     session,
                     max_steps=max_steps,
@@ -213,6 +213,33 @@ class LiveIncidentController:
                     persist=False,
                     event_sink=self.event_sink,
                 )
+                remediation_task = None
+                remediation_session = None
+                if session.submitted and isinstance(session.solution, dict):
+                    self._emit("remediation_started")
+                    _, remediation_task, remediation_session = self.orchestrator.init_problem(
+                        f"{scenario.scenario_id}-remediation",
+                        start=injection_start,
+                        end=None,
+                        run_dir=None,
+                        rca_solution=session.solution,
+                        rca_trace=[
+                            item.to_dict()
+                            for item in session.history
+                            if item.role in {"assistant", "env"}
+                        ],
+                    )
+                    await self.orchestrator.start_problem(
+                        remediation_task,
+                        remediation_session,
+                        max_steps=max_steps,
+                        evaluate=False,
+                        persist=False,
+                        event_sink=self.event_sink,
+                    )
+                    self._emit("remediation_finished", submitted=remediation_session.submitted)
+                else:
+                    self._emit("remediation_skipped", reason="rca_not_submitted")
                 injector_result = await asyncio.to_thread(
                     injector.wait, running, scenario.duration_seconds + 60
                 )
@@ -222,9 +249,29 @@ class LiveIncidentController:
                 )
                 write_json(run_path / "ground_truth.json", ground_truth)
                 session_result = self.orchestrator.finalize_session(
-                    task, session, expected=ground_truth
+                    task, session, expected=ground_truth, persist=False
                 )
                 write_json(run_path / "agent-session.json", session_result)
+                remediation_result = None
+                if remediation_session is not None and remediation_task is not None:
+                    remediation_result = self.orchestrator.finalize_session(
+                        remediation_task,
+                        remediation_session,
+                        expected=ground_truth,
+                        persist=False,
+                    )
+                    write_json(run_path / "remediation-session.json", remediation_result)
+                write_json(
+                    run_path / "agent-evaluation.json",
+                    {
+                        "schema_version": 1,
+                        "rca": session_result["results"],
+                        "remediation": remediation_result["results"] if remediation_result else None,
+                        "remediation_status": (
+                            "completed" if remediation_result else "skipped"
+                        ),
+                    },
+                )
                 self._emit(
                     "agent_evaluation_complete",
                     submitted=session_result.get("submitted", False),
@@ -286,6 +333,7 @@ class LiveIncidentController:
                     "experiment_id": metadata["experiment_id"],
                     "run_path": str(run_path),
                     "session": session_result,
+                    "remediation_session": remediation_result,
                 }
             except (
                 ObserverError,

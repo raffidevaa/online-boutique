@@ -87,6 +87,22 @@ class DatasetIndexTests(unittest.TestCase):
             self.assertEqual(row["eligible_for_evaluation"], "false")
             self.assertEqual(row["exclusion_reason"], "semantic_validation:failed")
 
+    def test_rejected_pilot_is_retained_but_excluded_from_dataset(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "research"
+            run_path = root / "experiments" / "runs" / "EXP-PILOT"
+            self._write_json(run_path / "metadata.json", {"experiment_id": "EXP-PILOT"})
+            self._write_json(run_path / "result.json", {"status": "completed"})
+            self._write_json(run_path / "ground_truth.json", self._ground_truth("EXP-PILOT"))
+            self._write_json(run_path / "pilot-assessment.json", {"accepted": False})
+            self._scenario(run_path)
+            self._telemetry(run_path)
+
+            row = build_dataset_index(run_path.parent, root)[0]
+
+            self.assertEqual(row["eligible_for_evaluation"], "false")
+            self.assertIn("pilot_assessment:not_accepted", row["exclusion_reason"])
+
     def test_cpu_fault_requires_host_impact_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "research"

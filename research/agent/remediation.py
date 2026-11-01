@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 
@@ -26,6 +27,7 @@ REMEDIATION_REQUIRED_FIELDS = (
     "requires_approval",
     "execution_allowed",
 )
+_UNSUPPORTED_PLATFORM = re.compile(r"\b(?:kubectl|helm|kubernetes|k8s|k3s|k3d|pods?)\b", re.IGNORECASE)
 
 
 def validate_remediation(
@@ -69,6 +71,9 @@ def validate_remediation(
         or not all(isinstance(item, str) and item.strip() for item in evidence)
     ):
         raise ValueError("evidence must contain one to five non-empty strings")
+    prose = [answer[field] for field in ("rationale", "expected_effect", "rollback_plan")]
+    if any(_UNSUPPORTED_PLATFORM.search(text) for text in [*prose, *evidence]):
+        raise ValueError("recommendation must use Docker Compose terminology, not Kubernetes")
     if answer["risk"] not in REMEDIATION_RISKS:
         raise ValueError("risk must be low, medium, or high")
     if answer["requires_approval"] is not True:

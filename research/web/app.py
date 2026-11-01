@@ -54,6 +54,12 @@ def create_app(config: ResearchConfig | None = None) -> FastAPI:
     async def index() -> HTMLResponse:
         return HTMLResponse((STATIC_DIR / "index.html").read_text(encoding="utf-8"))
 
+    @app.get("/runs/{experiment_id}")
+    async def run_page(experiment_id: str) -> HTMLResponse:
+        if not experiment_id or experiment_id in {".", ".."} or Path(experiment_id).name != experiment_id:
+            raise HTTPException(status_code=404, detail="run not found")
+        return await index()
+
     @app.get("/static/{asset:path}")
     async def static_asset(asset: str) -> Response:
         path = (STATIC_DIR / asset).resolve()
