@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from dataclasses import dataclass
 import json
 from pathlib import Path
 from typing import Any
@@ -32,6 +33,18 @@ TASKS = {
 }
 
 
+@dataclass(frozen=True)
+class ProblemDefinition:
+    """The five components of an AIOpsLab problem, independent of runtime."""
+
+    problem_id: str
+    application: str
+    task: str
+    fault: FaultScenario
+    workload: dict[str, Any]
+    evaluator: str
+
+
 class ComposeProblemRegistry:
     def __init__(self, config: ResearchConfig) -> None:
         self.config = config
@@ -46,6 +59,17 @@ class ComposeProblemRegistry:
 
     def get_problem_ids(self) -> list[str]:
         return [f"{scenario_id}-{task}" for scenario_id in sorted(self._scenarios) for task in TASKS]
+
+    def get_problem_definition(self, problem_id: str) -> ProblemDefinition:
+        scenario, task_name = self._split_problem_id(problem_id)
+        return ProblemDefinition(
+            problem_id=problem_id,
+            application="online-boutique",
+            task=task_name,
+            fault=scenario,
+            workload=dict(scenario.workload),
+            evaluator=task_name,
+        )
 
     def _split_problem_id(self, problem_id: str) -> tuple[FaultScenario, str]:
         for task_name in TASKS:

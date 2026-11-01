@@ -1,2 +1,1 @@
 experiment_id,scenario_id,run_path,target_service,fault_category,fault_type,severity,run_status,semantic_validation_status,host_impact_status,workload_status,baseline_available,incident_available,recovery_available,confounder_affected,eligible_for_evaluation,exclusion_reason
-EXP-20261030T170130648656Z-13f7fc,FI-RES-CPU-01,experiments/runs/EXP-20261030T170130648656Z-13f7fc,recommendationservice,resource,cpu_hog,medium,completed,not_required,not_flagged,observed,true,true,true,false,true,

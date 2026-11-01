@@ -63,8 +63,8 @@ class AgentOrchestrator:
         self.agent_name = "agent"
 
     def register_agent(self, agent: Any, name: str = "agent") -> None:
-        if not hasattr(agent, "init_context") or not hasattr(agent, "get_action"):
-            raise AgentRuntimeError("Agent must implement init_context and get_action")
+        if not callable(getattr(agent, "get_action", None)):
+            raise AgentRuntimeError("Agent must implement get_action")
         self.agent = agent
         self.agent_name = name
 
@@ -99,7 +99,9 @@ class AgentOrchestrator:
             instructions=task.get_instructions(),
             actions=task.get_available_actions(),
         )
-        self.agent.init_context(context.description, context.instructions, context.actions)
+        init_context = getattr(self.agent, "init_context", None)
+        if callable(init_context):
+            init_context(context.description, context.instructions, context.actions)
         session = AgentSession(problem_id=problem_id, agent_name=self.agent_name)
         session.add("system", context.description)
         session.add("user", context.instructions)
