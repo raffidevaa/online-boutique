@@ -59,3 +59,7 @@ research/agent/*.db
 research/agent/*.sqlite
 research/agent/*.sqlite3
 research/agent/*.sqlite-*
+research/.ua/intermediate/
+research/.ua/tmp/
+research/.ua/diff-overlay.json
+research/.ua/.trash-*/
