@@ -9,6 +9,7 @@ from typing import Any, Callable
 from research.utils import ResearchConfig, write_json
 
 from .models import AgentSession, ProblemContext
+from .actions import ComposeMitigationActions
 from .environment import EnvironmentError
 from .parser import ActionParseError, ResponseParser
 from .providers import LlmProvider, build_provider
@@ -31,10 +32,16 @@ class LlmAgent:
     def init_context(self, problem_description: str, instructions: str, actions: dict[str, str]) -> None:
         self.actions = actions
         action_text = "\n".join(f"- {name}: {description}" for name, description in actions.items())
+        action_policy = (
+            "Use only the listed actions. The restore_service action is permitted only "
+            "for the active target service in this mitigation problem. "
+            if "restore_service" in actions else
+            "Use only the listed read-only actions and submit when ready. "
+        )
         system = (
             "You are an autonomous AIOps agent. Return exactly one action per turn, either "
             "as a markdown code block or as one raw JSON object. Use only the listed "
-            "read-only actions and submit when ready. "
+            f"actions and submit when ready. {action_policy}"
             "Follow the step budget included in each user message; reserve the final two "
             "steps for submission and avoid broad service-by-service enumeration. "
             "You may use Python call syntax such as get_logs(window=\"incident\") or JSON "
@@ -68,6 +75,32 @@ class AgentOrchestrator:
         self.agent = agent
         self.agent_name = name
 
+    async def run_live_problem(
+        self,
+        scenario: Any,
+        task_name: str,
+        *,
+        max_steps: int = 15,
+        acknowledge_execute: bool = False,
+        event_sink: Callable[[dict[str, Any]], None] | None = None,
+    ) -> dict[str, Any]:
+        """Run a complete live problem through the Compose lifecycle adapter."""
+        from .live import LiveIncidentController
+
+        problem_id = f"{scenario.scenario_id}-{task_name}"
+        try:
+            definition = self.registry.get_problem_definition(problem_id)
+        except ProblemError as error:
+            raise AgentRuntimeError(str(error)) from error
+        if scenario.to_dict() != definition.fault.to_dict():
+            raise AgentRuntimeError("Live scenario must match the registered problem catalog")
+        return await LiveIncidentController(self.config, self, event_sink).run(
+            definition.fault,
+            definition.task,
+            max_steps=max_steps,
+            acknowledge_execute=acknowledge_execute,
+        )
+
     def init_problem(
         self,
         problem_id: str,
@@ -78,10 +111,12 @@ class AgentOrchestrator:
         withhold_ground_truth: bool = False,
         rca_solution: dict[str, Any] | None = None,
         rca_trace: list[dict[str, str]] | None = None,
+        mitigation_actions: ComposeMitigationActions | None = None,
     ) -> tuple[ProblemContext, Any, AgentSession]:
         if self.agent is None:
             raise AgentRuntimeError("Register an agent before initializing a problem")
         try:
+            definition = self.registry.get_problem_definition(problem_id)
             task, scenario, _ = self.registry.create(
                 problem_id,
                 start=start,
@@ -90,11 +125,12 @@ class AgentOrchestrator:
                 withhold_ground_truth=withhold_ground_truth,
                 rca_solution=rca_solution,
                 rca_trace=rca_trace,
+                mitigation_actions=mitigation_actions,
             )
         except (ProblemError, OSError) as error:
             raise AgentRuntimeError(str(error)) from error
         context = ProblemContext(
-            problem_id=problem_id,
+            problem_id=definition.problem_id,
             description=task.get_task_description(),
             instructions=task.get_instructions(),
             actions=task.get_available_actions(),

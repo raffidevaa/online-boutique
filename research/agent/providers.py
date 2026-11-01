@@ -57,6 +57,8 @@ class FakeProvider:
             )
         if "faulty_components" in submit:
             return 'submit({"faulty_components": []})'
+        if submit == "submit()":
+            return "submit()"
         return 'submit("No")'
 
 

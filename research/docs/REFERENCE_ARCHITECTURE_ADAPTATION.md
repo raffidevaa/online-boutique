@@ -1,7 +1,9 @@
 # Reference architecture adaptation
 
-This framework is inspired by, and is not compatible with, the reference projects below.
-It deliberately adapts only concepts useful for a constrained Docker Compose research runtime.
+This framework adapts AIOpsLab's four task contracts, agent action loop, problem registry,
+and session result shape for a constrained Docker Compose runtime. It is not a drop-in
+replacement for the upstream Python package: the thesis taxonomy, safe action allowlist,
+and runtime APIs differ. The other reference projects below remain conceptual inputs.
 
 | Reference | Original concept | Adopted concept | Docker Compose adaptation | Excluded parts | Reason |
 |---|---|---|---|---|---|

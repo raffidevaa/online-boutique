@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 import json
 from pathlib import Path
 from typing import Any
@@ -12,11 +12,13 @@ from research.generators import FaultScenario, load_scenario
 from research.utils import ResearchConfig
 
 from .environment import ComposeEvidence
+from .actions import ComposeMitigationActions
 from .tasks import (
     AnalysisTask,
     BaseTask,
     DetectionTask,
     LocalizationTask,
+    MitigationTask,
     RemediationTask,
 )
 
@@ -29,6 +31,7 @@ TASKS = {
     "detection": DetectionTask,
     "localization": LocalizationTask,
     "analysis": AnalysisTask,
+    "mitigation": MitigationTask,
     "remediation": RemediationTask,
 }
 
@@ -101,8 +104,10 @@ class ComposeProblemRegistry:
         withhold_ground_truth: bool = False,
         rca_solution: dict[str, Any] | None = None,
         rca_trace: list[dict[str, str]] | None = None,
+        mitigation_actions: ComposeMitigationActions | None = None,
     ) -> tuple[BaseTask, FaultScenario, dict[str, Any]]:
-        scenario, task_name = self._split_problem_id(problem_id)
+        definition = self.get_problem_definition(problem_id)
+        scenario, task_name = definition.fault, definition.task
         if run_dir is not None:
             resolved = run_dir.resolve()
             try:
@@ -115,7 +120,11 @@ class ComposeProblemRegistry:
         # evaluator labels during its action loop.  The evaluator hands the labels to
         # ``finalize_session`` only after the loop has ended.
         expected = {} if withhold_ground_truth else self._expected(scenario, run_dir)
-        if task_name == "remediation":
+        if task_name == "mitigation":
+            if run_dir is not None or mitigation_actions is None:
+                raise ProblemError("Mitigation requires an active live action adapter")
+            task = MitigationTask(evidence, expected, mitigation_actions)
+        elif task_name == "remediation":
             task = RemediationTask(
                 evidence,
                 expected,

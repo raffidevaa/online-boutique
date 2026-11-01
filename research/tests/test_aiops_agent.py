@@ -12,12 +12,124 @@ from research.agent.parser import ActionParseError, ResponseParser
 from research.agent.providers import FakeProvider
 from research.agent.sanitize import sanitize_text
 from research.agent.live import LiveIncidentController, LiveIncidentError
+from research.agent.runtime import ComposeWorkload
+from research.agent.actions import ComposeMitigationActions, MitigationActionError
+from research.agent.tasks import MitigationTask
+from research.agent.tasks import LocalizationTask
+from research.agent.models import AgentSession
+from research.agent.registry import ComposeProblemRegistry, ProblemError
 from research.generators import PumbaInjector, PumbaPlan, load_scenario
 from research.utils import ResearchConfig
 from research.utils.config import _load_dotenv
 
 
 class AioAgentTests(unittest.TestCase):
+    def test_fake_provider_uses_valid_mitigation_submission(self) -> None:
+        self.assertEqual(FakeProvider._default_action({"submit": "submit()"}), "submit()")
+
+    def test_failed_live_run_preserves_agent_session(self) -> None:
+        scenario = load_scenario(Path("research/generators/scenarios/resource-03-cpu-hog-checkout.yaml"))
+        config = ResearchConfig()
+        controller = LiveIncidentController(config, AgentOrchestrator(config))
+        with tempfile.TemporaryDirectory() as temporary:
+            run_path = Path(temporary)
+            session = AgentSession(problem_id=f"{scenario.scenario_id}-analysis")
+            session.start()
+            session.add("assistant", "get_metrics()")
+            application = Mock()
+            application.snapshot.return_value = {}
+            controller._record_failed_run(
+                scenario, application, Mock(), Mock(), None, run_path,
+                {"experiment_id": "EXP-TEST"}, None, RuntimeError("provider failed"), session,
+            )
+            saved = json.loads((run_path / "agent-session.json").read_text())
+            self.assertEqual(saved["termination_reason"], "runtime_error")
+            self.assertEqual(saved["history"], saved["trace"])
+
+    def test_localization_accepts_upstream_list_submission(self) -> None:
+        task = LocalizationTask(Mock(), {"root_cause_service": "checkoutservice"})
+        response = task.submit(faulty_components=["checkoutservice"])
+        self.assertEqual(response.solution, {"faulty_components": ["checkoutservice"]})
+        self.assertTrue(task.eval(response.solution, [], 0.1)["localization_exact"])
+
+    def test_mitigation_registry_requires_live_adapter(self) -> None:
+        registry = ComposeProblemRegistry(ResearchConfig())
+        problem_id = "FI-RES-CPU-02-mitigation"
+        self.assertIn(problem_id, registry.get_problem_ids())
+        with self.assertRaisesRegex(ProblemError, "active live"):
+            registry.create(problem_id, start=datetime.now(UTC), end=None)
+
+    def test_mitigation_agent_session_uses_live_action_adapter(self) -> None:
+        import asyncio
+
+        config = ResearchConfig()
+        orchestrator = AgentOrchestrator(config)
+        orchestrator.register_agent(LlmAgent(FakeProvider('submit()')))
+        runtime = Mock()
+        runtime.get_service_state.return_value = SimpleNamespace(status="running")
+        actions = ComposeMitigationActions(runtime, "checkoutservice")
+        context, task, session = orchestrator.init_problem(
+            "FI-RES-CPU-02-mitigation",
+            start=datetime.now(UTC),
+            end=None,
+            mitigation_actions=actions,
+        )
+        self.assertIn("restore_service", context.actions)
+        result = asyncio.run(orchestrator.start_problem(
+            task, session, max_steps=1, persist=False,
+        ))
+        self.assertTrue(result["submitted"])
+        self.assertFalse(result["results"]["mitigation_success"])
+
+    def test_mitigation_task_executes_and_scores_only_active_target(self) -> None:
+        runtime = Mock()
+        runtime.get_service_state.return_value = SimpleNamespace(status="running")
+        operations = ComposeMitigationActions(runtime, "checkoutservice", Mock(), object())
+        task = MitigationTask(Mock(), {}, operations)
+        self.assertIn("restore_service", task.get_available_actions())
+        with self.assertRaises(MitigationActionError):
+            task.perform_action("restore_service", "paymentservice")
+        task.perform_action("restore_service", "checkoutservice")
+        submitted = task.perform_action("submit")
+        self.assertTrue(submitted.submitted)
+        self.assertTrue(task.eval(submitted.solution, [], 1.0)["mitigation_success"])
+
+    def test_mitigation_action_is_scoped_to_active_service(self) -> None:
+        runtime = Mock()
+        runtime.get_service_state.return_value = SimpleNamespace(status="running")
+        actions = ComposeMitigationActions(runtime, "checkoutservice")
+        with self.assertRaises(MitigationActionError):
+            actions.restore_service("paymentservice")
+        runtime.restore_service.assert_not_called()
+        self.assertIn("status=running", actions.restore_service("checkoutservice"))
+        runtime.restore_service.assert_called_once_with("checkoutservice")
+        self.assertEqual(len(actions.history), 1)
+
+    def test_mitigation_stops_active_fault_before_recreating_target(self) -> None:
+        calls = []
+        runtime = Mock()
+        runtime.get_service_state.return_value = SimpleNamespace(status="running")
+        runtime.restore_service.side_effect = lambda service: calls.append("restore")
+        fault = Mock()
+        fault.stop.side_effect = lambda running: calls.append("stop")
+        actions = ComposeMitigationActions(runtime, "checkoutservice", fault, object())
+        actions.restore_service("checkoutservice")
+        self.assertEqual(calls, ["stop", "restore"])
+        self.assertTrue(actions.fault_stopped)
+
+    def test_compose_workload_requires_allowlisted_running_generator(self) -> None:
+        application = Mock()
+        workload = ComposeWorkload(application)
+        workload.ensure_running(None)
+        application.get_service_state.assert_not_called()
+        with self.assertRaisesRegex(ValueError, "Unsupported workload"):
+            workload.ensure_running("wrk")
+        application.get_service_state.return_value = SimpleNamespace(status="exited")
+        with self.assertRaisesRegex(ValueError, "did not leave"):
+            workload.ensure_running("loadgenerator")
+        application.get_service_state.return_value = SimpleNamespace(status="running")
+        workload.ensure_running("loadgenerator")
+
     def test_dotenv_loader_reads_local_values_without_exposing_secrets(self) -> None:
         with tempfile.NamedTemporaryFile("w", encoding="utf-8") as env_file:
             env_file.write(
@@ -92,6 +204,8 @@ class AioAgentTests(unittest.TestCase):
             self.assertIsNotNone(result["submission_elapsed_seconds"])
             self.assertIn("action_parsed", [event["kind"] for event in events])
             self.assertIn("submitted", [event["kind"] for event in events])
+            self.assertEqual(result["history"], result["trace"])
+            self.assertEqual(result["final_state"], "VALID_SUBMISSION")
             self.assertNotIn('"root_cause_service"', json.dumps(result["trace"]))
             self.assertEqual(len(list((root / "sessions").glob("*.json"))), 1)
 

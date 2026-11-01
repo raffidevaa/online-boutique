@@ -13,7 +13,7 @@ from research.utils import ResearchConfig
 
 from research.generators import ScenarioError, load_scenario
 
-from .live import LiveIncidentController, LiveIncidentError
+from .live import LiveIncidentError
 from .orchestrator import AgentRuntimeError, create_orchestrator
 from .providers import ProviderError
 
@@ -41,7 +41,7 @@ def main() -> int:
     )
     parser.add_argument("--live-incident", action="store_true")
     parser.add_argument("--scenario", type=Path, help="Scenario YAML for integrated live")
-    parser.add_argument("--task", choices=("detection", "localization", "analysis"))
+    parser.add_argument("--task", choices=("detection", "localization", "analysis", "mitigation"))
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--max-steps", type=int, default=15)
     arguments = parser.parse_args()
@@ -56,7 +56,7 @@ def main() -> int:
                 parser.error("--live-incident requires --scenario and --task")
             scenario = load_scenario(arguments.scenario)
             result = asyncio.run(
-                LiveIncidentController(config, orchestrator).run(
+                orchestrator.run_live_problem(
                     scenario,
                     arguments.task,
                     max_steps=arguments.max_steps,

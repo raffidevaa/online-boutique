@@ -7,18 +7,25 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable
 
-from research.generators import FaultScenario, InjectorError, PumbaInjector
+from research.generators import FaultScenario, PumbaInjector
 from research.observer import Observer, ObserverError
 from research.orchestrator.faults import (
-    FaultExecutionError,
     build_host_impact,
     fault_lock,
 )
-from research.service import ComposeApplication, ServiceError
+from research.service import ComposeApplication
 from research.utils import ResearchConfig, append_event, create_run, write_json
 
 from .orchestrator import AgentOrchestrator
-from .providers import ProviderError
+from .models import AgentSession
+from .actions import ComposeMitigationActions
+from .runtime import (
+    ApplicationRuntime,
+    ComposeWorkload,
+    FaultRuntime,
+    TelemetryRuntime,
+    WorkloadRuntime,
+)
 
 
 class LiveIncidentError(RuntimeError):
@@ -55,10 +62,18 @@ class LiveIncidentController:
         config: ResearchConfig,
         orchestrator: AgentOrchestrator,
         event_sink: Callable[[dict[str, Any]], None] | None = None,
+        application: ApplicationRuntime | None = None,
+        observer: TelemetryRuntime | None = None,
+        injector: FaultRuntime | None = None,
+        workload: WorkloadRuntime | None = None,
     ) -> None:
         self.config = config
         self.orchestrator = orchestrator
         self.event_sink = event_sink
+        self.application = application or ComposeApplication(config)
+        self.observer = observer or Observer(config)
+        self.injector = injector or PumbaInjector(config)
+        self.workload = workload or ComposeWorkload(self.application)
 
     def _emit(self, kind: str, **details: Any) -> None:
         if self.event_sink is not None:
@@ -67,22 +82,36 @@ class LiveIncidentController:
     def _record_failed_run(
         self,
         scenario: FaultScenario,
-        application: ComposeApplication,
-        observer: Observer,
-        injector: PumbaInjector,
+        application: ApplicationRuntime,
+        observer: TelemetryRuntime,
+        injector: FaultRuntime,
         running: Any,
         run_path: Path | None,
         metadata: dict[str, Any] | None,
         injection_start: datetime | None,
         error: BaseException,
+        session: AgentSession | None = None,
     ) -> None:
         """Stop an active fault and preserve failure/recovery artifacts."""
         if running is not None:
-            injector.stop(running)
+            try:
+                injector.stop(running)
+            except Exception as cleanup_error:
+                if run_path is not None:
+                    append_event(
+                        run_path,
+                        "live_fault_cleanup_failed",
+                        {"error": str(cleanup_error)},
+                    )
         if run_path is None or metadata is None:
             return
 
         append_event(run_path, "live_run_failed", {"error": str(error)})
+        if session is not None and not (run_path / "agent-session.json").exists():
+            session.termination_reason = session.termination_reason or "runtime_error"
+            if session.end_time is None:
+                session.end()
+            write_json(run_path / "agent-session.json", session.to_dict())
         recovery_recorded = False
         if injection_start is not None:
             injection_end = running.ended_at or datetime.now(UTC)
@@ -114,7 +143,7 @@ class LiveIncidentController:
                 )
         try:
             write_json(run_path / "cleanup-state.json", application.snapshot())
-        except OSError:
+        except (OSError, TypeError, ValueError):
             pass
         try:
             write_json(
@@ -146,14 +175,15 @@ class LiveIncidentController:
         if not scenario.target_service:
             raise LiveIncidentError("Live scenario has no target service")
 
-        application = ComposeApplication(self.config)
-        observer = Observer(self.config)
-        injector = PumbaInjector(self.config)
+        application = self.application
+        observer = self.observer
+        injector = self.injector
         running = None
         run_path: Path | None = None
         metadata: dict[str, Any] | None = None
         injection_start: datetime | None = None
         injection_end: datetime | None = None
+        session: AgentSession | None = None
         with fault_lock():
             try:
                 self._emit("preflight_started", scenario_id=scenario.scenario_id)
@@ -165,13 +195,7 @@ class LiveIncidentController:
                 observer.check_ready()
                 plan = injector.plan(scenario, target_state.container_id)
                 injector.check_images_available(scenario)
-                workload_generator = scenario.workload.get("generator")
-                if workload_generator == "loadgenerator":
-                    workload_state = application.get_service_state("loadgenerator")
-                    if workload_state is None or workload_state.status != "running":
-                        raise LiveIncidentError(
-                            "loadgenerator preparation did not leave the workload running"
-                        )
+                self.workload.ensure_running(scenario.workload.get("generator"))
                 run_path, metadata = create_run(self.config.experiment_runs, scenario.scenario_id)
                 write_json(run_path / "scenario.json", scenario.to_dict())
                 write_json(run_path / "injector-plan.json", plan.to_dict())
@@ -202,8 +226,18 @@ class LiveIncidentController:
                 )
                 self._emit("telemetry_warmup_complete", seconds=telemetry_warmup)
                 problem_id = f"{scenario.scenario_id}-{task_name}"
+                mitigation_actions = (
+                    ComposeMitigationActions(
+                        application, scenario.target_service, injector, running
+                    )
+                    if task_name == "mitigation" else None
+                )
                 _, task, session = self.orchestrator.init_problem(
-                    problem_id, start=injection_start, end=None, run_dir=None
+                    problem_id,
+                    start=injection_start,
+                    end=None,
+                    run_dir=None,
+                    mitigation_actions=mitigation_actions,
                 )
                 await self.orchestrator.start_problem(
                     task,
@@ -215,7 +249,7 @@ class LiveIncidentController:
                 )
                 remediation_task = None
                 remediation_session = None
-                if session.submitted and isinstance(session.solution, dict):
+                if task_name == "analysis" and session.submitted and isinstance(session.solution, dict):
                     self._emit("remediation_started")
                     _, remediation_task, remediation_session = self.orchestrator.init_problem(
                         f"{scenario.scenario_id}-remediation",
@@ -265,7 +299,9 @@ class LiveIncidentController:
                     run_path / "agent-evaluation.json",
                     {
                         "schema_version": 1,
-                        "rca": session_result["results"],
+                        "task": task_name,
+                        "task_results": session_result["results"],
+                        "rca": session_result["results"] if task_name == "analysis" else None,
                         "remediation": remediation_result["results"] if remediation_result else None,
                         "remediation_status": (
                             "completed" if remediation_result else "skipped"
@@ -286,6 +322,9 @@ class LiveIncidentController:
                         "stderr": injector_result.stderr,
                         "started_at": injection_start.isoformat(),
                         "ended_at": injection_end.isoformat(),
+                        "agent_stopped_fault": bool(
+                            mitigation_actions and mitigation_actions.fault_stopped
+                        ),
                     },
                 )
                 incident = observer.capture(injection_start, injection_end)
@@ -316,7 +355,10 @@ class LiveIncidentController:
                 append_event(run_path, "recovery_observation_finished")
                 self._emit("recovery_observation_finished")
                 write_json(run_path / "cleanup-state.json", application.snapshot())
-                status = "completed" if injector_result.returncode == 0 else "injector_failed"
+                status = "completed" if (
+                    injector_result.returncode == 0 or
+                    mitigation_actions is not None and mitigation_actions.fault_stopped
+                ) else "injector_failed"
                 write_json(
                     run_path / "result.json",
                     {
@@ -335,15 +377,7 @@ class LiveIncidentController:
                     "session": session_result,
                     "remediation_session": remediation_result,
                 }
-            except (
-                ObserverError,
-                InjectorError,
-                FaultExecutionError,
-                ServiceError,
-                ProviderError,
-                OSError,
-                ValueError,
-            ) as error:
+            except Exception as error:
                 self._record_failed_run(
                     scenario,
                     application,
@@ -354,6 +388,7 @@ class LiveIncidentController:
                     metadata,
                     injection_start,
                     error,
+                    session,
                 )
                 raise LiveIncidentError(str(error)) from error
             except (KeyboardInterrupt, asyncio.CancelledError) as error:
@@ -367,5 +402,6 @@ class LiveIncidentController:
                     metadata,
                     injection_start,
                     error,
+                    session,
                 )
                 raise

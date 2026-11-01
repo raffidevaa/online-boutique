@@ -53,6 +53,11 @@ class AgentSession:
         return (self.end_time - self.start_time).total_seconds()
 
     def to_dict(self) -> dict[str, Any]:
+        history = [item.to_dict() for item in self.history]
+        final_state = next(
+            (item.content for item in reversed(self.history) if item.role == "env"),
+            None,
+        )
         return {
             "schema_version": 2,
             "session_id": self.session_id,
@@ -62,7 +67,9 @@ class AgentSession:
             "end_time": self.end_time.isoformat() if self.end_time else None,
             "submitted_at": self.submitted_at.isoformat() if self.submitted_at else None,
             "submission_elapsed_seconds": self.submission_elapsed_seconds,
-            "trace": [item.to_dict() for item in self.history],
+            "trace": history,
+            "history": history,
+            "final_state": final_state,
             "solution": self.solution,
             "submitted": self.submitted,
             "termination_reason": self.termination_reason,

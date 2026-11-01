@@ -9,6 +9,7 @@ from typing import Any, Callable
 from research.generators.fault import VALID_FAULT_TYPES
 
 from .environment import ComposeEvidence
+from .actions import ComposeMitigationActions
 from .remediation import (
     REMEDIATION_ACTION_TYPES,
     validate_remediation,
@@ -133,20 +134,28 @@ class LocalizationTask(BaseTask):
     def get_instructions(self) -> str:
         return (
             'Start with get_incident_summary(window="incident"). Focus follow-up evidence on '
-            'the top one or two anomalous services, then submit a JSON object such as '
-            'submit({"faulty_components": ["service"]}) before the final step.'
+            'the top one or two anomalous services, then call '
+            'submit(faulty_components=["service"]) before the final step.'
         )
 
     def get_available_actions(self) -> dict[str, str]:
         actions = super().get_available_actions()
-        actions["submit"] = 'submit(answer: {"faulty_components": ["service"]})'
+        actions["submit"] = 'submit(faulty_components: list[str])'
         return actions
 
-    def submit(self, answer: dict[str, Any]) -> EnvironmentResponse:
-        components = answer.get("faulty_components") if isinstance(answer, dict) else None
+    def submit(
+        self,
+        answer: dict[str, Any] | list[str] | None = None,
+        *,
+        faulty_components: list[str] | None = None,
+    ) -> EnvironmentResponse:
+        components = (
+            faulty_components if faulty_components is not None else
+            answer.get("faulty_components") if isinstance(answer, dict) else answer
+        )
         if not isinstance(components, list) or not all(isinstance(item, str) for item in components):
             raise TaskError("faulty_components must be a list of service names")
-        return EnvironmentResponse("VALID_SUBMISSION", True, answer)
+        return EnvironmentResponse("VALID_SUBMISSION", True, {"faulty_components": components})
 
     def eval(self, solution: Any, trace: list[Any], duration: float) -> dict[str, Any]:
         results = super().eval(solution, trace, duration)
@@ -249,6 +258,63 @@ class AnalysisTask(BaseTask):
             "fault_type_correct": type_match,
             "combined_rca_correct": service_match and category_match and type_match,
             "TTA": duration,
+        })
+        return results
+
+
+class MitigationTask(BaseTask):
+    """Apply a target-scoped Compose recovery action during a live fault."""
+
+    task_name = "mitigation"
+
+    def __init__(
+        self,
+        evidence: ComposeEvidence,
+        expected: dict[str, Any],
+        operations: ComposeMitigationActions,
+    ) -> None:
+        super().__init__(evidence, expected)
+        self.operations = operations
+        self.submission_running: bool | None = None
+        self.actions["restore_service"] = self.restore_service
+        self.actions["submit"] = self.submit
+
+    def get_task_description(self) -> str:
+        return "Mitigate the active Online Boutique fault and verify the affected service."
+
+    def get_instructions(self) -> str:
+        return (
+            "Inspect telemetry, restore only the faulted service if justified, then submit(). "
+            "The restore_service action recreates the target container."
+        )
+
+    def get_available_actions(self) -> dict[str, str]:
+        actions = super().get_available_actions()
+        actions["restore_service"] = 'restore_service(service: str)'
+        actions["submit"] = "submit()"
+        return actions
+
+    def restore_service(self, service: str) -> EnvironmentResponse:
+        return EnvironmentResponse(self.operations.restore_service(service))
+
+    def submit(self) -> EnvironmentResponse:
+        state = self.operations.runtime.get_service_state(self.operations.target_service)
+        self.submission_running = state is not None and state.status == "running"
+        return EnvironmentResponse("VALID_SUBMISSION", True, {"actions": self.operations.history})
+
+    def eval(self, solution: Any, trace: list[Any], duration: float) -> dict[str, Any]:
+        results = super().eval(solution, trace, duration)
+        recovered = self.submission_running is True
+        results.update({
+            "task": self.task_name,
+            "TTM": duration,
+            "mitigation_executed": bool(self.operations.history),
+            "fault_stopped_by_agent": self.operations.fault_stopped,
+            "target_running_after_action": recovered,
+            "mitigation_success": (
+                recovered and bool(self.operations.history) and
+                self.operations.fault_stopped
+            ),
         })
         return results
 
