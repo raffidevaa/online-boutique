@@ -31,7 +31,7 @@ scope is recommendation-only; runtime execution remains out of scope.
 ## Deliverables
 
 - `research/agent/remediation_evaluator.py` emitting an RCA + remediation pair
-- [`research/docs/REMEDIATION_RECOMMENDATION.md`](../docs/REMEDIATION_RECOMMATION.md)
+- [`research/docs/old/REMEDIATION_RECOMMENDATION.md`](../../docs/old/REMEDIATION_RECOMMENDATION.md)
   documenting the action taxonomy and safety boundary
 - A review rubric and scored results in
   `research/experiments/evaluations/phase-05-remediation-v1/`

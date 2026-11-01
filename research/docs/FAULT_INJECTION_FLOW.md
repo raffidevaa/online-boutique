@@ -4,7 +4,7 @@ This guide explains how a controlled fault moves through the research framework:
 scenario definition to runtime injection, telemetry evidence, ground truth, recovery, and
 future RCA evaluation. It is a developer-facing companion to
 [ARCHITECTURE.md](ARCHITECTURE.md), [FAULT_INJECTION.md](FAULT_INJECTION.md),
-[FAULT_TAXONOMY.md](FAULT_TAXONOMY.md), and [SEMANTIC_PROBES.md](SEMANTIC_PROBES.md).
+[FAULT_TAXONOMY.md](FAULT_TAXONOMY.md), and [SEMANTIC_PROBES.md](old/SEMANTIC_PROBES.md).
 
 The upstream Online Boutique application directories are reference material. Research
 deployment, experiments, and fault-injection code live exclusively under `research/`.

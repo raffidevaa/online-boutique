@@ -1,7 +1,7 @@
 # Agentic AI for Root Cause Analysis & Automated Remediation in a Simulated SRE Environment
 
 Thesis project: design and implementation of an agentic AI system that performs root cause
-analysis (RCA) and recommends automated remediation, evaluated in a simulated SRE
+analysis (RCA), recommends remediation, and tests allowlisted live mitigation in a simulated SRE
 environment with controlled fault injection.
 
 This directory lives inside a clone of `GoogleCloudPlatform/microservices-demo` (Online
@@ -17,8 +17,8 @@ manifests/Helm chart/Skaffold config at the repo root — see
 | Microservices app | Online Boutique (`GoogleCloudPlatform/microservices-demo`) | `research/compose/` (source under repo-root `src/`) |
 | Observability | Prometheus, Grafana, Loki, Promtail, cAdvisor, OpenTelemetry, Jaeger | `research/observability/` |
 | Experiment runtime | Compose application access, read-only observer, CLI, and shared utilities | `research/service/`, `observer/`, `orchestrator/`, `utils/` |
-| Fault injection | Versioned scenario catalog, gated Pumba planner, and future workload controls | `research/generators/` |
-| Agentic AI | LLM via API + tool-calling into observability | `research/agent/` |
+| Fault injection | Versioned scenario catalog, gated Pumba planner, and allowlisted workload controls | `research/generators/` |
+| Agentic AI | LLM via API, read-only RCA actions, and gated live mitigation | `research/agent/` |
 
 ## Why Online Boutique
 
@@ -105,7 +105,7 @@ the upstream service source. The baseline source tree is not edited; each faulty
 selected only through its allowlisted scenario-specific Compose override. Code-level runs
 remain gated until the image build, semantic probe, behavior validator, telemetry capture, and
 baseline recovery have all been validated. See
-[`docs/SEMANTIC_PROBES.md`](docs/SEMANTIC_PROBES.md) for the implementation and execution
+[`docs/old/SEMANTIC_PROBES.md`](docs/old/SEMANTIC_PROBES.md) for the implementation and execution
 plan.
 
 `research/experiments/index.csv` is a generated inventory, not a source-of-truth artifact.
@@ -130,6 +130,8 @@ Incomplete and failed runs remain visible with an exclusion reason.
 - [`docs/FAULT_TAXONOMY.md`](docs/FAULT_TAXONOMY.md) — fault taxonomy covered by this research
 - [`docs/FAULT_INJECTION.md`](docs/FAULT_INJECTION.md) — RCAEval-aligned methodology and scenario catalog
 - [`docs/EXPERIMENT_LOG.md`](docs/EXPERIMENT_LOG.md) — experiment log template
+- [`docs/AIOPSLAB_REFACTOR_PLAN.md`](docs/AIOPSLAB_REFACTOR_PLAN.md) — current AIOpsLab adaptation and validation record
+- [`docs/old/`](docs/old/) — archived phase-specific documentation
 - [`../AGENTS.md`](../AGENTS.md) — conventions for AI coding agents working in this repo
 
 ## Research status

@@ -652,12 +652,12 @@ smoke test berhasil.
 
 Referensi internal:
 
-- [`ARCHITECTURE.md`](ARCHITECTURE.md)
-- [`FAULT_INJECTION.md`](FAULT_INJECTION.md)
-- [`FAULT_TAXONOMY.md`](FAULT_TAXONOMY.md)
-- [`research/orchestrator/faults.py`](../orchestrator/faults.py)
-- [`research/generators/semantic.py`](../generators/semantic.py)
-- [`research/generators/faulty_images/manifest.yaml`](../generators/faulty_images/manifest.yaml)
+- [`ARCHITECTURE.md`](../ARCHITECTURE.md)
+- [`FAULT_INJECTION.md`](../FAULT_INJECTION.md)
+- [`FAULT_TAXONOMY.md`](../FAULT_TAXONOMY.md)
+- [`research/orchestrator/faults.py`](../../orchestrator/faults.py)
+- [`research/generators/semantic.py`](../../generators/semantic.py)
+- [`research/generators/faulty_images/manifest.yaml`](../../generators/faulty_images/manifest.yaml)
 
 Referensi metodologi:
 

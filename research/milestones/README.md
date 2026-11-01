@@ -1,34 +1,14 @@
-# Milestones
+# Current roadmap
 
-Detailed, phase-by-phase development roadmap for the thesis project. This expands the
-high-level checklist in [`../README.md`](../README.md) into concrete, actionable steps.
+The previous phase plans and validation notes are in [`old/`](old/). Their experiment
+counts refer to data removed at the researcher's request. Use the current code and
+new run artifacts to evaluate the present pipeline.
 
-Each phase file uses the same structure: **Goal**, **Prerequisites**, **Steps**,
-**Deliverables**, **Definition of done**, **References**. Work through phases in order —
-each one depends on the previous phase's deliverables.
-
-| # | Phase | Status |
+| Work | Current status | Reference |
 |---|---|---|
-| 00 | [Environment setup](00-environment-setup.md) | Done |
-| 01 | [Experiment architecture foundation](01-experiment-architecture.md) | Done |
-| 02 | [Fault injection pipeline](01-fault-injection-pipeline.md) | Done |
-| 03 | [Ground truth dataset collection](02-ground-truth-dataset.md) | Done |
-| 04 | [RCA agent](03-rca-agent.md) | Done |
-| 05 | [Remediation recommendation](04-remediation-recommendation.md) | Done |
-| 06 | [Evaluation](05-evaluation.md) | In progress |
-| 07 | [Web RCA dashboard and experiment control](06-web-dashboard.md) | In progress |
+| AIOpsLab contract adaptation for Docker Compose | Pilot implemented; further validation needed | [Refactor and validation record](../docs/AIOPSLAB_REFACTOR_PLAN.md) |
+| Dataset collection and four-task evaluation | In progress; rebuild from new runs | [Agent CLI](../agent/README.md) |
+| Web dashboard | Available; evaluate against the new campaign | [Web guide](../web/README.md) |
 
-Update the **Status** column as work progresses (`Not started` / `In progress` / `Done`) —
-this is the single place tracking overall thesis progress; don't duplicate it elsewhere.
-
-## How to use this folder
-
-- Before starting a phase, re-read its **Prerequisites** — most reference a deliverable from
-  the previous phase.
-- Steps are checklists, not a rigid script — adapt as needed, but don't skip the
-  **Definition of done** criteria; they exist to keep the research methodologically sound
-  (e.g. not accepting an RCA result without checking it against known confounders).
-- Cross-cutting rules (hardware limits, JVM/LLM confounder handling, one-fault-at-a-time,
-  append-only experiment data) live in [`/AGENTS.md`](../../AGENTS.md) and
-  [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) — every phase assumes those rules
-  apply.
+Keep one fault active per run, preserve generated experiment artifacts, and follow the
+resource limits in [architecture](../docs/ARCHITECTURE.md).

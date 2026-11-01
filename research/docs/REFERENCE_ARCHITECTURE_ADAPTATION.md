@@ -24,5 +24,5 @@ and runtime APIs differ. The other reference projects below remain conceptual in
   introduced.
 - Scenario and injector adapters remain allowlisted: one target and one active runtime fault at
   a time; no arbitrary container command is accepted from an agent or scenario.
-- Telemetry adapters and agent tools are read-only. The future remediation layer must remain
-  separately gated.
+- RCA telemetry actions are read-only. Live mitigation has a separately gated,
+  target-scoped Compose restore action; recommendation remains non-executable.

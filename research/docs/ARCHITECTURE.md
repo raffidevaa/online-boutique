@@ -191,12 +191,9 @@ limitations" below.
 6. Distributed tracing relies on Online Boutique's native OpenTelemetry instrumentation;
    deeper custom instrumentation, if needed, requires building selected services from source
    rather than using prebuilt images.
-7. The actual homelab host has 7.6 GB RAM (2-core/4-thread CPU confirmed: i3-6100T), not the
-   20 GB this doc's "Resource allocation" table targets — the RAM upgrade referenced there
-   hadn't happened as of phase 00. The full stack (app + observability, `research/compose/`)
-   still runs, but with the desktop session active alongside it, available memory sits in the
-   3-3.5 GB range and some (zram-backed, not disk) swap gets used. Re-check headroom before
-   adding the agent layer (phase 04+) or running memory-heavier fault scenarios.
+7. The 20 GB allocation table is a planning budget for constrained homelab hardware.
+   Check actual host memory and CPU headroom before each memory-heavy fault scenario;
+   historical phase-00 measurements are archived and do not establish current capacity.
 8. This host's Docker Engine (29.x) defaults to the containerd-snapshotter storage driver.
    cAdvisor's classic Docker-container factory claims every container's cgroup by name before
    the containerd factory can, then fails to read per-container stats from the (nonexistent,

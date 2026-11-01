@@ -62,7 +62,7 @@ python -m research.orchestrator fault run \
 The legacy `--semantic-observation PATH` option remains available for compatibility with
 older manual observations. Use `--semantic-probe off` only for debugging or a deliberately
 unvalidated pilot. The probe design, observation schema, and evidence rules are documented in
-[`SEMANTIC_PROBES.md`](SEMANTIC_PROBES.md).
+[`SEMANTIC_PROBES.md`](old/SEMANTIC_PROBES.md).
 
 The RCA agent may receive alerts, metrics, logs, traces when available, service topology,
 service metadata, and approved runbooks. It must not receive the scenario ID, ground truth,
