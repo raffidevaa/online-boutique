@@ -280,12 +280,12 @@ services:
 
   jaeger:
     image: jaegertracing/all-in-one:1.62.0
-    mem_limit: 256m
+    mem_limit: 512m
     cpus: 0.2
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
       # Jaeger uses in-memory storage; keep retention bounded on the constrained host.
-      MEMORY_MAX_TRACES: "2000"
+      MEMORY_MAX_TRACES: "1000"
     restart: unless-stopped
     ports:
       - "16686:16686"

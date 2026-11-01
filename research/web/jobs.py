@@ -16,9 +16,10 @@ import uuid
 
 from research.agent.orchestrator import create_orchestrator
 from research.agent.sanitize import sanitize_text
-from research.generators import FaultScenario, ScenarioError, load_scenario
+from research.generators import FaultScenario, FaultyImageInjector, ScenarioError, load_scenario
 from research.observer import Observer
 from research.orchestrator.dataset import write_dataset_index
+from research.orchestrator.faults import run_faulty_image
 from research.generators import PumbaInjector
 from research.service import ComposeApplication
 from research.utils import ResearchConfig
@@ -144,7 +145,8 @@ class JobManager:
             record = scenario.to_dict()
             record.pop("ground_truth", None)
             record["source_path"] = str(path.relative_to(self.config.research_root))
-            record["runnable_for_gui"] = scenario.runnable and scenario.category != "code_level"
+            record["runnable_for_gui"] = scenario.runnable or scenario.category == "code_level"
+            record["gui_mode"] = "semantic_fault" if scenario.category == "code_level" else "full"
             if not record["runnable_for_gui"]:
                 record["gui_reason"] = (
                     "Only ready_for_pilot runtime scenarios can be executed from the GUI."
@@ -160,7 +162,7 @@ class JobManager:
             )
 
     def _preflight(self, scenario: FaultScenario) -> dict[str, Any]:
-        if not scenario.runnable or scenario.category == "code_level":
+        if not scenario.runnable and scenario.category != "code_level":
             raise GuiJobError(
                 "GUI execution supports ready_for_pilot runtime scenarios only"
             )
@@ -177,8 +179,11 @@ class JobManager:
             if target_state is None:
                 raise GuiJobError(f"Target service is not ready: {scenario.target_service}")
             observer.check_ready()
-            plan = injector.plan(scenario, target_state.container_id)
-            injector.check_images_available(scenario)
+            if scenario.category == "code_level":
+                plan = FaultyImageInjector(self.config).prepare(scenario)
+            else:
+                plan = injector.plan(scenario, target_state.container_id).to_dict()
+                injector.check_images_available(scenario)
             workload_generator = scenario.workload.get("generator")
             if workload_generator == "loadgenerator":
                 workload_state = application.get_service_state("loadgenerator")
@@ -194,25 +199,29 @@ class JobManager:
             "scenario": scenario.to_dict(),
             "scenario_id": scenario.scenario_id,
             "target_service": scenario.target_service,
-            "plan": plan.to_dict(),
-            "warnings": [
+            "plan": plan,
+            "warnings": ([
+                "Fault injection is bounded to one scenario and one target.",
+                "The baseline image is restored after semantic validation.",
+            ] if scenario.category == "code_level" else [
                 "Fault injection is bounded to one scenario and one target.",
                 "The required loadgenerator is started during preparation when it is not already running.",
                 "Ground truth is withheld until the full agent pipeline has ended.",
-            ],
+            ]),
             "workload_started": workload_started,
         }
 
     def prepare(self, scenario_id: str, task: str, max_steps: int) -> dict[str, Any]:
-        if task != "full":
-            raise GuiJobError("GUI runs the full pipeline for each fault")
+        scenario = self._scenario(scenario_id)
+        expected_task = "semantic_fault" if scenario.category == "code_level" else "full"
+        if task != expected_task:
+            raise GuiJobError(f"This scenario requires task={expected_task}")
         if max_steps < 1 or max_steps > 50:
             raise GuiJobError("max_steps must be between 1 and 50")
         with self.lock:
             active = self._active_job()
             if active is not None:
                 raise GuiJobError(f"Another GUI job is active: {active.job_id}")
-        scenario = self._scenario(scenario_id)
         plan = self._preflight(scenario)
         job_id = f"GUI-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:6]}"
         job = GuiJob(
@@ -284,18 +293,23 @@ class JobManager:
                 job.updated_at = _now()
                 job.condition.notify_all()
             self.emit(job_id, "run_started")
-            orchestrator = create_orchestrator(self.config)
-            result = asyncio.run(
-                orchestrator.run_live_problem(
-                    scenario,
-                    job.task,
-                    max_steps=job.max_steps,
-                    acknowledge_execute=True,
-                    event_sink=lambda event: self.emit(
-                        job_id, event.pop("kind", "agent_event"), **event
-                    ),
+            if scenario.category == "code_level":
+                self.emit(job_id, "semantic_fault_started", target_service=scenario.target_service)
+                result = run_faulty_image(scenario, self.config, semantic_probe_mode="auto")
+                self.emit(job_id, "semantic_fault_finished", status=result.get("status"))
+            else:
+                orchestrator = create_orchestrator(self.config)
+                result = asyncio.run(
+                    orchestrator.run_live_problem(
+                        scenario,
+                        job.task,
+                        max_steps=job.max_steps,
+                        acknowledge_execute=True,
+                        event_sink=lambda event: self.emit(
+                            job_id, event.pop("kind", "agent_event"), **event
+                        ),
+                    )
                 )
-            )
             job.experiment_id = result.get("experiment_id")
             job.result = result
             job.status = "completed" if result.get("status") == "completed" else "failed"
@@ -317,6 +331,12 @@ class JobManager:
             job.updated_at = _now()
             self.emit(job_id, "failed", error=str(error))
         finally:
+            if job.workload_started_by_job:
+                try:
+                    self._stop_prepared_workload(job)
+                    self.emit(job_id, "workload_stopped")
+                except Exception as error:
+                    self.emit(job_id, "workload_stop_failed", error=str(error))
             with job.condition:
                 job.condition.notify_all()
 
@@ -370,11 +390,13 @@ class JobManager:
                 result = _read_json(run_path / "result.json") or {}
                 session = _read_json(run_path / "agent-session.json") or {}
                 evaluation = _read_json(run_path / "agent-evaluation.json") or {}
+                scenario_record = _read_json(run_path / "scenario.json") or {}
+                semantic = _read_json(run_path / "semantic-validation.json") or {}
                 partial_traces = any(
                     bool((_read_json(run_path / phase / "traces.json") or {}).get("errors"))
                     for phase in ("baseline", "incident", "recovery")
                 )
-                task = str(evaluation.get("task") or session.get("problem_id", "").rsplit("-", 1)[-1])
+                task = str(evaluation.get("task") or session.get("problem_id", "").rsplit("-", 1)[-1] or ("semantic_fault" if scenario_record.get("category") == "code_level" else "unknown"))
                 scores = session.get("results") if isinstance(session.get("results"), dict) else {}
                 stages = evaluation.get("stages") if isinstance(evaluation.get("stages"), dict) else {}
                 stage_keys = {
@@ -383,17 +405,22 @@ class JobManager:
                     "analysis": "combined_rca_correct",
                     "mitigation": "mitigation_success",
                 }
-                task_result = (
-                    all(stages.get(stage, {}).get(key) is True for stage, key in stage_keys.items())
-                    if task == "full" else scores.get(stage_keys.get(task, ""))
-                )
+                if task == "full":
+                    task_result = all(
+                        stages.get(stage, {}).get(key) is True
+                        for stage, key in stage_keys.items()
+                    )
+                elif task == "semantic_fault":
+                    task_result = semantic.get("status") == "passed"
+                else:
+                    task_result = scores.get(stage_keys.get(task, ""))
                 experiment_id = str(metadata.get("experiment_id", run_path.name))
                 solution = session.get("solution") if isinstance(session.get("solution"), dict) else {}
                 rows.setdefault(experiment_id, {
                     "source": "live-run",
                     "experiment_id": experiment_id,
                     "scenario_id": metadata.get("scenario_id", ""),
-                    "scope": (_read_json(run_path / "scenario.json") or {}).get("category", ""),
+                    "scope": scenario_record.get("category", ""),
                     "evaluation_status": result.get("status", "incomplete"),
                     "partial_trace_telemetry": partial_traces,
                     "task": task,
@@ -433,7 +460,19 @@ class JobManager:
             "agent_session": None,
             "agent_sessions": sessions,
             "agent_evaluation": _json_safe(_read_json(run_path / "agent-evaluation.json") or {}),
-            "task": str((_read_json(run_path / "agent-evaluation.json") or {}).get("task") or (_read_json(run_path / "agent-session.json") or {}).get("problem_id", "").rsplit("-", 1)[-1]),
+            "semantic_validation": _json_safe(_read_json(run_path / "semantic-validation.json") or {}),
+            "semantic_observation": _json_safe(_read_json(run_path / "semantic-observation.json") or {}),
+            "semantic_probe": _json_safe(_read_json(run_path / "semantic-probe.json") or {}),
+            "faulty_image_plan": _json_safe(_read_json(run_path / "faulty-image-plan.json") or {}),
+            "telemetry": {
+                phase: {
+                    kind: _json_safe(_read_json(run_path / phase / f"{kind}.json") or {})
+                    for kind in ("metrics", "logs", "traces", "alerts")
+                }
+                for phase in ("baseline", "incident", "recovery")
+                if (run_path / phase).is_dir()
+            },
+            "task": str((_read_json(run_path / "agent-evaluation.json") or {}).get("task") or (_read_json(run_path / "agent-session.json") or {}).get("problem_id", "").rsplit("-", 1)[-1] or ("semantic_fault" if (_read_json(run_path / "scenario.json") or {}).get("category") == "code_level" else "unknown")),
             "pilot_assessment": _json_safe(_read_json(run_path / "pilot-assessment.json") or {}),
             "partial_trace_telemetry": any(
                 bool((_read_json(run_path / phase / "traces.json") or {}).get("errors"))

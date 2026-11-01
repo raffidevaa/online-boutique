@@ -161,7 +161,10 @@ accidentally confounding a fault experiment.
 | Agent orchestration + vector store (optional) | ~0.5-1 GB | |
 | OS + buffer | ~2 GB | |
 
-Jaeger uses bounded in-memory trace storage (`MEMORY_MAX_TRACES=2000`) and restarts when
+Jaeger has a 512 MB memory limit and bounded in-memory trace storage
+(`MEMORY_MAX_TRACES=1000`). The previous 256 MB limit caused Jaeger query requests to
+time out under the active workload; trace queries are capped at 50 results per service.
+Jaeger restarts when
 the container exits unexpectedly. This keeps the observability stack within the constrained
 host budget; trace retention is intentionally sized for the short baseline, incident, and
 recovery windows used by a single experiment rather than long-term storage.

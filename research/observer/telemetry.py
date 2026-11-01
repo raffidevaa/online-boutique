@@ -151,7 +151,7 @@ class Observer:
                         "end": int(end.timestamp() * 1_000_000),
                         "limit": self.trace_limit,
                     },
-                    timeout=3,
+                    timeout=8,
                 )
             except ObserverError as error:
                 trace_errors[service] = str(error)

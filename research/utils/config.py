@@ -58,7 +58,7 @@ class ResearchConfig:
     loki_url: str = "http://127.0.0.1:3100"
     jaeger_url: str = "http://127.0.0.1:16686"
     telemetry_limit: int = 5_000
-    trace_limit: int = 500
+    trace_limit: int = 50
     trace_services: tuple[str, ...] = (
         "frontend",
         "productcatalogservice",
@@ -107,7 +107,7 @@ class ResearchConfig:
             loki_url=env("RESEARCH_LOKI_URL", cls.loki_url),
             jaeger_url=env("RESEARCH_JAEGER_URL", cls.jaeger_url),
             telemetry_limit=int(env("RESEARCH_TELEMETRY_LIMIT", "5000")),
-            trace_limit=int(env("RESEARCH_TRACE_LIMIT", "500")),
+            trace_limit=int(env("RESEARCH_TRACE_LIMIT", "50")),
             pumba_image=env("RESEARCH_PUMBA_IMAGE", cls.pumba_image),
             pumba_stress_image=env("RESEARCH_PUMBA_STRESS_IMAGE", cls.pumba_stress_image),
             aiops_llm_provider=env("AIOPS_LLM_PROVIDER", cls.aiops_llm_provider),
