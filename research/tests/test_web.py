@@ -13,6 +13,73 @@ from research.web.jobs import GuiJobError, JobManager
 
 
 class WebDashboardTests(unittest.IsolatedAsyncioTestCase):
+    async def test_full_run_history_exposes_five_stage_sessions(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            config = self._config(Path(temporary))
+            run = config.experiment_runs / "EXP-FULL"
+            run.mkdir(parents=True)
+            (run / "metadata.json").write_text(json.dumps({"experiment_id": run.name, "scenario_id": "FI-NET-LOSS-02"}))
+            (run / "result.json").write_text('{"status":"completed"}')
+            scores = {"detection": {"detection_accuracy": True}, "localization": {"localization_exact": True}, "analysis": {"combined_rca_correct": True}, "mitigation": {"mitigation_success": True}}
+            (run / "agent-evaluation.json").write_text(json.dumps({"task": "full", "stages": scores}))
+            for name in ("detection", "localization", "mitigation", "remediation"):
+                (run / f"{name}-session.json").write_text('{"trace":[],"submitted":true}')
+            (run / "agent-session.json").write_text('{"trace":[],"submitted":true}')
+            app = create_app(config)
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+                listed = (await client.get("/api/runs")).json()["runs"][0]
+                detail = (await client.get("/api/runs/EXP-FULL")).json()
+            self.assertEqual(listed["task"], "full")
+            self.assertTrue(listed["task_result"])
+            self.assertEqual(set(detail["agent_sessions"]), {"live_detection", "live_localization", "live_rca", "remediation_recommendation", "live_mitigation"})
+
+    def test_prepare_accepts_only_full_pipeline(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            manager = JobManager(self._config(Path(temporary)))
+            with patch.object(manager, "_preflight", return_value={"scenario_id": "FI-NET-LOSS-02"}):
+                prepared = manager.prepare("FI-NET-LOSS-02", "full", 3)
+                self.assertEqual(prepared["job"]["task"], "full")
+                manager.cancel(prepared["job"]["job_id"])
+                with self.assertRaises(GuiJobError):
+                    manager.prepare("FI-NET-LOSS-02", "analysis", 3)
+            manager.close()
+
+    def test_job_marks_injector_failure_as_failed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            manager = JobManager(self._config(Path(temporary)))
+            with patch.object(manager, "_preflight", return_value={"scenario_id": "FI-NET-LOSS-02"}):
+                job_id = manager.prepare("FI-NET-LOSS-02", "full", 2)["job"]["job_id"]
+
+            async def failed_run(*args, **kwargs):
+                return {"status": "injector_failed", "experiment_id": "EXP-FAIL"}
+
+            with patch("research.web.jobs.create_orchestrator") as factory, patch("research.web.jobs.write_dataset_index"):
+                factory.return_value.run_live_problem = failed_run
+                manager._run(job_id)
+            job = manager.get(job_id)
+            self.assertEqual(job.status, "failed")
+            self.assertEqual(job.experiment_id, "EXP-FAIL")
+            manager.close()
+
+    async def test_current_mitigation_runs_keep_failed_status_out_of_success_summary(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            config = self._config(Path(temporary))
+            for name, status in (("EXP-FAIL", "injector_failed"), ("EXP-OK", "completed")):
+                run = config.experiment_runs / name
+                run.mkdir(parents=True)
+                (run / "metadata.json").write_text(json.dumps({"experiment_id": name, "scenario_id": "FI-NET-LOSS-02"}))
+                (run / "result.json").write_text(json.dumps({"status": status}))
+                (run / "agent-session.json").write_text(json.dumps({"problem_id": "FI-NET-LOSS-02-mitigation", "submitted": True, "results": {"mitigation_success": True}}))
+                (run / "agent-evaluation.json").write_text(json.dumps({"task": "mitigation"}))
+            app = create_app(config)
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+                runs = (await client.get("/api/runs")).json()["runs"]
+                summary = (await client.get("/api/metrics/summary")).json()["summary"]
+                detail = (await client.get("/api/runs/EXP-OK")).json()
+            self.assertIsNone(next(row for row in runs if row["experiment_id"] == "EXP-FAIL")["task_result"])
+            self.assertEqual(summary["mitigation"], {"total": 2, "completed": 1, "failed": 1, "partial": 0, "successful": 1})
+            self.assertIn("live_mitigation", detail["agent_sessions"])
+
     def test_gui_defaults_to_all_host_interfaces(self) -> None:
         self.assertEqual(ResearchConfig().gui_host, "0.0.0.0")
 
@@ -156,7 +223,7 @@ class WebDashboardTests(unittest.IsolatedAsyncioTestCase):
             ) as client:
                 response = await client.post(
                     "/api/jobs/prepare",
-                    json={"scenario_id": "FI-CODE-RETURN-01", "task": "analysis"},
+                    json={"scenario_id": "FI-CODE-RETURN-01", "task": "full"},
                 )
             self.assertEqual(response.status_code, 409)
             self.assertIn("runtime", response.json()["error"])
@@ -167,7 +234,7 @@ class WebDashboardTests(unittest.IsolatedAsyncioTestCase):
             manager = JobManager(config)
             try:
                 with patch.object(manager, "_preflight", return_value={"plan": {}, "warnings": []}):
-                    prepared = manager.prepare("FI-NET-DELAY-01", "analysis", 15)
+                    prepared = manager.prepare("FI-NET-DELAY-01", "full", 15)
                 job_id = prepared["job"]["job_id"]
                 manager.emit(
                     job_id,
@@ -189,7 +256,7 @@ class WebDashboardTests(unittest.IsolatedAsyncioTestCase):
             manager = JobManager(self._config(Path(temporary)))
             try:
                 with patch.object(manager, "_preflight", return_value={"plan": {}, "warnings": []}):
-                    prepared = manager.prepare("FI-NET-DELAY-01", "analysis", 15)
+                    prepared = manager.prepare("FI-NET-DELAY-01", "full", 15)
                 job_id = prepared["job"]["job_id"]
                 with self.assertRaises(GuiJobError):
                     manager.start(job_id, "wrong-token")
@@ -249,7 +316,7 @@ class WebDashboardTests(unittest.IsolatedAsyncioTestCase):
                     "research.web.jobs.ComposeApplication",
                     return_value=application,
                 ):
-                    prepared = manager.prepare("FI-NET-DELAY-01", "analysis", 15)
+                    prepared = manager.prepare("FI-NET-DELAY-01", "full", 15)
                     result = manager.cancel(prepared["job"]["job_id"])
                 application.stop_workload.assert_called_once_with()
                 self.assertEqual(result["status"], "cancelled")

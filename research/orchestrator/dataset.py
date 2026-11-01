@@ -112,6 +112,10 @@ def index_run(run_path: Path, research_root: Path) -> dict[str, str]:
     baseline_metrics, baseline_metrics_error = _read_json(
         run_path / "baseline" / "metrics.json"
     )
+    trace_captures = [
+        _read_json(run_path / phase / "traces.json")[0]
+        for phase in ("baseline", "incident", "recovery")
+    ]
     metadata = metadata or {}
     result = result or {}
     ground_truth = ground_truth or {}
@@ -189,6 +193,8 @@ def index_run(run_path: Path, research_root: Path) -> dict[str, str]:
         reasons.append("missing_incident_telemetry")
     if not recovery_available:
         reasons.append("missing_recovery_telemetry")
+    if any(capture and capture.get("errors") for capture in trace_captures):
+        reasons.append("partial_trace_telemetry")
     if fault_category == "code_level" and semantic_status != "passed":
         reasons.append(f"semantic_validation:{semantic_status}")
     if fault_type == "cpu_hog" and host_impact_status not in {"flagged", "not_flagged"}:

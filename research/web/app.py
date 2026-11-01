@@ -123,7 +123,7 @@ def create_app(config: ResearchConfig | None = None) -> FastAPI:
         try:
             return manager.prepare(
                 str(body.get("scenario_id", "")),
-                str(body.get("task", "analysis")),
+                str(body.get("task", "full")),
                 int(body.get("max_steps", 15)),
             )
         except (TypeError, ValueError) as error:
@@ -205,11 +205,21 @@ def create_app(config: ResearchConfig | None = None) -> FastAPI:
     @app.get("/api/metrics/summary")
     async def metrics(authorization: str | None = Header(default=None)) -> dict[str, Any]:
         _require_auth(config, authorization)
-        path = config.evaluations_dir / "phase-06-final" / "final-summary.json"
-        if not path.is_file():
-            return {"available": False, "error": "Phase 06 summary not found"}
-        import json
-
-        return {"available": True, "summary": json.loads(path.read_text(encoding="utf-8"))}
+        summary: dict[str, dict[str, int]] = {
+            task: {"total": 0, "completed": 0, "failed": 0, "partial": 0, "successful": 0}
+            for task in ("full", "detection", "localization", "analysis", "mitigation")
+        }
+        for run in manager.list_runs():
+            task = run.get("task") or "unknown"
+            bucket = summary.setdefault(task, {"total": 0, "completed": 0, "failed": 0, "successful": 0})
+            bucket["total"] += 1
+            if run.get("evaluation_status") == "completed" and run.get("partial_trace_telemetry"):
+                bucket["partial"] += 1
+            elif run.get("evaluation_status") == "completed":
+                bucket["completed"] += 1
+                bucket["successful"] += int(run.get("task_result") is True)
+            else:
+                bucket["failed"] += 1
+        return {"available": any(row["total"] for row in summary.values()), "summary": summary}
 
     return app

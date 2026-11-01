@@ -16,7 +16,8 @@ python -m research.agent \
   --execute
 ```
 
-Choose `detection`, `localization`, `analysis`, or `mitigation` for `--task`.
+Choose `full` to run detection, localization, analysis, recommendation, and mitigation
+against one fault. Individual tasks remain available for diagnostic and benchmark runs.
 The default provider is deterministic `fake`; configure an API provider through the
 repository-root `.env` or environment variables for an LLM run. Every live run writes
 an append-only experiment under `research/experiments/runs/`.

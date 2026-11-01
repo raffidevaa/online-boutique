@@ -67,6 +67,20 @@ class DatasetIndexTests(unittest.TestCase):
             self.assertEqual(row["eligible_for_evaluation"], "true")
             self.assertEqual(row["exclusion_reason"], "")
 
+    def test_partial_trace_capture_excludes_run_from_evaluation(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "research"
+            run_path = root / "experiments" / "runs" / "EXP-TRACE"
+            self._write_json(run_path / "metadata.json", {"experiment_id": "EXP-TRACE"})
+            self._write_json(run_path / "result.json", {"status": "completed"})
+            self._write_json(run_path / "ground_truth.json", self._ground_truth("EXP-TRACE"))
+            self._scenario(run_path)
+            self._telemetry(run_path)
+            self._write_json(run_path / "incident" / "traces.json", {"services": {}, "errors": {"frontend": "timeout"}})
+            row = build_dataset_index(run_path.parent, root)[0]
+            self.assertEqual(row["eligible_for_evaluation"], "false")
+            self.assertIn("partial_trace_telemetry", row["exclusion_reason"])
+
     def test_code_fault_requires_passed_semantic_validation(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / "research"

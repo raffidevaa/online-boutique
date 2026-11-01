@@ -87,7 +87,7 @@ class AgentOrchestrator:
         """Run a complete live problem through the Compose lifecycle adapter."""
         from .live import LiveIncidentController
 
-        problem_id = f"{scenario.scenario_id}-{task_name}"
+        problem_id = f"{scenario.scenario_id}-{'analysis' if task_name == 'full' else task_name}"
         try:
             definition = self.registry.get_problem_definition(problem_id)
         except ProblemError as error:
@@ -96,7 +96,7 @@ class AgentOrchestrator:
             raise AgentRuntimeError("Live scenario must match the registered problem catalog")
         return await LiveIncidentController(self.config, self, event_sink).run(
             definition.fault,
-            definition.task,
+            task_name,
             max_steps=max_steps,
             acknowledge_execute=acknowledge_execute,
         )

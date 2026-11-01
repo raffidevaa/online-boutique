@@ -16,10 +16,10 @@ class ObserverError(RuntimeError):
     """A required observability backend is unavailable or returned invalid data."""
 
 
-def _get_json(url: str, params: dict[str, Any] | None = None) -> Any:
+def _get_json(url: str, params: dict[str, Any] | None = None, *, timeout: float = 10) -> Any:
     query = f"?{urlencode(params)}" if params else ""
     try:
-        with urlopen(f"{url}{query}", timeout=10) as response:  # nosec B310: local configuration
+        with urlopen(f"{url}{query}", timeout=timeout) as response:  # nosec B310: local configuration
             return json.loads(response.read().decode("utf-8"))
     except (OSError, TimeoutError, json.JSONDecodeError) as error:
         raise ObserverError(f"Unable to query {url}: {error}") from error
@@ -139,12 +139,11 @@ class Observer:
             "captured_at": datetime.now(UTC).isoformat(),
             "alerts": _get_json(f"{self.prometheus_url}/api/v1/alerts"),
         }
-        traces = {
-            "schema_version": 1,
-            "start": start.isoformat(),
-            "end": end.isoformat(),
-            "services": {
-                service: _get_json(
+        trace_services: dict[str, Any] = {}
+        trace_errors: dict[str, str] = {}
+        for service in self.trace_services:
+            try:
+                trace_services[service] = _get_json(
                     f"{self.jaeger_url}/api/traces",
                     {
                         "service": service,
@@ -152,9 +151,16 @@ class Observer:
                         "end": int(end.timestamp() * 1_000_000),
                         "limit": self.trace_limit,
                     },
+                    timeout=3,
                 )
-                for service in self.trace_services
-            },
+            except ObserverError as error:
+                trace_errors[service] = str(error)
+        traces = {
+            "schema_version": 1,
+            "start": start.isoformat(),
+            "end": end.isoformat(),
+            "services": trace_services,
+            "errors": trace_errors,
         }
         return {"metrics": metrics, "logs": logs, "alerts": alerts, "traces": traces}
 

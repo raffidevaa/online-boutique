@@ -116,24 +116,24 @@ class LiveIncidentController:
         if injection_start is not None:
             injection_end = running.ended_at or datetime.now(UTC)
             try:
-                write_json(
-                    run_path / "ground_truth.json",
-                    _ground_truth(
-                        scenario,
-                        metadata["experiment_id"],
-                        injection_start,
-                        injection_end,
-                    ),
-                )
-                _capture(
-                    run_path / "incident",
-                    observer.capture(injection_start, injection_end),
-                )
+                if not (run_path / "ground_truth.json").exists():
+                    write_json(
+                        run_path / "ground_truth.json",
+                        _ground_truth(
+                            scenario, metadata["experiment_id"], injection_start, injection_end
+                        ),
+                    )
+                if not (run_path / "incident").exists():
+                    _capture(
+                        run_path / "incident",
+                        observer.capture(injection_start, injection_end),
+                    )
                 recovery_end = datetime.now(UTC)
-                _capture(
-                    run_path / "recovery",
-                    observer.capture(recovery_end - timedelta(minutes=1), recovery_end),
-                )
+                if not (run_path / "recovery").exists():
+                    _capture(
+                        run_path / "recovery",
+                        observer.capture(recovery_end - timedelta(minutes=1), recovery_end),
+                    )
                 recovery_recorded = True
             except (ObserverError, OSError, ValueError) as capture_error:
                 append_event(
@@ -225,55 +225,70 @@ class LiveIncidentController:
                     {"seconds": telemetry_warmup},
                 )
                 self._emit("telemetry_warmup_complete", seconds=telemetry_warmup)
-                problem_id = f"{scenario.scenario_id}-{task_name}"
-                mitigation_actions = (
-                    ComposeMitigationActions(
-                        application, scenario.target_service, injector, running
+                stage_records: dict[str, tuple[Any, AgentSession]] = {}
+                mitigation_actions = None
+                stages = (
+                    ("detection", "localization", "analysis", "remediation", "mitigation")
+                    if task_name == "full" else (task_name,)
+                )
+                rca_solution = None
+                rca_trace = None
+                for stage in stages:
+                    if stage == "remediation" and not isinstance(rca_solution, dict):
+                        self._emit("stage_skipped", stage=stage, reason="rca_not_submitted")
+                        continue
+                    if stage == "mitigation":
+                        mitigation_actions = ComposeMitigationActions(
+                            application, scenario.target_service, injector, running
+                        )
+                    self._emit("stage_started", stage=stage)
+                    _, current_task, current_session = self.orchestrator.init_problem(
+                        f"{scenario.scenario_id}-{stage}",
+                        start=injection_start,
+                        end=None,
+                        run_dir=None,
+                        mitigation_actions=mitigation_actions if stage == "mitigation" else None,
+                        rca_solution=rca_solution if stage == "remediation" else None,
+                        rca_trace=rca_trace if stage == "remediation" else None,
                     )
-                    if task_name == "mitigation" else None
-                )
-                _, task, session = self.orchestrator.init_problem(
-                    problem_id,
-                    start=injection_start,
-                    end=None,
-                    run_dir=None,
-                    mitigation_actions=mitigation_actions,
-                )
-                await self.orchestrator.start_problem(
-                    task,
-                    session,
-                    max_steps=max_steps,
-                    evaluate=False,
-                    persist=False,
-                    event_sink=self.event_sink,
-                )
-                remediation_task = None
-                remediation_session = None
+                    session = current_session
+                    await self.orchestrator.start_problem(
+                        current_task,
+                        current_session,
+                        max_steps=max_steps,
+                        evaluate=False,
+                        persist=False,
+                        event_sink=(
+                            lambda event, active_stage=stage: self.event_sink(
+                                {**event, "stage": active_stage}
+                            )
+                            if self.event_sink is not None else None
+                        ),
+                    )
+                    stage_records[stage] = (current_task, current_session)
+                    self._emit("stage_finished", stage=stage, submitted=current_session.submitted)
+                    if stage == "analysis" and current_session.submitted:
+                        rca_solution = current_session.solution
+                        rca_trace = [
+                            item.to_dict() for item in current_session.history
+                            if item.role in {"assistant", "env"}
+                        ]
+                task, session = stage_records["analysis" if task_name == "full" else task_name]
+                remediation_task, remediation_session = stage_records.get("remediation", (None, None))
                 if task_name == "analysis" and session.submitted and isinstance(session.solution, dict):
                     self._emit("remediation_started")
                     _, remediation_task, remediation_session = self.orchestrator.init_problem(
                         f"{scenario.scenario_id}-remediation",
-                        start=injection_start,
-                        end=None,
-                        run_dir=None,
+                        start=injection_start, end=None, run_dir=None,
                         rca_solution=session.solution,
-                        rca_trace=[
-                            item.to_dict()
-                            for item in session.history
-                            if item.role in {"assistant", "env"}
-                        ],
+                        rca_trace=[item.to_dict() for item in session.history if item.role in {"assistant", "env"}],
                     )
                     await self.orchestrator.start_problem(
-                        remediation_task,
-                        remediation_session,
-                        max_steps=max_steps,
-                        evaluate=False,
-                        persist=False,
-                        event_sink=self.event_sink,
+                        remediation_task, remediation_session, max_steps=max_steps,
+                        evaluate=False, persist=False, event_sink=self.event_sink,
                     )
+                    stage_records["remediation"] = (remediation_task, remediation_session)
                     self._emit("remediation_finished", submitted=remediation_session.submitted)
-                else:
-                    self._emit("remediation_skipped", reason="rca_not_submitted")
                 injector_result = await asyncio.to_thread(
                     injector.wait, running, scenario.duration_seconds + 60
                 )
@@ -282,37 +297,29 @@ class LiveIncidentController:
                     scenario, metadata["experiment_id"], injection_start, injection_end
                 )
                 write_json(run_path / "ground_truth.json", ground_truth)
-                session_result = self.orchestrator.finalize_session(
-                    task, session, expected=ground_truth, persist=False
-                )
-                write_json(run_path / "agent-session.json", session_result)
-                remediation_result = None
-                if remediation_session is not None and remediation_task is not None:
-                    remediation_result = self.orchestrator.finalize_session(
-                        remediation_task,
-                        remediation_session,
-                        expected=ground_truth,
-                        persist=False,
+                stage_results: dict[str, dict[str, Any]] = {}
+                for stage, (stage_task, stage_session) in stage_records.items():
+                    evaluated = self.orchestrator.finalize_session(
+                        stage_task, stage_session, expected=ground_truth, persist=False
                     )
-                    write_json(run_path / "remediation-session.json", remediation_result)
+                    stage_results[stage] = evaluated
+                    filename = "agent-session.json" if stage == "analysis" else f"{stage}-session.json"
+                    write_json(run_path / filename, evaluated)
+                session_result = stage_results["analysis" if task_name == "full" else task_name]
+                remediation_result = stage_results.get("remediation")
                 write_json(
                     run_path / "agent-evaluation.json",
                     {
-                        "schema_version": 1,
+                        "schema_version": 2,
                         "task": task_name,
                         "task_results": session_result["results"],
-                        "rca": session_result["results"] if task_name == "analysis" else None,
+                        "stages": {stage: result["results"] for stage, result in stage_results.items()},
+                        "rca": stage_results.get("analysis", {}).get("results"),
                         "remediation": remediation_result["results"] if remediation_result else None,
-                        "remediation_status": (
-                            "completed" if remediation_result else "skipped"
-                        ),
+                        "remediation_status": "completed" if remediation_result else "skipped",
                     },
                 )
-                self._emit(
-                    "agent_evaluation_complete",
-                    submitted=session_result.get("submitted", False),
-                    termination_reason=session_result.get("termination_reason"),
-                )
+                self._emit("agent_evaluation_complete", stages=list(stage_results))
                 write_json(
                     run_path / "injector-result.json",
                     {
@@ -376,6 +383,7 @@ class LiveIncidentController:
                     "run_path": str(run_path),
                     "session": session_result,
                     "remediation_session": remediation_result,
+                    "stages": stage_results,
                 }
             except Exception as error:
                 self._record_failed_run(

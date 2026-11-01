@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from research.agent.orchestrator import AgentOrchestrator, LlmAgent
 from research.agent.environment import ComposeEvidence
@@ -24,6 +24,64 @@ from research.utils.config import _load_dotenv
 
 
 class AioAgentTests(unittest.TestCase):
+    def test_orchestrator_passes_full_mode_to_live_controller(self) -> None:
+        import asyncio
+
+        scenario = load_scenario(Path("research/generators/scenarios/network-05-loss-productcatalog.yaml"))
+        orchestrator = AgentOrchestrator(ResearchConfig())
+        with patch("research.agent.live.LiveIncidentController") as controller:
+            async def completed(*args, **kwargs):
+                return {"status": "completed"}
+            controller.return_value.run.side_effect = completed
+            asyncio.run(orchestrator.run_live_problem(scenario, "full", acknowledge_execute=True))
+            self.assertEqual(controller.return_value.run.call_args.args[1], "full")
+
+    def test_full_live_pipeline_records_each_stage_with_one_fault(self) -> None:
+        import asyncio
+        from dataclasses import replace
+        from contextlib import nullcontext
+        from research.agent.providers import FakeProvider
+
+        source = load_scenario(Path("research/generators/scenarios/network-05-loss-productcatalog.yaml"))
+        scenario = replace(source, parameters={**source.parameters, "duration_seconds": 1})
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config = ResearchConfig(experiment_runs=root / "runs", recovery_observation_seconds=0)
+            provider = FakeProvider(actions=[
+                'submit("Yes")',
+                'submit(faulty_components=["productcatalogservice"])',
+                'submit({"system_level":"network","fault_type":"packet_loss","faulty_components":["productcatalogservice"]})',
+                'submit({"action_type":"manual_investigation","target_service":"unknown","rationale":"Collect evidence","evidence":["Incident telemetry"],"expected_effect":"Clarify cause","risk":"low","rollback_plan":"No change","requires_approval":True,"execution_allowed":False})',
+                'restore_service("productcatalogservice")',
+                'submit()',
+            ])
+            orchestrator = AgentOrchestrator(config)
+            orchestrator.register_agent(LlmAgent(provider))
+            application = Mock()
+            application.validate_readiness.return_value = {"productcatalogservice": SimpleNamespace(container_id="test")}
+            application.get_service_state.return_value = SimpleNamespace(status="running")
+            application.snapshot.return_value = {}
+            observer = Mock()
+            observer.capture.return_value = {kind: {} for kind in ("metrics", "logs", "traces", "alerts")}
+            injector = Mock()
+            injector.plan.return_value.to_dict.return_value = {}
+            running = SimpleNamespace(started_at=datetime.now(UTC), ended_at=None)
+            injector.start.return_value = running
+            injector.wait.return_value = SimpleNamespace(returncode=0, stdout="", stderr="")
+            run_path = config.experiment_runs / "EXP-TEST-FULL"
+            run_path.mkdir(parents=True)
+            controller = LiveIncidentController(config, orchestrator, application=application, observer=observer, injector=injector)
+            async def direct_thread(function, *args):
+                return function(*args)
+
+            with patch("research.agent.live.fault_lock", return_value=nullcontext()), patch("research.agent.live.create_run", return_value=(run_path, {"experiment_id": run_path.name})), patch("research.agent.live.asyncio.to_thread", side_effect=direct_thread):
+                result = asyncio.run(controller.run(scenario, "full", max_steps=2, acknowledge_execute=True))
+            self.assertEqual(result["status"], "completed")
+            self.assertEqual(injector.start.call_count, 1)
+            self.assertEqual(set(result["stages"]), {"detection", "localization", "analysis", "remediation", "mitigation"})
+            for name in ("detection-session.json", "localization-session.json", "agent-session.json", "remediation-session.json", "mitigation-session.json"):
+                self.assertTrue((run_path / name).is_file(), name)
+
     def test_fake_provider_uses_valid_mitigation_submission(self) -> None:
         self.assertEqual(FakeProvider._default_action({"submit": "submit()"}), "submit()")
 
@@ -116,6 +174,17 @@ class AioAgentTests(unittest.TestCase):
         actions.restore_service("checkoutservice")
         self.assertEqual(calls, ["stop", "restore"])
         self.assertTrue(actions.fault_stopped)
+
+    def test_mitigation_does_not_claim_naturally_expired_fault(self) -> None:
+        runtime = Mock()
+        runtime.get_service_state.return_value = SimpleNamespace(status="running")
+        fault = Mock()
+        running = SimpleNamespace(process=Mock())
+        running.process.poll.return_value = 0
+        actions = ComposeMitigationActions(runtime, "checkoutservice", fault, running)
+        actions.restore_service("checkoutservice")
+        fault.stop.assert_not_called()
+        self.assertFalse(actions.fault_stopped)
 
     def test_compose_workload_requires_allowlisted_running_generator(self) -> None:
         application = Mock()

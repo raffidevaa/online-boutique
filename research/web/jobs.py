@@ -14,7 +14,6 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Any
 import uuid
 
-from research.agent.live import LiveIncidentController
 from research.agent.orchestrator import create_orchestrator
 from research.agent.sanitize import sanitize_text
 from research.generators import FaultScenario, ScenarioError, load_scenario
@@ -199,14 +198,14 @@ class JobManager:
             "warnings": [
                 "Fault injection is bounded to one scenario and one target.",
                 "The required loadgenerator is started during preparation when it is not already running.",
-                "Ground truth is withheld until RCA and recommendation have ended.",
+                "Ground truth is withheld until the full agent pipeline has ended.",
             ],
             "workload_started": workload_started,
         }
 
     def prepare(self, scenario_id: str, task: str, max_steps: int) -> dict[str, Any]:
-        if task != "analysis":
-            raise GuiJobError("GUI live runs currently support task=analysis only")
+        if task != "full":
+            raise GuiJobError("GUI runs the full pipeline for each fault")
         if max_steps < 1 or max_steps > 50:
             raise GuiJobError("max_steps must be between 1 and 50")
         with self.lock:
@@ -286,24 +285,24 @@ class JobManager:
                 job.condition.notify_all()
             self.emit(job_id, "run_started")
             orchestrator = create_orchestrator(self.config)
-            controller = LiveIncidentController(
-                self.config,
-                orchestrator,
-                event_sink=lambda event: self.emit(job_id, event.pop("kind", "agent_event"), **event),
-            )
             result = asyncio.run(
-                controller.run(
+                orchestrator.run_live_problem(
                     scenario,
                     job.task,
                     max_steps=job.max_steps,
                     acknowledge_execute=True,
+                    event_sink=lambda event: self.emit(
+                        job_id, event.pop("kind", "agent_event"), **event
+                    ),
                 )
             )
             job.experiment_id = result.get("experiment_id")
             job.result = result
-            job.status = "completed"
+            job.status = "completed" if result.get("status") == "completed" else "failed"
+            if job.status == "failed":
+                job.error = f"Experiment ended with status {result.get('status', 'unknown')}"
             job.updated_at = _now()
-            self.emit(job_id, "completed", experiment_id=job.experiment_id, result=result)
+            self.emit(job_id, job.status, experiment_id=job.experiment_id, result=result)
             try:
                 write_dataset_index(
                     self.config.experiment_runs,
@@ -370,6 +369,24 @@ class JobManager:
                 metadata = _read_json(run_path / "metadata.json") or {}
                 result = _read_json(run_path / "result.json") or {}
                 session = _read_json(run_path / "agent-session.json") or {}
+                evaluation = _read_json(run_path / "agent-evaluation.json") or {}
+                partial_traces = any(
+                    bool((_read_json(run_path / phase / "traces.json") or {}).get("errors"))
+                    for phase in ("baseline", "incident", "recovery")
+                )
+                task = str(evaluation.get("task") or session.get("problem_id", "").rsplit("-", 1)[-1])
+                scores = session.get("results") if isinstance(session.get("results"), dict) else {}
+                stages = evaluation.get("stages") if isinstance(evaluation.get("stages"), dict) else {}
+                stage_keys = {
+                    "detection": "detection_accuracy",
+                    "localization": "localization_exact",
+                    "analysis": "combined_rca_correct",
+                    "mitigation": "mitigation_success",
+                }
+                task_result = (
+                    all(stages.get(stage, {}).get(key) is True for stage, key in stage_keys.items())
+                    if task == "full" else scores.get(stage_keys.get(task, ""))
+                )
                 experiment_id = str(metadata.get("experiment_id", run_path.name))
                 solution = session.get("solution") if isinstance(session.get("solution"), dict) else {}
                 rows.setdefault(experiment_id, {
@@ -378,6 +395,12 @@ class JobManager:
                     "scenario_id": metadata.get("scenario_id", ""),
                     "scope": (_read_json(run_path / "scenario.json") or {}).get("category", ""),
                     "evaluation_status": result.get("status", "incomplete"),
+                    "partial_trace_telemetry": partial_traces,
+                    "task": task,
+                    "task_result": task_result if result.get("status") == "completed" else None,
+                    "stages": {stage: values.get(key) for stage, key in stage_keys.items() for values in [stages.get(stage, {})]} if task == "full" else {},
+                    "submitted": session.get("submitted", False),
+                    "duration_seconds": session.get("duration_seconds"),
                     "predicted_service": (solution.get("faulty_components") or [""])[0],
                     "predicted_category": solution.get("system_level", ""),
                     "predicted_fault_type": solution.get("fault_type", ""),
@@ -410,7 +433,12 @@ class JobManager:
             "agent_session": None,
             "agent_sessions": sessions,
             "agent_evaluation": _json_safe(_read_json(run_path / "agent-evaluation.json") or {}),
+            "task": str((_read_json(run_path / "agent-evaluation.json") or {}).get("task") or (_read_json(run_path / "agent-session.json") or {}).get("problem_id", "").rsplit("-", 1)[-1]),
             "pilot_assessment": _json_safe(_read_json(run_path / "pilot-assessment.json") or {}),
+            "partial_trace_telemetry": any(
+                bool((_read_json(run_path / phase / "traces.json") or {}).get("errors"))
+                for phase in ("baseline", "incident", "recovery")
+            ),
         }
         events_path = run_path / "events.jsonl"
         if events_path.is_file():
@@ -422,10 +450,14 @@ class JobManager:
         session = _read_json(run_path / "agent-session.json")
         if session is not None:
             detail["agent_session"] = _json_safe(session)
-            detail["agent_sessions"]["live_rca"] = _json_safe(session)
+            detail["agent_sessions"]["live_mitigation" if detail["task"] == "mitigation" else "live_rca"] = _json_safe(session)
         remediation_session = _read_json(run_path / "remediation-session.json")
         if remediation_session is not None:
             detail["agent_sessions"]["remediation_recommendation"] = _json_safe(remediation_session)
+        for stage in ("detection", "localization", "mitigation"):
+            stage_session = _read_json(run_path / f"{stage}-session.json")
+            if stage_session is not None:
+                detail["agent_sessions"][f"live_{stage}"] = _json_safe(stage_session)
         if result.get("status") in {"completed", "injector_failed", "failed"}:
             detail["ground_truth"] = _json_safe(
                 _read_json(run_path / "ground_truth.json") or {}, hide_labels=False

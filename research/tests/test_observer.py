@@ -34,7 +34,7 @@ class ObserverTests(unittest.TestCase):
         self.assertIn("frontend", captured["traces"]["services"])
 
     @patch("research.observer.telemetry.urlopen")
-    def test_capture_converts_disconnected_trace_backend_to_observer_error(
+    def test_capture_records_disconnected_trace_backend_without_losing_other_telemetry(
         self, mocked_urlopen: object
     ) -> None:
         def open_endpoint(url: str, timeout: int) -> FakeResponse:
@@ -46,8 +46,9 @@ class ObserverTests(unittest.TestCase):
         mocked_urlopen.side_effect = open_endpoint
         observer = Observer(ResearchConfig())
         end = datetime.now(UTC)
-        with self.assertRaisesRegex(ObserverError, "Unable to query.*api/traces"):
-            observer.capture(end - timedelta(minutes=1), end)
+        captured = observer.capture(end - timedelta(minutes=1), end)
+        self.assertIn("frontend", captured["traces"]["errors"])
+        self.assertIn("metrics", captured)
 
 
 if __name__ == "__main__":

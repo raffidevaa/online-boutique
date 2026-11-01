@@ -41,7 +41,7 @@ def main() -> int:
     )
     parser.add_argument("--live-incident", action="store_true")
     parser.add_argument("--scenario", type=Path, help="Scenario YAML for integrated live")
-    parser.add_argument("--task", choices=("detection", "localization", "analysis", "mitigation"))
+    parser.add_argument("--task", choices=("full", "detection", "localization", "analysis", "mitigation"))
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--max-steps", type=int, default=15)
     arguments = parser.parse_args()

@@ -44,8 +44,12 @@ class ComposeMitigationActions:
         if before is None:
             raise MitigationActionError("Target service is unavailable")
         if self.fault_runtime is not None and self.running_fault is not None:
-            self.fault_runtime.stop(self.running_fault)
-            self.fault_stopped = True
+            process = getattr(self.running_fault, "process", None)
+            poll = getattr(process, "poll", None)
+            active = not callable(poll) or poll() is None
+            if active:
+                self.fault_runtime.stop(self.running_fault)
+                self.fault_stopped = True
         self.runtime.restore_service(service)
         after = self.runtime.get_service_state(service)
         status = getattr(after, "status", "unknown")

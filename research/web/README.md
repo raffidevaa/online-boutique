@@ -31,7 +31,12 @@ to a shared or public network, configure a bearer token in the repository-root `
 RESEARCH_GUI_AUTH_TOKEN=use-a-long-random-value
 ```
 
-The GUI exposes the allowlisted `ready_for_pilot` runtime scenarios. Preparation validates the
+The GUI exposes the allowlisted `ready_for_pilot` runtime scenarios. Choosing one fault
+runs the full pipeline in a single experiment: detection, localization, analysis,
+recommendation (when RCA submits), then mitigation. There is no task selector.
+After changing Python backend code, restart the running `python -m research.web` process;
+refreshing the browser only reloads static assets, not the backend modules.
+Preparation validates the
 stack and starts the required `loadgenerator` profile when it is stopped; a separate confirmation
 then starts the fault. It permits only one active fault job. Code-level scenarios and catalogued
 unavailable scenarios remain visible for context but cannot be executed from the GUI.
@@ -40,8 +45,14 @@ The live trace is sanitized before it is streamed to the browser. Ground truth i
 the agent and is only available in a completed run detail. Agent session events and GUI job events
 are stored as append-only local research artifacts.
 
-History links open `/runs/<experiment_id>` and can be bookmarked. Each new run stores one
-RCA session and, after a valid RCA submission, one remediation recommendation session. The
-detail page pairs each agent action with its recorded observation; long inputs and outputs
-expand on demand. The recommendation summary appears near the top. If RCA did not submit,
-the recommendation stage is skipped and the detail explains that no recommendation exists.
+History links open `/runs/<experiment_id>` and can be bookmarked. Live jobs show stage
+progress and link to the recorded run. The run detail separates each stage's actions,
+observations, and scores. Mitigation can restore only the active
+target service and stops the injected fault before recreating that service. Its current
+success score means the fault was stopped and the target container was running at
+submission; telemetry-based recovery is not yet scored. Failed injector runs remain
+visible but are excluded from successful-run counts. The summary uses current run
+artifacts and shows an empty state when no runs exist for a task.
+If Jaeger times out for one trace service during capture, the run records a partial trace
+warning and the dataset index excludes it from evaluation instead of losing completed
+agent sessions.
