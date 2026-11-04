@@ -207,11 +207,14 @@ def create_app(config: ResearchConfig | None = None) -> FastAPI:
         _require_auth(config, authorization)
         summary: dict[str, dict[str, int]] = {
             task: {"total": 0, "completed": 0, "failed": 0, "partial": 0, "successful": 0}
-            for task in ("full", "detection", "localization", "analysis", "mitigation")
+            for task in ("full", "detection", "localization", "analysis", "mitigation", "semantic_fault")
         }
         for run in manager.list_runs():
             task = run.get("task") or "unknown"
-            bucket = summary.setdefault(task, {"total": 0, "completed": 0, "failed": 0, "successful": 0})
+            bucket = summary.setdefault(
+                task,
+                {"total": 0, "completed": 0, "failed": 0, "partial": 0, "successful": 0},
+            )
             bucket["total"] += 1
             if run.get("evaluation_status") == "completed" and run.get("partial_trace_telemetry"):
                 bucket["partial"] += 1

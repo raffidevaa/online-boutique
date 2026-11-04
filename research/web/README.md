@@ -31,7 +31,7 @@ to a shared or public network, configure a bearer token in the repository-root `
 RESEARCH_GUI_AUTH_TOKEN=use-a-long-random-value
 ```
 
-The GUI exposes the allowlisted `ready_for_pilot` runtime scenarios. Choosing one fault
+The GUI exposes the allowlisted `ready_for_pilot` runtime scenarios. Choosing one runtime fault
 runs the full pipeline in a single experiment: detection, localization, analysis,
 recommendation (when RCA submits), then mitigation. There is no task selector.
 After changing Python backend code, restart the running `python -m research.web` process;
@@ -39,7 +39,12 @@ refreshing the browser only reloads static assets, not the backend modules.
 Preparation validates the
 stack and starts the required `loadgenerator` profile when it is stopped; a separate confirmation
 then starts the fault. It permits only one active fault job. Code-level scenarios and catalogued
-unavailable scenarios remain visible for context but cannot be executed from the GUI.
+unavailable scenarios remain visible for context. Code-level scenarios can be prepared
+when their research-owned faulty image has been built locally. Their GUI jobs validate
+the behavioral change with a semantic probe, then run the same five-stage agent pipeline
+and record stage scores in History. Mitigation or final cleanup restores the baseline image.
+Older semantic-only runs remain readable in History and are labeled "Validation only";
+they have no agent-stage scores. New GUI jobs use the full pipeline.
 
 The live trace is sanitized before it is streamed to the browser. Ground truth is not sent to
 the agent and is only available in a completed run detail. Agent session events and GUI job events

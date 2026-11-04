@@ -1,0 +1,6 @@
+experiments/**
+agent/.cache/**
+agent/cache/**
+agent/local/**
+agent/vectorstore/**
+**/__pycache__/**

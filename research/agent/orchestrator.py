@@ -112,6 +112,7 @@ class AgentOrchestrator:
         rca_solution: dict[str, Any] | None = None,
         rca_trace: list[dict[str, str]] | None = None,
         mitigation_actions: ComposeMitigationActions | None = None,
+        prior_context: str | None = None,
     ) -> tuple[ProblemContext, Any, AgentSession]:
         if self.agent is None:
             raise AgentRuntimeError("Register an agent before initializing a problem")
@@ -129,10 +130,24 @@ class AgentOrchestrator:
             )
         except (ProblemError, OSError) as error:
             raise AgentRuntimeError(str(error)) from error
+        instructions = task.get_instructions()
+        if prior_context:
+            instructions += (
+                "\n\nFindings from earlier stages of this same incident follow. "
+                "They are agent observations and hypotheses, not evaluator labels. "
+                "Continue from them. Do not repeat an evidence query already answered "
+                "unless the evidence is stale or insufficient.\n" + prior_context
+            )
+            if task.task_name == "mitigation":
+                instructions += (
+                    "\nThe fault may expire soon. If the prior RCA and recommendation "
+                    "justify restoring the identified service, make restore_service "
+                    "your first action. Verify afterward, then submit."
+                )
         context = ProblemContext(
             problem_id=definition.problem_id,
             description=task.get_task_description(),
-            instructions=task.get_instructions(),
+            instructions=instructions,
             actions=task.get_available_actions(),
         )
         init_context = getattr(self.agent, "init_context", None)
@@ -152,6 +167,7 @@ class AgentOrchestrator:
         evaluate: bool = True,
         persist: bool = True,
         event_sink: Callable[[dict[str, Any]], None] | None = None,
+        initial_observation: str | None = None,
     ) -> dict[str, Any]:
         if self.agent is None:
             raise AgentRuntimeError("Register an agent before starting a problem")
@@ -160,7 +176,7 @@ class AgentOrchestrator:
         session.start()
         if event_sink is not None:
             event_sink({"kind": "session_started", "problem_id": session.problem_id})
-        observation = f"Step 1 of {max_steps}. Start with the recommended triage action."
+        observation = initial_observation or f"Step 1 of {max_steps}. Start with the recommended triage action."
         try:
             for step in range(1, max_steps + 1):
                 response = await self.agent.get_action(observation)

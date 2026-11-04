@@ -1,0 +1,6312 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "research",
+    "languages": [
+      "config",
+      "css",
+      "dockerfile",
+      "html",
+      "javascript",
+      "json",
+      "markdown",
+      "patch",
+      "python",
+      "shell",
+      "txt",
+      "unknown",
+      "yaml"
+    ],
+    "frameworks": [
+      "FastAPI",
+      "Docker Compose"
+    ],
+    "description": "Thesis scaffold for an agentic AI system that analyzes observability data, identifies root causes, and recommends remediation in a Docker Compose Online Boutique SRE environment. Note: this project has over 100 source files; consider scoping analysis to a subdirectory for faster results.",
+    "analyzedAt": "2026-11-01T17:16:46.540369+00:00",
+    "gitCommitHash": "803a114a2c44f6657e009d26a130bffe8e556ed7"
+  },
+  "nodes": [
+    {
+      "id": "file:agent/evaluate.py",
+      "type": "file",
+      "name": "evaluate.py",
+      "filePath": "agent/evaluate.py",
+      "summary": "Entry point for batch RCA evaluation.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:agent/evaluate_final.py",
+      "type": "file",
+      "name": "evaluate_final.py",
+      "filePath": "agent/evaluate_final.py",
+      "summary": "Entry point for final end-to-end evaluation.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:agent/evaluator.py",
+      "type": "file",
+      "name": "evaluator.py",
+      "filePath": "agent/evaluator.py",
+      "summary": "Evaluates RCA sessions against withheld experiment ground truth and aggregates scores.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:agent/evaluator.py:_resolve_run_path",
+      "type": "function",
+      "name": "_resolve_run_path",
+      "filePath": "agent/evaluator.py",
+      "lineRange": [
+        95,
+        111
+      ],
+      "summary": "Handles resolve run path within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/evaluator.py:read_eligible_runs",
+      "type": "function",
+      "name": "read_eligible_runs",
+      "filePath": "agent/evaluator.py",
+      "lineRange": [
+        114,
+        151
+      ],
+      "summary": "Read every eligible row from the derived index, in CSV order.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/evaluator.py:_blank_result",
+      "type": "function",
+      "name": "_blank_result",
+      "filePath": "agent/evaluator.py",
+      "lineRange": [
+        154,
+        181
+      ],
+      "summary": "Handles blank result within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/evaluator.py:_prediction",
+      "type": "function",
+      "name": "_prediction",
+      "filePath": "agent/evaluator.py",
+      "lineRange": [
+        184,
+        194
+      ],
+      "summary": "Handles prediction within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/evaluator.py:_result_from_session",
+      "type": "function",
+      "name": "_result_from_session",
+      "filePath": "agent/evaluator.py",
+      "lineRange": [
+        197,
+        245
+      ],
+      "summary": "Handles result from session within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/evaluator.py:_metric_bundle",
+      "type": "function",
+      "name": "_metric_bundle",
+      "filePath": "agent/evaluator.py",
+      "lineRange": [
+        248,
+        270
+      ],
+      "summary": "Handles metric bundle within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/evaluator.py:_cli_provider",
+      "type": "function",
+      "name": "_cli_provider",
+      "filePath": "agent/evaluator.py",
+      "lineRange": [
+        405,
+        416
+      ],
+      "summary": "Handles cli provider within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/evaluator.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "agent/evaluator.py",
+      "lineRange": [
+        419,
+        459
+      ],
+      "summary": "Runs the command-line entry point for this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/evaluator.py:EvaluationRun",
+      "type": "class",
+      "name": "EvaluationRun",
+      "filePath": "agent/evaluator.py",
+      "lineRange": [
+        60,
+        68
+      ],
+      "summary": "One eligible index row with its resolved replay directory.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/evaluator.py:BatchEvaluator",
+      "type": "class",
+      "name": "BatchEvaluator",
+      "filePath": "agent/evaluator.py",
+      "lineRange": [
+        273,
+        402
+      ],
+      "summary": "Replay all selected index rows and write an auditable evaluation bundle.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:agent/final_evaluator.py",
+      "type": "file",
+      "name": "final_evaluator.py",
+      "filePath": "agent/final_evaluator.py",
+      "summary": "Scores final diagnosis and recommendations across recorded experiments.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:agent/final_evaluator.py:_build_row",
+      "type": "function",
+      "name": "_build_row",
+      "filePath": "agent/final_evaluator.py",
+      "lineRange": [
+        110,
+        176
+      ],
+      "summary": "Handles build row within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:agent/final_evaluator.py:_metrics",
+      "type": "function",
+      "name": "_metrics",
+      "filePath": "agent/final_evaluator.py",
+      "lineRange": [
+        188,
+        212
+      ],
+      "summary": "Handles metrics within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/final_evaluator.py:aggregate",
+      "type": "function",
+      "name": "aggregate",
+      "filePath": "agent/final_evaluator.py",
+      "lineRange": [
+        215,
+        258
+      ],
+      "summary": "Handles aggregate within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/final_evaluator.py:_render_report",
+      "type": "function",
+      "name": "_render_report",
+      "filePath": "agent/final_evaluator.py",
+      "lineRange": [
+        261,
+        288
+      ],
+      "summary": "Handles render report within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/final_evaluator.py:run_cli",
+      "type": "function",
+      "name": "run_cli",
+      "filePath": "agent/final_evaluator.py",
+      "lineRange": [
+        291,
+        318
+      ],
+      "summary": "Handles run cli within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/final_evaluator.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "agent/final_evaluator.py",
+      "lineRange": [
+        321,
+        332
+      ],
+      "summary": "Runs the command-line entry point for this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/final_evaluator.py:CanonicalPaths",
+      "type": "class",
+      "name": "CanonicalPaths",
+      "filePath": "agent/final_evaluator.py",
+      "lineRange": [
+        33,
+        35
+      ],
+      "summary": "Handles CanonicalPaths within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:agent/remediation.py",
+      "type": "file",
+      "name": "remediation.py",
+      "filePath": "agent/remediation.py",
+      "summary": "Defines allowlisted remediation review and execution behavior.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:agent/remediation.py:validate_remediation",
+      "type": "function",
+      "name": "validate_remediation",
+      "filePath": "agent/remediation.py",
+      "lineRange": [
+        33,
+        94
+      ],
+      "summary": "Validate and return a recommendation without enabling execution.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:agent/remediation_evaluate.py",
+      "type": "file",
+      "name": "remediation_evaluate.py",
+      "filePath": "agent/remediation_evaluate.py",
+      "summary": "Entry point for remediation evaluation.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:agent/remediation_evaluator.py",
+      "type": "file",
+      "name": "remediation_evaluator.py",
+      "filePath": "agent/remediation_evaluator.py",
+      "summary": "Evaluates remediation decisions and outcomes from experiment runs.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:agent/remediation_evaluator.py:_rca_prediction",
+      "type": "function",
+      "name": "_rca_prediction",
+      "filePath": "agent/remediation_evaluator.py",
+      "lineRange": [
+        64,
+        74
+      ],
+      "summary": "Handles rca prediction within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/remediation_evaluator.py:_blank_result",
+      "type": "function",
+      "name": "_blank_result",
+      "filePath": "agent/remediation_evaluator.py",
+      "lineRange": [
+        77,
+        100
+      ],
+      "summary": "Handles blank result within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/remediation_evaluator.py:_result_from_sessions",
+      "type": "function",
+      "name": "_result_from_sessions",
+      "filePath": "agent/remediation_evaluator.py",
+      "lineRange": [
+        103,
+        167
+      ],
+      "summary": "Handles result from sessions within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:agent/remediation_evaluator.py:_stored_session",
+      "type": "function",
+      "name": "_stored_session",
+      "filePath": "agent/remediation_evaluator.py",
+      "lineRange": [
+        170,
+        184
+      ],
+      "summary": "Handles stored session within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/remediation_evaluator.py:_recommendation_metrics",
+      "type": "function",
+      "name": "_recommendation_metrics",
+      "filePath": "agent/remediation_evaluator.py",
+      "lineRange": [
+        187,
+        205
+      ],
+      "summary": "Handles recommendation metrics within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/remediation_evaluator.py:_cli_provider",
+      "type": "function",
+      "name": "_cli_provider",
+      "filePath": "agent/remediation_evaluator.py",
+      "lineRange": [
+        421,
+        430
+      ],
+      "summary": "Handles cli provider within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/remediation_evaluator.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "agent/remediation_evaluator.py",
+      "lineRange": [
+        433,
+        468
+      ],
+      "summary": "Runs the command-line entry point for this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/remediation_evaluator.py:RemediationBatchEvaluator",
+      "type": "class",
+      "name": "RemediationBatchEvaluator",
+      "filePath": "agent/remediation_evaluator.py",
+      "lineRange": [
+        208,
+        418
+      ],
+      "summary": "Run analysis followed by recommendation and preserve both stage traces.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:agent/remediation_review.py",
+      "type": "file",
+      "name": "remediation_review.py",
+      "filePath": "agent/remediation_review.py",
+      "summary": "Reviews remediation recommendations before action.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:agent/remediation_review.py:write_review_template",
+      "type": "function",
+      "name": "write_review_template",
+      "filePath": "agent/remediation_review.py",
+      "lineRange": [
+        31,
+        58
+      ],
+      "summary": "Create a separate, append-only-friendly CSV for human rubric scores.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/remediation_review.py:validate_review_rows",
+      "type": "function",
+      "name": "validate_review_rows",
+      "filePath": "agent/remediation_review.py",
+      "lineRange": [
+        61,
+        96
+      ],
+      "summary": "Validate completed manual reviews and return aggregate rubric metrics.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/remediation_review.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "agent/remediation_review.py",
+      "lineRange": [
+        99,
+        107
+      ],
+      "summary": "Runs the command-line entry point for this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:agent/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "agent/__init__.py",
+      "summary": "Initializes the RCA agent package.",
+      "tags": [
+        "package",
+        "entry-point",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:agent/actions.py",
+      "type": "file",
+      "name": "actions.py",
+      "filePath": "agent/actions.py",
+      "summary": "Defines the agent action interfaces used for observations and mitigation.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/actions.py:MitigationActionError",
+      "type": "class",
+      "name": "MitigationActionError",
+      "filePath": "agent/actions.py",
+      "lineRange": [
+        8,
+        9
+      ],
+      "summary": "The requested operation is outside the active problem's allowlist.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/actions.py:ServiceActionRuntime",
+      "type": "class",
+      "name": "ServiceActionRuntime",
+      "filePath": "agent/actions.py",
+      "lineRange": [
+        12,
+        14
+      ],
+      "summary": "Handles ServiceActionRuntime within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/actions.py:ActiveFaultRuntime",
+      "type": "class",
+      "name": "ActiveFaultRuntime",
+      "filePath": "agent/actions.py",
+      "lineRange": [
+        17,
+        18
+      ],
+      "summary": "Handles ActiveFaultRuntime within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/actions.py:ComposeMitigationActions",
+      "type": "class",
+      "name": "ComposeMitigationActions",
+      "filePath": "agent/actions.py",
+      "lineRange": [
+        21,
+        57
+      ],
+      "summary": "Execute only service restoration for the faulted service.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:agent/environment.py",
+      "type": "file",
+      "name": "environment.py",
+      "filePath": "agent/environment.py",
+      "summary": "Builds the RCA environment from service metadata, telemetry, and experiment state.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "class:agent/environment.py:EnvironmentError",
+      "type": "class",
+      "name": "EnvironmentError",
+      "filePath": "agent/environment.py",
+      "lineRange": [
+        17,
+        18
+      ],
+      "summary": "Raised when telemetry cannot be read safely.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/environment.py:ComposeEvidence",
+      "type": "class",
+      "name": "ComposeEvidence",
+      "filePath": "agent/environment.py",
+      "lineRange": [
+        21,
+        685
+      ],
+      "summary": "Expose bounded telemetry observations without Docker or shell access.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:agent/orchestrator.py",
+      "type": "file",
+      "name": "orchestrator.py",
+      "filePath": "agent/orchestrator.py",
+      "summary": "Coordinates the agent session through detection, localization, analysis, and recommendation.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:agent/orchestrator.py:create_orchestrator",
+      "type": "function",
+      "name": "create_orchestrator",
+      "filePath": "agent/orchestrator.py",
+      "lineRange": [
+        291,
+        294
+      ],
+      "summary": "Handles create orchestrator within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/orchestrator.py:AgentRuntimeError",
+      "type": "class",
+      "name": "AgentRuntimeError",
+      "filePath": "agent/orchestrator.py",
+      "lineRange": [
+        20,
+        21
+      ],
+      "summary": "Raised when an agent session cannot proceed safely.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/orchestrator.py:LlmAgent",
+      "type": "class",
+      "name": "LlmAgent",
+      "filePath": "agent/orchestrator.py",
+      "lineRange": [
+        24,
+        58
+      ],
+      "summary": "Provider-backed agent implementing the AIOpsLab agent contract.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/orchestrator.py:AgentOrchestrator",
+      "type": "class",
+      "name": "AgentOrchestrator",
+      "filePath": "agent/orchestrator.py",
+      "lineRange": [
+        61,
+        288
+      ],
+      "summary": "Manage problem setup, interaction, evaluation, persistence, and cleanup.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:agent/parser.py",
+      "type": "file",
+      "name": "parser.py",
+      "filePath": "agent/parser.py",
+      "summary": "Parses and validates structured responses from the LLM provider.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:agent/parser.py:ActionParseError",
+      "type": "class",
+      "name": "ActionParseError",
+      "filePath": "agent/parser.py",
+      "lineRange": [
+        11,
+        12
+      ],
+      "summary": "Raised when an agent response is not exactly one permitted action call.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/parser.py:ResponseParser",
+      "type": "class",
+      "name": "ResponseParser",
+      "filePath": "agent/parser.py",
+      "lineRange": [
+        15,
+        72
+      ],
+      "summary": "Handles ResponseParser within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:agent/registry.py",
+      "type": "file",
+      "name": "registry.py",
+      "filePath": "agent/registry.py",
+      "summary": "Registers read-only tools and allowlisted actions available to the agent.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:agent/registry.py:ProblemError",
+      "type": "class",
+      "name": "ProblemError",
+      "filePath": "agent/registry.py",
+      "lineRange": [
+        26,
+        27
+      ],
+      "summary": "Raised when a problem ID or evidence source is invalid.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/registry.py:ProblemDefinition",
+      "type": "class",
+      "name": "ProblemDefinition",
+      "filePath": "agent/registry.py",
+      "lineRange": [
+        40,
+        48
+      ],
+      "summary": "The five components of an AIOpsLab problem, independent of runtime.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/registry.py:ComposeProblemRegistry",
+      "type": "class",
+      "name": "ComposeProblemRegistry",
+      "filePath": "agent/registry.py",
+      "lineRange": [
+        51,
+        136
+      ],
+      "summary": "Handles ComposeProblemRegistry within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:agent/tasks.py",
+      "type": "file",
+      "name": "tasks.py",
+      "filePath": "agent/tasks.py",
+      "summary": "Defines task-specific prompts, states, and response contracts for RCA.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "class:agent/tasks.py:EnvironmentResponse",
+      "type": "class",
+      "name": "EnvironmentResponse",
+      "filePath": "agent/tasks.py",
+      "lineRange": [
+        20,
+        23
+      ],
+      "summary": "Handles EnvironmentResponse within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/tasks.py:TaskError",
+      "type": "class",
+      "name": "TaskError",
+      "filePath": "agent/tasks.py",
+      "lineRange": [
+        26,
+        27
+      ],
+      "summary": "Raised for invalid task actions or submissions.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/tasks.py:BaseTask",
+      "type": "class",
+      "name": "BaseTask",
+      "filePath": "agent/tasks.py",
+      "lineRange": [
+        30,
+        88
+      ],
+      "summary": "Handles BaseTask within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:agent/tasks.py:DetectionTask",
+      "type": "class",
+      "name": "DetectionTask",
+      "filePath": "agent/tasks.py",
+      "lineRange": [
+        91,
+        121
+      ],
+      "summary": "Handles DetectionTask within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/tasks.py:LocalizationTask",
+      "type": "class",
+      "name": "LocalizationTask",
+      "filePath": "agent/tasks.py",
+      "lineRange": [
+        124,
+        171
+      ],
+      "summary": "Handles LocalizationTask within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/tasks.py:AnalysisTask",
+      "type": "class",
+      "name": "AnalysisTask",
+      "filePath": "agent/tasks.py",
+      "lineRange": [
+        174,
+        264
+      ],
+      "summary": "Handles AnalysisTask within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:agent/tasks.py:MitigationTask",
+      "type": "class",
+      "name": "MitigationTask",
+      "filePath": "agent/tasks.py",
+      "lineRange": [
+        267,
+        322
+      ],
+      "summary": "Apply a target-scoped Compose recovery action during a live fault.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:agent/tasks.py:RemediationTask",
+      "type": "class",
+      "name": "RemediationTask",
+      "filePath": "agent/tasks.py",
+      "lineRange": [
+        325,
+        415
+      ],
+      "summary": "Produce a reviewable remediation plan without an execution capability.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:generators/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "generators/__init__.py",
+      "summary": "Exports the fault generation interfaces.",
+      "tags": [
+        "package",
+        "entry-point",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:generators/fault.py",
+      "type": "file",
+      "name": "fault.py",
+      "filePath": "generators/fault.py",
+      "summary": "Defines fault scenarios and validates controlled injection inputs.",
+      "tags": [
+        "fault-injection",
+        "generator",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:generators/fault.py:load_scenario",
+      "type": "function",
+      "name": "load_scenario",
+      "filePath": "generators/fault.py",
+      "lineRange": [
+        154,
+        277
+      ],
+      "summary": "Load one strict, versioned scenario YAML definition.",
+      "tags": [
+        "function",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:generators/fault.py:load_scenarios",
+      "type": "function",
+      "name": "load_scenarios",
+      "filePath": "generators/fault.py",
+      "lineRange": [
+        280,
+        288
+      ],
+      "summary": "Load the complete catalog and reject duplicate identifiers.",
+      "tags": [
+        "function",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:generators/fault.py:ScenarioError",
+      "type": "class",
+      "name": "ScenarioError",
+      "filePath": "generators/fault.py",
+      "lineRange": [
+        58,
+        59
+      ],
+      "summary": "Raised when a scenario is not a safe, complete catalog entry.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:generators/fault.py:FaultSpec",
+      "type": "class",
+      "name": "FaultSpec",
+      "filePath": "generators/fault.py",
+      "lineRange": [
+        63,
+        68
+      ],
+      "summary": "A fault description, not an executable shell command.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:generators/fault.py:FaultScenario",
+      "type": "class",
+      "name": "FaultScenario",
+      "filePath": "generators/fault.py",
+      "lineRange": [
+        72,
+        118
+      ],
+      "summary": "The normalized catalog contract shared by planning and execution.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:generators/faulty_image.py",
+      "type": "file",
+      "name": "faulty_image.py",
+      "filePath": "generators/faulty_image.py",
+      "summary": "Prepares versioned faulty container images for code-level scenarios.",
+      "tags": [
+        "fault-injection",
+        "generator",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:generators/faulty_image.py:load_faulty_images",
+      "type": "function",
+      "name": "load_faulty_images",
+      "filePath": "generators/faulty_image.py",
+      "lineRange": [
+        74,
+        132
+      ],
+      "summary": "Load and validate the research-owned faulty-image manifest.",
+      "tags": [
+        "function",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:generators/faulty_image.py:FaultyImageError",
+      "type": "class",
+      "name": "FaultyImageError",
+      "filePath": "generators/faulty_image.py",
+      "lineRange": [
+        16,
+        17
+      ],
+      "summary": "Raised when a faulty-image definition cannot be used safely.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:generators/faulty_image.py:FaultyImageDefinition",
+      "type": "class",
+      "name": "FaultyImageDefinition",
+      "filePath": "generators/faulty_image.py",
+      "lineRange": [
+        21,
+        50
+      ],
+      "summary": "A single reproducible, research-owned faulty image variant.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:generators/faulty_image.py:FaultyImagePlan",
+      "type": "class",
+      "name": "FaultyImagePlan",
+      "filePath": "generators/faulty_image.py",
+      "lineRange": [
+        54,
+        64
+      ],
+      "summary": "Non-shell build and Compose plan for one faulty image.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:generators/faulty_image.py:FaultyImageInjector",
+      "type": "class",
+      "name": "FaultyImageInjector",
+      "filePath": "generators/faulty_image.py",
+      "lineRange": [
+        135,
+        275
+      ],
+      "summary": "Build and select only manifest-approved faulty images.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:generators/pumba.py",
+      "type": "file",
+      "name": "pumba.py",
+      "filePath": "generators/pumba.py",
+      "summary": "Plans allowlisted Pumba commands for one controlled fault.",
+      "tags": [
+        "fault-injection",
+        "generator",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:generators/pumba.py:plan_pumba",
+      "type": "function",
+      "name": "plan_pumba",
+      "filePath": "generators/pumba.py",
+      "lineRange": [
+        280,
+        287
+      ],
+      "summary": "Convenience entry point used by tests and the experiment CLI.",
+      "tags": [
+        "function",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:generators/pumba.py:InjectorError",
+      "type": "class",
+      "name": "InjectorError",
+      "filePath": "generators/pumba.py",
+      "lineRange": [
+        12,
+        13
+      ],
+      "summary": "Raised when a scenario cannot safely be delivered by Pumba.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:generators/pumba.py:PumbaPlan",
+      "type": "class",
+      "name": "PumbaPlan",
+      "filePath": "generators/pumba.py",
+      "lineRange": [
+        17,
+        33
+      ],
+      "summary": "A fully tokenized command; no shell parsing is used.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:generators/pumba.py:RunningInjection",
+      "type": "class",
+      "name": "RunningInjection",
+      "filePath": "generators/pumba.py",
+      "lineRange": [
+        37,
+        44
+      ],
+      "summary": "A bounded Pumba process that can be observed while the fault is active.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:generators/pumba.py:PumbaInjector",
+      "type": "class",
+      "name": "PumbaInjector",
+      "filePath": "generators/pumba.py",
+      "lineRange": [
+        47,
+        277
+      ],
+      "summary": "Translate only the validated runnable taxonomy into Pumba invocations.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:generators/semantic.py",
+      "type": "file",
+      "name": "semantic.py",
+      "filePath": "generators/semantic.py",
+      "summary": "Defines semantic checks for code-level fault effects.",
+      "tags": [
+        "fault-injection",
+        "generator",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:generators/semantic.py:_normalized",
+      "type": "function",
+      "name": "_normalized",
+      "filePath": "generators/semantic.py",
+      "lineRange": [
+        34,
+        48
+      ],
+      "summary": "Handles normalized within this module.",
+      "tags": [
+        "function",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:generators/semantic.py:_missing_exception",
+      "type": "function",
+      "name": "_missing_exception",
+      "filePath": "generators/semantic.py",
+      "lineRange": [
+        66,
+        81
+      ],
+      "summary": "Handles missing exception within this module.",
+      "tags": [
+        "function",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:generators/semantic.py:_incorrect_parameter",
+      "type": "function",
+      "name": "_incorrect_parameter",
+      "filePath": "generators/semantic.py",
+      "lineRange": [
+        84,
+        100
+      ],
+      "summary": "Handles incorrect parameter within this module.",
+      "tags": [
+        "function",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:generators/semantic.py:_missing_parameter",
+      "type": "function",
+      "name": "_missing_parameter",
+      "filePath": "generators/semantic.py",
+      "lineRange": [
+        103,
+        119
+      ],
+      "summary": "Handles missing parameter within this module.",
+      "tags": [
+        "function",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:generators/semantic.py:validate_semantic",
+      "type": "function",
+      "name": "validate_semantic",
+      "filePath": "generators/semantic.py",
+      "lineRange": [
+        140,
+        147
+      ],
+      "summary": "Validate a normalized observation emitted by a workload harness.",
+      "tags": [
+        "function",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:generators/semantic.py:SemanticValidationError",
+      "type": "class",
+      "name": "SemanticValidationError",
+      "filePath": "generators/semantic.py",
+      "lineRange": [
+        9,
+        10
+      ],
+      "summary": "Raised when a validator observation is malformed or does not prove the fault.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:generators/semantic.py:SemanticValidationResult",
+      "type": "class",
+      "name": "SemanticValidationResult",
+      "filePath": "generators/semantic.py",
+      "lineRange": [
+        14,
+        25
+      ],
+      "summary": "Handles SemanticValidationResult within this module.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:generators/semantic_probe.py",
+      "type": "file",
+      "name": "semantic_probe.py",
+      "filePath": "generators/semantic_probe.py",
+      "summary": "Runs semantic probes to distinguish faulty responses from healthy behavior.",
+      "tags": [
+        "fault-injection",
+        "generator",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:generators/semantic_probe.py:_checkout_form",
+      "type": "function",
+      "name": "_checkout_form",
+      "filePath": "generators/semantic_probe.py",
+      "lineRange": [
+        181,
+        193
+      ],
+      "summary": "Handles checkout form within this module.",
+      "tags": [
+        "function",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:generators/semantic_probe.py:_run_currency_phase",
+      "type": "function",
+      "name": "_run_currency_phase",
+      "filePath": "generators/semantic_probe.py",
+      "lineRange": [
+        196,
+        259
+      ],
+      "summary": "Handles run currency phase within this module.",
+      "tags": [
+        "function",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:generators/semantic_probe.py:_run_checkout_phase",
+      "type": "function",
+      "name": "_run_checkout_phase",
+      "filePath": "generators/semantic_probe.py",
+      "lineRange": [
+        262,
+        328
+      ],
+      "summary": "Handles run checkout phase within this module.",
+      "tags": [
+        "function",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:generators/semantic_probe.py:run_semantic_probe",
+      "type": "function",
+      "name": "run_semantic_probe",
+      "filePath": "generators/semantic_probe.py",
+      "lineRange": [
+        331,
+        342
+      ],
+      "summary": "Run the configured probe against the public frontend.",
+      "tags": [
+        "function",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:generators/semantic_probe.py:_telemetry_text",
+      "type": "function",
+      "name": "_telemetry_text",
+      "filePath": "generators/semantic_probe.py",
+      "lineRange": [
+        345,
+        361
+      ],
+      "summary": "Handles telemetry text within this module.",
+      "tags": [
+        "function",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:generators/semantic_probe.py:build_semantic_observation",
+      "type": "function",
+      "name": "build_semantic_observation",
+      "filePath": "generators/semantic_probe.py",
+      "lineRange": [
+        373,
+        446
+      ],
+      "summary": "Combine probe phases with bounded telemetry evidence.",
+      "tags": [
+        "function",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:generators/semantic_probe.py:SemanticProbeError",
+      "type": "class",
+      "name": "SemanticProbeError",
+      "filePath": "generators/semantic_probe.py",
+      "lineRange": [
+        21,
+        26
+      ],
+      "summary": "Raised when a deterministic semantic flow cannot be completed.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:generators/semantic_probe.py:ProbePhaseResult",
+      "type": "class",
+      "name": "ProbePhaseResult",
+      "filePath": "generators/semantic_probe.py",
+      "lineRange": [
+        30,
+        46
+      ],
+      "summary": "Raw request evidence and normalized values for one experiment phase.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:generators/semantic_probe.py:_ProductPriceParser",
+      "type": "class",
+      "name": "_ProductPriceParser",
+      "filePath": "generators/semantic_probe.py",
+      "lineRange": [
+        49,
+        75
+      ],
+      "summary": "Handles ProductPriceParser within this module.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:generators/semantic_probe.py:_FrontendSession",
+      "type": "class",
+      "name": "_FrontendSession",
+      "filePath": "generators/semantic_probe.py",
+      "lineRange": [
+        138,
+        178
+      ],
+      "summary": "Handles FrontendSession within this module.",
+      "tags": [
+        "class",
+        "fault-injection",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:agent/__main__.py",
+      "type": "file",
+      "name": "__main__.py",
+      "filePath": "agent/__main__.py",
+      "summary": "Starts the RCA agent command-line interface.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:agent/providers.py",
+      "type": "file",
+      "name": "providers.py",
+      "filePath": "agent/providers.py",
+      "summary": "Connects the agent to supported external LLM API providers.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:agent/providers.py:build_provider",
+      "type": "function",
+      "name": "build_provider",
+      "filePath": "agent/providers.py",
+      "lineRange": [
+        107,
+        113
+      ],
+      "summary": "Handles build provider within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/providers.py:ProviderError",
+      "type": "class",
+      "name": "ProviderError",
+      "filePath": "agent/providers.py",
+      "lineRange": [
+        15,
+        16
+      ],
+      "summary": "Raised when a configured LLM provider cannot produce a response.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/providers.py:LlmProvider",
+      "type": "class",
+      "name": "LlmProvider",
+      "filePath": "agent/providers.py",
+      "lineRange": [
+        19,
+        24
+      ],
+      "summary": "Handles LlmProvider within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/providers.py:FakeProvider",
+      "type": "class",
+      "name": "FakeProvider",
+      "filePath": "agent/providers.py",
+      "lineRange": [
+        27,
+        62
+      ],
+      "summary": "Deterministic provider for tests and offline framework validation.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/providers.py:OpenAICompatibleProvider",
+      "type": "class",
+      "name": "OpenAICompatibleProvider",
+      "filePath": "agent/providers.py",
+      "lineRange": [
+        65,
+        104
+      ],
+      "summary": "Minimal standard-library client for OpenAI-compatible chat endpoints.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:agent/run.py",
+      "type": "file",
+      "name": "run.py",
+      "filePath": "agent/run.py",
+      "summary": "Coordinates command-line RCA session execution.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:agent/run.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "agent/run.py",
+      "lineRange": [
+        31,
+        89
+      ],
+      "summary": "Runs the command-line entry point for this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:agent/sanitize.py",
+      "type": "file",
+      "name": "sanitize.py",
+      "filePath": "agent/sanitize.py",
+      "summary": "Removes sensitive or withheld fields from agent-visible traces.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/sanitize.py:sanitize_text",
+      "type": "function",
+      "name": "sanitize_text",
+      "filePath": "agent/sanitize.py",
+      "lineRange": [
+        22,
+        32
+      ],
+      "summary": "Remove common credentials and network identifiers while preserving RCA labels.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/sanitize.py:sanitize_messages",
+      "type": "function",
+      "name": "sanitize_messages",
+      "filePath": "agent/sanitize.py",
+      "lineRange": [
+        35,
+        45
+      ],
+      "summary": "Copy and sanitize provider messages without mutating the local session trace.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:web/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "web/__init__.py",
+      "summary": "Initializes the RCA web application package.",
+      "tags": [
+        "package",
+        "entry-point",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:web/__main__.py",
+      "type": "file",
+      "name": "__main__.py",
+      "filePath": "web/__main__.py",
+      "summary": "Starts the FastAPI dashboard server.",
+      "tags": [
+        "dashboard",
+        "web",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:web/__main__.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "web/__main__.py",
+      "lineRange": [
+        13,
+        20
+      ],
+      "summary": "Runs the command-line entry point for this module.",
+      "tags": [
+        "function",
+        "dashboard",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:web/app.py",
+      "type": "file",
+      "name": "app.py",
+      "filePath": "web/app.py",
+      "summary": "Defines dashboard routes for scenarios, jobs, and experiment results.",
+      "tags": [
+        "dashboard",
+        "web",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:web/app.py:create_app",
+      "type": "function",
+      "name": "create_app",
+      "filePath": "web/app.py",
+      "lineRange": [
+        32,
+        228
+      ],
+      "summary": "Handles create app within this module.",
+      "tags": [
+        "function",
+        "dashboard",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:web/jobs.py",
+      "type": "file",
+      "name": "jobs.py",
+      "filePath": "web/jobs.py",
+      "summary": "Manages asynchronous experiment jobs and their live status.",
+      "tags": [
+        "dashboard",
+        "web",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:web/jobs.py:_json_safe",
+      "type": "function",
+      "name": "_json_safe",
+      "filePath": "web/jobs.py",
+      "lineRange": [
+        40,
+        56
+      ],
+      "summary": "Handles json safe within this module.",
+      "tags": [
+        "function",
+        "dashboard",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:web/jobs.py:GuiJobError",
+      "type": "class",
+      "name": "GuiJobError",
+      "filePath": "web/jobs.py",
+      "lineRange": [
+        32,
+        33
+      ],
+      "summary": "Raised when a GUI job cannot be safely prepared or started.",
+      "tags": [
+        "class",
+        "dashboard",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:web/jobs.py:GuiJob",
+      "type": "class",
+      "name": "GuiJob",
+      "filePath": "web/jobs.py",
+      "lineRange": [
+        76,
+        110
+      ],
+      "summary": "Handles GuiJob within this module.",
+      "tags": [
+        "class",
+        "dashboard",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:web/jobs.py:JobManager",
+      "type": "class",
+      "name": "JobManager",
+      "filePath": "web/jobs.py",
+      "lineRange": [
+        113,
+        504
+      ],
+      "summary": "Run one controlled live experiment at a time and expose audit events.",
+      "tags": [
+        "class",
+        "dashboard",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:agent/live.py",
+      "type": "file",
+      "name": "live.py",
+      "filePath": "agent/live.py",
+      "summary": "Runs the RCA agent against live telemetry during injected faults.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:agent/live.py:_ground_truth",
+      "type": "function",
+      "name": "_ground_truth",
+      "filePath": "agent/live.py",
+      "lineRange": [
+        42,
+        55
+      ],
+      "summary": "Handles ground truth within this module.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:agent/live.py:_prior_stage_context",
+      "type": "function",
+      "name": "_prior_stage_context",
+      "filePath": "agent/live.py",
+      "lineRange": [
+        58,
+        75
+      ],
+      "summary": "Carry agent findings and bounded observations, never evaluator labels.",
+      "tags": [
+        "function",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/live.py:LiveIncidentError",
+      "type": "class",
+      "name": "LiveIncidentError",
+      "filePath": "agent/live.py",
+      "lineRange": [
+        32,
+        33
+      ],
+      "summary": "Raised when an integrated incident cannot complete safely.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/live.py:LiveIncidentController",
+      "type": "class",
+      "name": "LiveIncidentController",
+      "filePath": "agent/live.py",
+      "lineRange": [
+        78,
+        447
+      ],
+      "summary": "Run one allowlisted fault while an agent interacts with live telemetry.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:agent/models.py",
+      "type": "file",
+      "name": "models.py",
+      "filePath": "agent/models.py",
+      "summary": "Defines structured RCA agent inputs, outputs, and state models.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:agent/models.py:SessionItem",
+      "type": "class",
+      "name": "SessionItem",
+      "filePath": "agent/models.py",
+      "lineRange": [
+        12,
+        17
+      ],
+      "summary": "Handles SessionItem within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/models.py:AgentSession",
+      "type": "class",
+      "name": "AgentSession",
+      "filePath": "agent/models.py",
+      "lineRange": [
+        21,
+        79
+      ],
+      "summary": "Handles AgentSession within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:agent/models.py:ProblemContext",
+      "type": "class",
+      "name": "ProblemContext",
+      "filePath": "agent/models.py",
+      "lineRange": [
+        83,
+        87
+      ],
+      "summary": "Handles ProblemContext within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:agent/runtime.py",
+      "type": "file",
+      "name": "runtime.py",
+      "filePath": "agent/runtime.py",
+      "summary": "Builds runtime dependencies and settings for agent sessions.",
+      "tags": [
+        "agent",
+        "rca",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/runtime.py:ApplicationRuntime",
+      "type": "class",
+      "name": "ApplicationRuntime",
+      "filePath": "agent/runtime.py",
+      "lineRange": [
+        8,
+        12
+      ],
+      "summary": "Handles ApplicationRuntime within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/runtime.py:FaultRuntime",
+      "type": "class",
+      "name": "FaultRuntime",
+      "filePath": "agent/runtime.py",
+      "lineRange": [
+        15,
+        20
+      ],
+      "summary": "Handles FaultRuntime within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/runtime.py:TelemetryRuntime",
+      "type": "class",
+      "name": "TelemetryRuntime",
+      "filePath": "agent/runtime.py",
+      "lineRange": [
+        23,
+        25
+      ],
+      "summary": "Handles TelemetryRuntime within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/runtime.py:WorkloadRuntime",
+      "type": "class",
+      "name": "WorkloadRuntime",
+      "filePath": "agent/runtime.py",
+      "lineRange": [
+        28,
+        29
+      ],
+      "summary": "Handles WorkloadRuntime within this module.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:agent/runtime.py:ComposeWorkload",
+      "type": "class",
+      "name": "ComposeWorkload",
+      "filePath": "agent/runtime.py",
+      "lineRange": [
+        32,
+        45
+      ],
+      "summary": "Enforce the declared, low-load Compose workload before fault injection.",
+      "tags": [
+        "class",
+        "agent",
+        "python"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:utils/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "utils/__init__.py",
+      "summary": "Exposes shared configuration and artifact helpers to the research runtime.",
+      "tags": [
+        "entry-point",
+        "utility",
+        "research-runtime"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:utils/artifacts.py",
+      "type": "file",
+      "name": "artifacts.py",
+      "filePath": "utils/artifacts.py",
+      "summary": "Creates experiment identifiers and writes versioned JSON and append-only event artifacts for research runs.",
+      "tags": [
+        "utility",
+        "research-runtime",
+        "artifacts"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:utils/artifacts.py:new_experiment_id",
+      "type": "function",
+      "name": "new_experiment_id",
+      "filePath": "utils/artifacts.py",
+      "lineRange": [
+        12,
+        14
+      ],
+      "summary": "Generates a unique experiment identifier for a new run.",
+      "tags": [
+        "utility",
+        "research-runtime",
+        "data-flow"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:utils/artifacts.py:write_json",
+      "type": "function",
+      "name": "write_json",
+      "filePath": "utils/artifacts.py",
+      "lineRange": [
+        17,
+        24
+      ],
+      "summary": "Writes JSON to a temporary file and atomically replaces the destination.",
+      "tags": [
+        "utility",
+        "research-runtime",
+        "data-flow"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:utils/artifacts.py:create_run",
+      "type": "function",
+      "name": "create_run",
+      "filePath": "utils/artifacts.py",
+      "lineRange": [
+        27,
+        40
+      ],
+      "summary": "Creates a run directory and initializes its versioned metadata artifact.",
+      "tags": [
+        "utility",
+        "research-runtime",
+        "data-flow"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:utils/artifacts.py:append_event",
+      "type": "function",
+      "name": "append_event",
+      "filePath": "utils/artifacts.py",
+      "lineRange": [
+        43,
+        52
+      ],
+      "summary": "Appends a timestamped structured event to the run event log.",
+      "tags": [
+        "utility",
+        "research-runtime",
+        "data-flow"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:utils/config.py",
+      "type": "file",
+      "name": "config.py",
+      "filePath": "utils/config.py",
+      "summary": "Centralizes research paths, observability endpoints, and runtime settings with environment overrides.",
+      "tags": [
+        "configuration",
+        "research-runtime",
+        "observability"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:utils/config.py:_load_dotenv",
+      "type": "function",
+      "name": "_load_dotenv",
+      "filePath": "utils/config.py",
+      "lineRange": [
+        13,
+        36
+      ],
+      "summary": "Parses a local dotenv file without replacing shell environment values.",
+      "tags": [
+        "utility",
+        "research-runtime",
+        "data-flow"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:utils/config.py:ResearchConfig",
+      "type": "class",
+      "name": "ResearchConfig",
+      "filePath": "utils/config.py",
+      "lineRange": [
+        40,
+        123
+      ],
+      "summary": "Stores shared paths, endpoints, and runtime settings for the research system.",
+      "tags": [
+        "utility",
+        "research-runtime",
+        "data-flow"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "service:observability/container-metadata-exporter/Dockerfile",
+      "type": "service",
+      "name": "Dockerfile",
+      "filePath": "observability/container-metadata-exporter/Dockerfile",
+      "summary": "Builds the Python container image for the container metadata exporter.",
+      "tags": [
+        "containerization",
+        "fault-injection",
+        "deployment"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "service:observability/container-metadata-exporter/Dockerfile:python",
+      "type": "service",
+      "name": "python",
+      "filePath": "observability/container-metadata-exporter/Dockerfile",
+      "summary": "Python container running the metadata exporter on port 8081.",
+      "tags": [
+        "containerization",
+        "observability",
+        "metadata"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:compose/faulty-overrides/FI-CODE-CALL-01.yml",
+      "type": "config",
+      "name": "FI-CODE-CALL-01.yml",
+      "filePath": "compose/faulty-overrides/FI-CODE-CALL-01.yml",
+      "summary": "Overrides the checkoutservice image for controlled code-level fault scenario FI-CODE-CALL-01.",
+      "tags": [
+        "configuration",
+        "fault-injection",
+        "docker-compose"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:compose/faulty-overrides/FI-CODE-EXC-01.yml",
+      "type": "config",
+      "name": "FI-CODE-EXC-01.yml",
+      "filePath": "compose/faulty-overrides/FI-CODE-EXC-01.yml",
+      "summary": "Overrides the checkoutservice image for controlled code-level fault scenario FI-CODE-EXC-01.",
+      "tags": [
+        "configuration",
+        "fault-injection",
+        "docker-compose"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:compose/faulty-overrides/FI-CODE-PARAM-01.yml",
+      "type": "config",
+      "name": "FI-CODE-PARAM-01.yml",
+      "filePath": "compose/faulty-overrides/FI-CODE-PARAM-01.yml",
+      "summary": "Overrides the checkoutservice image for controlled code-level fault scenario FI-CODE-PARAM-01.",
+      "tags": [
+        "configuration",
+        "fault-injection",
+        "docker-compose"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:compose/faulty-overrides/FI-CODE-PARAM-02.yml",
+      "type": "config",
+      "name": "FI-CODE-PARAM-02.yml",
+      "filePath": "compose/faulty-overrides/FI-CODE-PARAM-02.yml",
+      "summary": "Overrides the checkoutservice image for controlled code-level fault scenario FI-CODE-PARAM-02.",
+      "tags": [
+        "configuration",
+        "fault-injection",
+        "docker-compose"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:compose/faulty-overrides/FI-CODE-RETURN-01.yml",
+      "type": "config",
+      "name": "FI-CODE-RETURN-01.yml",
+      "filePath": "compose/faulty-overrides/FI-CODE-RETURN-01.yml",
+      "summary": "Overrides the currencyservice image for controlled code-level fault scenario FI-CODE-RETURN-01.",
+      "tags": [
+        "configuration",
+        "fault-injection",
+        "docker-compose"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:docs/AGENT_STAGE_CONTEXT.md",
+      "type": "document",
+      "name": "AGENT_STAGE_CONTEXT.md",
+      "filePath": "docs/AGENT_STAGE_CONTEXT.md",
+      "summary": "Defines the context and evidence available to each agent stage during RCA and remediation.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:docs/AIOPSLAB_REFACTOR_PLAN.md",
+      "type": "document",
+      "name": "AIOPSLAB_REFACTOR_PLAN.md",
+      "filePath": "docs/AIOPSLAB_REFACTOR_PLAN.md",
+      "summary": "Records the AIOpsLab contract adaptation and validation status for the Docker Compose research stack.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:docs/ARCHITECTURE.md",
+      "type": "document",
+      "name": "ARCHITECTURE.md",
+      "filePath": "docs/ARCHITECTURE.md",
+      "summary": "Explains the research system architecture, component boundaries, and Docker Compose design decisions.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:docs/EXPERIMENT_LOG.md",
+      "type": "document",
+      "name": "EXPERIMENT_LOG.md",
+      "filePath": "docs/EXPERIMENT_LOG.md",
+      "summary": "Provides a template for recording experiment setup, observed behavior, and evaluation results.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:docs/FAULT_INJECTION.md",
+      "type": "document",
+      "name": "FAULT_INJECTION.md",
+      "filePath": "docs/FAULT_INJECTION.md",
+      "summary": "Specifies the controlled fault injection method, execution gates, and ground-truth artifacts.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:docs/FAULT_INJECTION_FLOW.md",
+      "type": "document",
+      "name": "FAULT_INJECTION_FLOW.md",
+      "filePath": "docs/FAULT_INJECTION_FLOW.md",
+      "summary": "Describes the end-to-end fault injection flow from scenario planning through execution and evidence capture.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:docs/FAULT_TAXONOMY.md",
+      "type": "document",
+      "name": "FAULT_TAXONOMY.md",
+      "filePath": "docs/FAULT_TAXONOMY.md",
+      "summary": "Defines RCAEval-aligned fault categories, scenario identifiers, and known confounders.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:docs/REFERENCE_ARCHITECTURE_ADAPTATION.md",
+      "type": "document",
+      "name": "REFERENCE_ARCHITECTURE_ADAPTATION.md",
+      "filePath": "docs/REFERENCE_ARCHITECTURE_ADAPTATION.md",
+      "summary": "Documents how the reference architecture was adapted to the constrained research environment.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:docs/old/DATASET_RESET.md",
+      "type": "document",
+      "name": "DATASET_RESET.md",
+      "filePath": "docs/old/DATASET_RESET.md",
+      "summary": "Archives the previous dataset reset procedure and its research context.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:docs/old/README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "docs/old/README.md",
+      "summary": "Explains that the old documentation is archived rather than current guidance.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:docs/old/REMEDIATION_RECOMMENDATION.md",
+      "type": "document",
+      "name": "REMEDIATION_RECOMMENDATION.md",
+      "filePath": "docs/old/REMEDIATION_RECOMMENDATION.md",
+      "summary": "Archives the earlier remediation recommendation design and evaluation notes.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:docs/old/SEMANTIC_PROBES.md",
+      "type": "document",
+      "name": "SEMANTIC_PROBES.md",
+      "filePath": "docs/old/SEMANTIC_PROBES.md",
+      "summary": "Archives the detailed semantic probe design for validating injected code-level faults.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "service:generators/faulty_images/Dockerfile.checkoutservice",
+      "type": "service",
+      "name": "Dockerfile.checkoutservice",
+      "filePath": "generators/faulty_images/Dockerfile.checkoutservice",
+      "summary": "Builds a patched checkoutservice image from Go source for controlled code-level fault scenarios.",
+      "tags": [
+        "containerization",
+        "fault-injection",
+        "deployment"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "service:generators/faulty_images/Dockerfile.currencyservice",
+      "type": "service",
+      "name": "Dockerfile.currencyservice",
+      "filePath": "generators/faulty_images/Dockerfile.currencyservice",
+      "summary": "Builds a patched currencyservice Node image for a controlled incorrect-return-value scenario.",
+      "tags": [
+        "containerization",
+        "fault-injection",
+        "deployment"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:generators/faulty_images/manifest.yaml",
+      "type": "config",
+      "name": "manifest.yaml",
+      "filePath": "generators/faulty_images/manifest.yaml",
+      "summary": "Maps code-level fault scenarios to Dockerfiles, patches, images, Compose overrides, and validators.",
+      "tags": [
+        "configuration",
+        "fault-injection",
+        "scenario-catalog"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:generators/scenarios/code-level-01-incorrect-return-currency.yaml",
+      "type": "config",
+      "name": "code-level-01-incorrect-return-currency.yaml",
+      "filePath": "generators/scenarios/code-level-01-incorrect-return-currency.yaml",
+      "summary": "Defines a controlled incorrect return value scenario targeting currencyservice, including workload, expected evidence, ground truth, and recovery.",
+      "tags": [
+        "fault-injection",
+        "scenario",
+        "ground-truth"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:generators/scenarios/code-level-02-missing-exception-checkout.yaml",
+      "type": "config",
+      "name": "code-level-02-missing-exception-checkout.yaml",
+      "filePath": "generators/scenarios/code-level-02-missing-exception-checkout.yaml",
+      "summary": "Defines a controlled missing exception handler scenario targeting checkoutservice, including workload, expected evidence, ground truth, and recovery.",
+      "tags": [
+        "fault-injection",
+        "scenario",
+        "ground-truth"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:generators/scenarios/code-level-03-incorrect-parameter-checkout.yaml",
+      "type": "config",
+      "name": "code-level-03-incorrect-parameter-checkout.yaml",
+      "filePath": "generators/scenarios/code-level-03-incorrect-parameter-checkout.yaml",
+      "summary": "Defines a controlled incorrect parameter scenario targeting checkoutservice, including workload, expected evidence, ground truth, and recovery.",
+      "tags": [
+        "fault-injection",
+        "scenario",
+        "ground-truth"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:generators/scenarios/code-level-04-missing-parameter-checkout.yaml",
+      "type": "config",
+      "name": "code-level-04-missing-parameter-checkout.yaml",
+      "filePath": "generators/scenarios/code-level-04-missing-parameter-checkout.yaml",
+      "summary": "Defines a controlled missing parameter scenario targeting checkoutservice, including workload, expected evidence, ground truth, and recovery.",
+      "tags": [
+        "fault-injection",
+        "scenario",
+        "ground-truth"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:generators/scenarios/code-level-05-missing-function-call-checkout.yaml",
+      "type": "config",
+      "name": "code-level-05-missing-function-call-checkout.yaml",
+      "filePath": "generators/scenarios/code-level-05-missing-function-call-checkout.yaml",
+      "summary": "Defines a controlled missing function call scenario targeting checkoutservice, including workload, expected evidence, ground truth, and recovery.",
+      "tags": [
+        "fault-injection",
+        "scenario",
+        "ground-truth"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:generators/scenarios/network-01-delay-payment.yaml",
+      "type": "config",
+      "name": "network-01-delay-payment.yaml",
+      "filePath": "generators/scenarios/network-01-delay-payment.yaml",
+      "summary": "Defines a controlled network delay scenario targeting paymentservice, including workload, expected evidence, ground truth, and recovery.",
+      "tags": [
+        "fault-injection",
+        "scenario",
+        "ground-truth"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:generators/scenarios/network-02-loss-payment.yaml",
+      "type": "config",
+      "name": "network-02-loss-payment.yaml",
+      "filePath": "generators/scenarios/network-02-loss-payment.yaml",
+      "summary": "Defines a controlled packet loss scenario targeting paymentservice, including workload, expected evidence, ground truth, and recovery.",
+      "tags": [
+        "fault-injection",
+        "scenario",
+        "ground-truth"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:generators/scenarios/network-03-delay-shipping.yaml",
+      "type": "config",
+      "name": "network-03-delay-shipping.yaml",
+      "filePath": "generators/scenarios/network-03-delay-shipping.yaml",
+      "summary": "Defines a controlled network delay scenario targeting shippingservice, including workload, expected evidence, ground truth, and recovery.",
+      "tags": [
+        "fault-injection",
+        "scenario",
+        "ground-truth"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:generators/scenarios/network-04-delay-currency.yaml",
+      "type": "config",
+      "name": "network-04-delay-currency.yaml",
+      "filePath": "generators/scenarios/network-04-delay-currency.yaml",
+      "summary": "Defines a controlled network delay scenario targeting currencyservice, including workload, expected evidence, ground truth, and recovery.",
+      "tags": [
+        "fault-injection",
+        "scenario",
+        "ground-truth"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:generators/scenarios/network-05-loss-productcatalog.yaml",
+      "type": "config",
+      "name": "network-05-loss-productcatalog.yaml",
+      "filePath": "generators/scenarios/network-05-loss-productcatalog.yaml",
+      "summary": "Defines a controlled packet loss scenario targeting productcatalogservice, including workload, expected evidence, ground truth, and recovery.",
+      "tags": [
+        "fault-injection",
+        "scenario",
+        "ground-truth"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:generators/scenarios/resource-01-cpu-hog-recommendation.yaml",
+      "type": "config",
+      "name": "resource-01-cpu-hog-recommendation.yaml",
+      "filePath": "generators/scenarios/resource-01-cpu-hog-recommendation.yaml",
+      "summary": "Defines a controlled cpu hog scenario targeting recommendationservice, including workload, expected evidence, ground truth, and recovery.",
+      "tags": [
+        "fault-injection",
+        "scenario",
+        "ground-truth"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:generators/scenarios/resource-02-memory-pressure-cart.yaml",
+      "type": "config",
+      "name": "resource-02-memory-pressure-cart.yaml",
+      "filePath": "generators/scenarios/resource-02-memory-pressure-cart.yaml",
+      "summary": "Defines a controlled memory pressure scenario targeting cartservice, including workload, expected evidence, ground truth, and recovery.",
+      "tags": [
+        "fault-injection",
+        "scenario",
+        "ground-truth"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:generators/scenarios/resource-03-cpu-hog-checkout.yaml",
+      "type": "config",
+      "name": "resource-03-cpu-hog-checkout.yaml",
+      "filePath": "generators/scenarios/resource-03-cpu-hog-checkout.yaml",
+      "summary": "Defines a controlled cpu hog scenario targeting checkoutservice, including workload, expected evidence, ground truth, and recovery.",
+      "tags": [
+        "fault-injection",
+        "scenario",
+        "ground-truth"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:generators/scenarios/resource-04-disk-stress.yaml",
+      "type": "config",
+      "name": "resource-04-disk-stress.yaml",
+      "filePath": "generators/scenarios/resource-04-disk-stress.yaml",
+      "summary": "Defines a controlled disk stress scenario targeting null, including workload, expected evidence, ground truth, and recovery.",
+      "tags": [
+        "fault-injection",
+        "scenario",
+        "ground-truth"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:generators/scenarios/resource-05-socket-stress.yaml",
+      "type": "config",
+      "name": "resource-05-socket-stress.yaml",
+      "filePath": "generators/scenarios/resource-05-socket-stress.yaml",
+      "summary": "Defines a controlled socket stress scenario targeting null, including workload, expected evidence, ground truth, and recovery.",
+      "tags": [
+        "fault-injection",
+        "scenario",
+        "ground-truth"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:milestones/old/00-environment-setup.md",
+      "type": "document",
+      "name": "00-environment-setup.md",
+      "filePath": "milestones/old/00-environment-setup.md",
+      "summary": "Documents the 00 environment setup stage of the thesis roadmap and its implementation or validation goals.",
+      "tags": [
+        "documentation",
+        "roadmap",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:milestones/old/01-experiment-architecture.md",
+      "type": "document",
+      "name": "01-experiment-architecture.md",
+      "filePath": "milestones/old/01-experiment-architecture.md",
+      "summary": "Documents the 01 experiment architecture stage of the thesis roadmap and its implementation or validation goals.",
+      "tags": [
+        "documentation",
+        "roadmap",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:milestones/old/01-fault-injection-pipeline.md",
+      "type": "document",
+      "name": "01-fault-injection-pipeline.md",
+      "filePath": "milestones/old/01-fault-injection-pipeline.md",
+      "summary": "Documents the 01 fault injection pipeline stage of the thesis roadmap and its implementation or validation goals.",
+      "tags": [
+        "documentation",
+        "roadmap",
+        "research"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:milestones/old/02-ground-truth-dataset.md",
+      "type": "document",
+      "name": "02-ground-truth-dataset.md",
+      "filePath": "milestones/old/02-ground-truth-dataset.md",
+      "summary": "Documents the 02 ground truth dataset stage of the thesis roadmap and its implementation or validation goals.",
+      "tags": [
+        "documentation",
+        "roadmap",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:milestones/old/03-rca-agent.md",
+      "type": "document",
+      "name": "03-rca-agent.md",
+      "filePath": "milestones/old/03-rca-agent.md",
+      "summary": "Documents the 03 rca agent stage of the thesis roadmap and its implementation or validation goals.",
+      "tags": [
+        "documentation",
+        "roadmap",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:milestones/old/04-remediation-recommendation.md",
+      "type": "document",
+      "name": "04-remediation-recommendation.md",
+      "filePath": "milestones/old/04-remediation-recommendation.md",
+      "summary": "Documents the 04 remediation recommendation stage of the thesis roadmap and its implementation or validation goals.",
+      "tags": [
+        "documentation",
+        "roadmap",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:milestones/old/05-evaluation.md",
+      "type": "document",
+      "name": "05-evaluation.md",
+      "filePath": "milestones/old/05-evaluation.md",
+      "summary": "Documents the 05 evaluation stage of the thesis roadmap and its implementation or validation goals.",
+      "tags": [
+        "documentation",
+        "roadmap",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:milestones/old/06-web-dashboard.md",
+      "type": "document",
+      "name": "06-web-dashboard.md",
+      "filePath": "milestones/old/06-web-dashboard.md",
+      "summary": "Documents the 06 web dashboard stage of the thesis roadmap and its implementation or validation goals.",
+      "tags": [
+        "documentation",
+        "roadmap",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:milestones/old/README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "milestones/old/README.md",
+      "summary": "Documents the README stage of the thesis roadmap and its implementation or validation goals.",
+      "tags": [
+        "documentation",
+        "roadmap",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:.ua/config.json",
+      "type": "config",
+      "name": "config.json",
+      "filePath": ".ua/config.json",
+      "summary": "Sets Understand Anything output language to English and disables automatic graph updates.",
+      "tags": [
+        "configuration",
+        "research",
+        "component"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "Explains the thesis environment, architecture, and research workflows.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "__init__.py",
+      "summary": "Marks the . directory as an importable Python package.",
+      "tags": [
+        "configuration",
+        "research",
+        "component"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:agent/README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "agent/README.md",
+      "summary": "Documents or configures the agent README component for RCA workflows.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:agent/old/README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "agent/old/README.md",
+      "summary": "Documents or configures the agent README component for RCA workflows.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:agent/prompts/.gitkeep",
+      "type": "file",
+      "name": ".gitkeep",
+      "filePath": "agent/prompts/.gitkeep",
+      "summary": "Keeps the agent/prompts directory present in Git.",
+      "tags": [
+        "configuration",
+        "research",
+        "component"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:agent/prompts/README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "agent/prompts/README.md",
+      "summary": "Documents or configures the agent README component for RCA workflows.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:agent/tools/.gitkeep",
+      "type": "file",
+      "name": ".gitkeep",
+      "filePath": "agent/tools/.gitkeep",
+      "summary": "Keeps the agent/tools directory present in Git.",
+      "tags": [
+        "configuration",
+        "research",
+        "component"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:compose/.env.example",
+      "type": "config",
+      "name": ".env.example",
+      "filePath": "compose/.env.example",
+      "summary": "Configures the Docker Compose research environment through .env.example.",
+      "tags": [
+        "configuration",
+        "research",
+        "component"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:compose/.gitkeep",
+      "type": "file",
+      "name": ".gitkeep",
+      "filePath": "compose/.gitkeep",
+      "summary": "Keeps the compose directory present in Git.",
+      "tags": [
+        "configuration",
+        "research",
+        "component"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "service:compose/docker-compose.yml",
+      "type": "service",
+      "name": "docker-compose.yml",
+      "filePath": "compose/docker-compose.yml",
+      "summary": "Defines the bounded-resource application and observability services for Docker Compose.",
+      "tags": [
+        "configuration",
+        "research",
+        "component"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:compose/healthcheck/download.sh",
+      "type": "file",
+      "name": "download.sh",
+      "filePath": "compose/healthcheck/download.sh",
+      "summary": "Configures the Docker Compose research environment through download.sh.",
+      "tags": [
+        "configuration",
+        "research",
+        "component"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:generators/faulty_images/patches/FI-CODE-CALL-01.patch",
+      "type": "file",
+      "name": "FI-CODE-CALL-01.patch",
+      "filePath": "generators/faulty_images/patches/FI-CODE-CALL-01.patch",
+      "summary": "Defines a code change for an allowlisted faulty-image variant used in controlled experiments.",
+      "tags": [
+        "configuration",
+        "research",
+        "component"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:generators/faulty_images/patches/FI-CODE-EXC-01.patch",
+      "type": "file",
+      "name": "FI-CODE-EXC-01.patch",
+      "filePath": "generators/faulty_images/patches/FI-CODE-EXC-01.patch",
+      "summary": "Defines a code change for an allowlisted faulty-image variant used in controlled experiments.",
+      "tags": [
+        "configuration",
+        "research",
+        "component"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:generators/faulty_images/patches/FI-CODE-PARAM-01.patch",
+      "type": "file",
+      "name": "FI-CODE-PARAM-01.patch",
+      "filePath": "generators/faulty_images/patches/FI-CODE-PARAM-01.patch",
+      "summary": "Defines a code change for an allowlisted faulty-image variant used in controlled experiments.",
+      "tags": [
+        "configuration",
+        "research",
+        "component"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:generators/faulty_images/patches/FI-CODE-PARAM-02.patch",
+      "type": "file",
+      "name": "FI-CODE-PARAM-02.patch",
+      "filePath": "generators/faulty_images/patches/FI-CODE-PARAM-02.patch",
+      "summary": "Defines a code change for an allowlisted faulty-image variant used in controlled experiments.",
+      "tags": [
+        "configuration",
+        "research",
+        "component"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:generators/faulty_images/patches/FI-CODE-RETURN-01.patch",
+      "type": "file",
+      "name": "FI-CODE-RETURN-01.patch",
+      "filePath": "generators/faulty_images/patches/FI-CODE-RETURN-01.patch",
+      "summary": "Defines a code change for an allowlisted faulty-image variant used in controlled experiments.",
+      "tags": [
+        "configuration",
+        "research",
+        "component"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:milestones/README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "milestones/README.md",
+      "summary": "Documents the README stage of the thesis roadmap and its implementation or validation goals.",
+      "tags": [
+        "documentation",
+        "roadmap",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:observability/.gitkeep",
+      "type": "file",
+      "name": ".gitkeep",
+      "filePath": "observability/.gitkeep",
+      "summary": "Keeps the observability directory present in Git.",
+      "tags": [
+        "observability",
+        "configuration",
+        "telemetry"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:observability/container-metadata-exporter/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "observability/container-metadata-exporter/__init__.py",
+      "summary": "Marks the observability/container-metadata-exporter directory as an importable Python package.",
+      "tags": [
+        "observability",
+        "configuration",
+        "telemetry"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:observability/container-metadata-exporter/server.py",
+      "type": "file",
+      "name": "server.py",
+      "filePath": "observability/container-metadata-exporter/server.py",
+      "summary": "Exports container metadata for observability and service attribution.",
+      "tags": [
+        "observability",
+        "configuration",
+        "telemetry"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:observability/container-metadata-exporter/server.py:UnixHTTPConnection",
+      "type": "class",
+      "name": "UnixHTTPConnection",
+      "filePath": "observability/container-metadata-exporter/server.py",
+      "lineRange": [
+        33,
+        43
+      ],
+      "summary": "Defines UnixHTTPConnection, responsible for exports container metadata for observability and service attribution.",
+      "tags": [
+        "observability",
+        "configuration",
+        "class"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:observability/container-metadata-exporter/server.py:Handler",
+      "type": "class",
+      "name": "Handler",
+      "filePath": "observability/container-metadata-exporter/server.py",
+      "lineRange": [
+        110,
+        144
+      ],
+      "summary": "Defines Handler, responsible for exports container metadata for observability and service attribution.",
+      "tags": [
+        "observability",
+        "configuration",
+        "class"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:observability/container-metadata-exporter/server.py:render_metrics",
+      "type": "function",
+      "name": "render_metrics",
+      "filePath": "observability/container-metadata-exporter/server.py",
+      "lineRange": [
+        72,
+        107
+      ],
+      "summary": "Implements render metrics within the server.py component.",
+      "tags": [
+        "observability",
+        "configuration",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:observability/grafana/dashboards/overview.json",
+      "type": "config",
+      "name": "overview.json",
+      "filePath": "observability/grafana/dashboards/overview.json",
+      "summary": "Configures the Grafana overview resource for research telemetry views.",
+      "tags": [
+        "observability",
+        "configuration",
+        "telemetry"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:observability/grafana/dashboards/service-detail.json",
+      "type": "config",
+      "name": "service-detail.json",
+      "filePath": "observability/grafana/dashboards/service-detail.json",
+      "summary": "Configures the Grafana service detail resource for research telemetry views.",
+      "tags": [
+        "observability",
+        "configuration",
+        "telemetry"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:observability/grafana/provisioning/dashboards/dashboards.yml",
+      "type": "config",
+      "name": "dashboards.yml",
+      "filePath": "observability/grafana/provisioning/dashboards/dashboards.yml",
+      "summary": "Configures the Grafana dashboards resource for research telemetry views.",
+      "tags": [
+        "observability",
+        "configuration",
+        "telemetry"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:observability/grafana/provisioning/datasources/datasources.yml",
+      "type": "config",
+      "name": "datasources.yml",
+      "filePath": "observability/grafana/provisioning/datasources/datasources.yml",
+      "summary": "Configures the Grafana datasources resource for research telemetry views.",
+      "tags": [
+        "observability",
+        "configuration",
+        "telemetry"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:observability/loki/loki-config.yml",
+      "type": "config",
+      "name": "loki-config.yml",
+      "filePath": "observability/loki/loki-config.yml",
+      "summary": "Configures Loki log storage and ingestion for the research stack.",
+      "tags": [
+        "observability",
+        "configuration",
+        "telemetry"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:observability/opentelemetry/collector-config.yaml",
+      "type": "config",
+      "name": "collector-config.yaml",
+      "filePath": "observability/opentelemetry/collector-config.yaml",
+      "summary": "Routes OpenTelemetry signals from services to the observability stack.",
+      "tags": [
+        "observability",
+        "configuration",
+        "telemetry"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:observability/prometheus/prometheus.yml",
+      "type": "config",
+      "name": "prometheus.yml",
+      "filePath": "observability/prometheus/prometheus.yml",
+      "summary": "Configures Prometheus scraping of application and observability targets.",
+      "tags": [
+        "observability",
+        "configuration",
+        "telemetry"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:observability/promtail/promtail-config.yml",
+      "type": "config",
+      "name": "promtail-config.yml",
+      "filePath": "observability/promtail/promtail-config.yml",
+      "summary": "Configures Promtail log collection and forwarding to Loki.",
+      "tags": [
+        "observability",
+        "configuration",
+        "telemetry"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:observer/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "observer/__init__.py",
+      "summary": "Marks the observer directory as an importable Python package.",
+      "tags": [
+        "observability",
+        "telemetry",
+        "read-only"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:observer/telemetry.py",
+      "type": "file",
+      "name": "telemetry.py",
+      "filePath": "observer/telemetry.py",
+      "summary": "Queries Prometheus, Loki, Jaeger, and alerts to capture read-only telemetry for RCA.",
+      "tags": [
+        "observability",
+        "telemetry",
+        "read-only"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:observer/telemetry.py:Observer",
+      "type": "class",
+      "name": "Observer",
+      "filePath": "observer/telemetry.py",
+      "lineRange": [
+        28,
+        176
+      ],
+      "summary": "Defines Observer, responsible for queries prometheus, loki, jaeger, and alerts to capture read-only telemetry for rca.",
+      "tags": [
+        "observability",
+        "telemetry",
+        "class"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:orchestrator/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "orchestrator/__init__.py",
+      "summary": "Marks the orchestrator directory as an importable Python package.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:orchestrator/__main__.py",
+      "type": "file",
+      "name": "__main__.py",
+      "filePath": "orchestrator/__main__.py",
+      "summary": "Provides the research command-line interface for environment checks, snapshots, and fault runs.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "research"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:orchestrator/__main__.py:doctor",
+      "type": "function",
+      "name": "doctor",
+      "filePath": "orchestrator/__main__.py",
+      "lineRange": [
+        28,
+        41
+      ],
+      "summary": "Implements doctor within the __main__.py component.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:orchestrator/__main__.py:snapshot",
+      "type": "function",
+      "name": "snapshot",
+      "filePath": "orchestrator/__main__.py",
+      "lineRange": [
+        44,
+        63
+      ],
+      "summary": "Implements snapshot within the __main__.py component.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:orchestrator/__main__.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "orchestrator/__main__.py",
+      "lineRange": [
+        66,
+        191
+      ],
+      "summary": "Implements main within the __main__.py component.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "function"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:orchestrator/dataset.py",
+      "type": "file",
+      "name": "dataset.py",
+      "filePath": "orchestrator/dataset.py",
+      "summary": "Builds the dataset index and task availability from recorded experiment artifacts.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "research"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:orchestrator/dataset.py:_read_json",
+      "type": "function",
+      "name": "_read_json",
+      "filePath": "orchestrator/dataset.py",
+      "lineRange": [
+        67,
+        76
+      ],
+      "summary": "Implements  read json within the dataset.py component.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:orchestrator/dataset.py:_loadgenerator_observed",
+      "type": "function",
+      "name": "_loadgenerator_observed",
+      "filePath": "orchestrator/dataset.py",
+      "lineRange": [
+        88,
+        102
+      ],
+      "summary": "Implements  loadgenerator observed within the dataset.py component.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:orchestrator/dataset.py:index_run",
+      "type": "function",
+      "name": "index_run",
+      "filePath": "orchestrator/dataset.py",
+      "lineRange": [
+        105,
+        231
+      ],
+      "summary": "Implements index run within the dataset.py component.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "function"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:orchestrator/dataset.py:build_dataset_index",
+      "type": "function",
+      "name": "build_dataset_index",
+      "filePath": "orchestrator/dataset.py",
+      "lineRange": [
+        234,
+        243
+      ],
+      "summary": "Implements build dataset index within the dataset.py component.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:orchestrator/dataset.py:write_dataset_index",
+      "type": "function",
+      "name": "write_dataset_index",
+      "filePath": "orchestrator/dataset.py",
+      "lineRange": [
+        246,
+        269
+      ],
+      "summary": "Implements write dataset index within the dataset.py component.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:orchestrator/faults.py",
+      "type": "file",
+      "name": "faults.py",
+      "filePath": "orchestrator/faults.py",
+      "summary": "Coordinates one controlled fault run, telemetry capture, recovery, and ground-truth recording.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "research"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:orchestrator/faults.py:fault_lock",
+      "type": "function",
+      "name": "fault_lock",
+      "filePath": "orchestrator/faults.py",
+      "lineRange": [
+        35,
+        45
+      ],
+      "summary": "Implements fault lock within the faults.py component.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:orchestrator/faults.py:describe_scenario",
+      "type": "function",
+      "name": "describe_scenario",
+      "filePath": "orchestrator/faults.py",
+      "lineRange": [
+        48,
+        76
+      ],
+      "summary": "Implements describe scenario within the faults.py component.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:orchestrator/faults.py:_metric_samples",
+      "type": "function",
+      "name": "_metric_samples",
+      "filePath": "orchestrator/faults.py",
+      "lineRange": [
+        85,
+        109
+      ],
+      "summary": "Implements  metric samples within the faults.py component.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:orchestrator/faults.py:build_host_impact",
+      "type": "function",
+      "name": "build_host_impact",
+      "filePath": "orchestrator/faults.py",
+      "lineRange": [
+        112,
+        154
+      ],
+      "summary": "Implements build host impact within the faults.py component.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:orchestrator/faults.py:_ground_truth",
+      "type": "function",
+      "name": "_ground_truth",
+      "filePath": "orchestrator/faults.py",
+      "lineRange": [
+        168,
+        183
+      ],
+      "summary": "Implements  ground truth within the faults.py component.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:orchestrator/faults.py:run_fault",
+      "type": "function",
+      "name": "run_fault",
+      "filePath": "orchestrator/faults.py",
+      "lineRange": [
+        186,
+        293
+      ],
+      "summary": "Implements run fault within the faults.py component.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "function"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:orchestrator/faults.py:run_faulty_image",
+      "type": "function",
+      "name": "run_faulty_image",
+      "filePath": "orchestrator/faults.py",
+      "lineRange": [
+        296,
+        668
+      ],
+      "summary": "Implements run faulty image within the faults.py component.",
+      "tags": [
+        "orchestration",
+        "experiment",
+        "function"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:requirements.txt",
+      "type": "document",
+      "name": "requirements.txt",
+      "filePath": "requirements.txt",
+      "summary": "Pins Python packages required by the research runtime and dashboard.",
+      "tags": [
+        "documentation",
+        "research",
+        "architecture"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:service/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "service/__init__.py",
+      "summary": "Marks the service directory as an importable Python package.",
+      "tags": [
+        "docker-compose",
+        "service",
+        "metadata"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:service/compose.py",
+      "type": "file",
+      "name": "compose.py",
+      "filePath": "service/compose.py",
+      "summary": "Wraps Docker Compose state, service metadata, and allowlisted application operations.",
+      "tags": [
+        "docker-compose",
+        "service",
+        "metadata"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "class:service/compose.py:ServiceCatalog",
+      "type": "class",
+      "name": "ServiceCatalog",
+      "filePath": "service/compose.py",
+      "lineRange": [
+        46,
+        76
+      ],
+      "summary": "Defines ServiceCatalog, responsible for wraps docker compose state, service metadata, and allowlisted application operations.",
+      "tags": [
+        "docker-compose",
+        "service",
+        "class"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:service/compose.py:ServiceState",
+      "type": "class",
+      "name": "ServiceState",
+      "filePath": "service/compose.py",
+      "lineRange": [
+        80,
+        104
+      ],
+      "summary": "Defines ServiceState, responsible for wraps docker compose state, service metadata, and allowlisted application operations.",
+      "tags": [
+        "docker-compose",
+        "service",
+        "class"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:service/compose.py:ComposeApplication",
+      "type": "class",
+      "name": "ComposeApplication",
+      "filePath": "service/compose.py",
+      "lineRange": [
+        107,
+        357
+      ],
+      "summary": "Defines ComposeApplication, responsible for wraps docker compose state, service metadata, and allowlisted application operations.",
+      "tags": [
+        "docker-compose",
+        "service",
+        "class"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:service/metadata.yaml",
+      "type": "config",
+      "name": "metadata.yaml",
+      "filePath": "service/metadata.yaml",
+      "summary": "Defines service identities and dependency metadata for the Compose application.",
+      "tags": [
+        "docker-compose",
+        "service",
+        "metadata"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/__init__.py",
+      "type": "file",
+      "name": "__init__.py",
+      "filePath": "tests/__init__.py",
+      "summary": "Tests   init   behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_aiops_agent.py",
+      "type": "file",
+      "name": "test_aiops_agent.py",
+      "filePath": "tests/test_aiops_agent.py",
+      "summary": "Tests aiops agent behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "class:tests/test_aiops_agent.py:AioAgentTests",
+      "type": "class",
+      "name": "AioAgentTests",
+      "filePath": "tests/test_aiops_agent.py",
+      "lineRange": [
+        26,
+        842
+      ],
+      "summary": "Defines AioAgentTests, responsible for tests aiops agent behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:tests/test_catalog.py",
+      "type": "file",
+      "name": "test_catalog.py",
+      "filePath": "tests/test_catalog.py",
+      "summary": "Tests catalog behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_catalog.py:CatalogTests",
+      "type": "class",
+      "name": "CatalogTests",
+      "filePath": "tests/test_catalog.py",
+      "lineRange": [
+        7,
+        19
+      ],
+      "summary": "Defines CatalogTests, responsible for tests catalog behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_compose.py",
+      "type": "file",
+      "name": "test_compose.py",
+      "filePath": "tests/test_compose.py",
+      "summary": "Tests compose behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_compose.py:ComposeTests",
+      "type": "class",
+      "name": "ComposeTests",
+      "filePath": "tests/test_compose.py",
+      "lineRange": [
+        8,
+        32
+      ],
+      "summary": "Defines ComposeTests, responsible for tests compose behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_container_metadata_exporter.py",
+      "type": "file",
+      "name": "test_container_metadata_exporter.py",
+      "filePath": "tests/test_container_metadata_exporter.py",
+      "summary": "Tests container metadata exporter behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:tests/test_container_metadata_exporter.py:ContainerMetadataExporterTests",
+      "type": "class",
+      "name": "ContainerMetadataExporterTests",
+      "filePath": "tests/test_container_metadata_exporter.py",
+      "lineRange": [
+        18,
+        91
+      ],
+      "summary": "Defines ContainerMetadataExporterTests, responsible for tests container metadata exporter behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_dataset_index.py",
+      "type": "file",
+      "name": "test_dataset_index.py",
+      "filePath": "tests/test_dataset_index.py",
+      "summary": "Tests dataset index behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:tests/test_dataset_index.py:DatasetIndexTests",
+      "type": "class",
+      "name": "DatasetIndexTests",
+      "filePath": "tests/test_dataset_index.py",
+      "lineRange": [
+        10,
+        180
+      ],
+      "summary": "Defines DatasetIndexTests, responsible for tests dataset index behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_evaluator.py",
+      "type": "file",
+      "name": "test_evaluator.py",
+      "filePath": "tests/test_evaluator.py",
+      "summary": "Tests evaluator behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:tests/test_evaluator.py:RecordingProvider",
+      "type": "class",
+      "name": "RecordingProvider",
+      "filePath": "tests/test_evaluator.py",
+      "lineRange": [
+        12,
+        22
+      ],
+      "summary": "Defines RecordingProvider, responsible for tests evaluator behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_evaluator.py:EvaluatorTests",
+      "type": "class",
+      "name": "EvaluatorTests",
+      "filePath": "tests/test_evaluator.py",
+      "lineRange": [
+        25,
+        207
+      ],
+      "summary": "Defines EvaluatorTests, responsible for tests evaluator behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_fault_catalog.py",
+      "type": "file",
+      "name": "test_fault_catalog.py",
+      "filePath": "tests/test_fault_catalog.py",
+      "summary": "Tests fault catalog behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "class:tests/test_fault_catalog.py:FaultCatalogTests",
+      "type": "class",
+      "name": "FaultCatalogTests",
+      "filePath": "tests/test_fault_catalog.py",
+      "lineRange": [
+        18,
+        241
+      ],
+      "summary": "Defines FaultCatalogTests, responsible for tests fault catalog behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:tests/test_faulty_images.py",
+      "type": "file",
+      "name": "test_faulty_images.py",
+      "filePath": "tests/test_faulty_images.py",
+      "summary": "Tests faulty images behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:tests/test_faulty_images.py:FaultyImageTests",
+      "type": "class",
+      "name": "FaultyImageTests",
+      "filePath": "tests/test_faulty_images.py",
+      "lineRange": [
+        19,
+        107
+      ],
+      "summary": "Defines FaultyImageTests, responsible for tests faulty images behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:tests/test_faulty_images.py:FaultOverrideTests",
+      "type": "class",
+      "name": "FaultOverrideTests",
+      "filePath": "tests/test_faulty_images.py",
+      "lineRange": [
+        110,
+        222
+      ],
+      "summary": "Defines FaultOverrideTests, responsible for tests faulty images behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_final_evaluator.py",
+      "type": "file",
+      "name": "test_final_evaluator.py",
+      "filePath": "tests/test_final_evaluator.py",
+      "summary": "Tests final evaluator behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "class:tests/test_final_evaluator.py:FinalEvaluatorTests",
+      "type": "class",
+      "name": "FinalEvaluatorTests",
+      "filePath": "tests/test_final_evaluator.py",
+      "lineRange": [
+        10,
+        224
+      ],
+      "summary": "Defines FinalEvaluatorTests, responsible for tests final evaluator behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:tests/test_ground_truth_schema.py",
+      "type": "file",
+      "name": "test_ground_truth_schema.py",
+      "filePath": "tests/test_ground_truth_schema.py",
+      "summary": "Tests ground truth schema behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_observer.py",
+      "type": "file",
+      "name": "test_observer.py",
+      "filePath": "tests/test_observer.py",
+      "summary": "Tests observer behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_observer.py:FakeResponse",
+      "type": "class",
+      "name": "FakeResponse",
+      "filePath": "tests/test_observer.py",
+      "lineRange": [
+        11,
+        21
+      ],
+      "summary": "Defines FakeResponse, responsible for tests observer behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_observer.py:ObserverTests",
+      "type": "class",
+      "name": "ObserverTests",
+      "filePath": "tests/test_observer.py",
+      "lineRange": [
+        24,
+        51
+      ],
+      "summary": "Defines ObserverTests, responsible for tests observer behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_recorder.py",
+      "type": "file",
+      "name": "test_recorder.py",
+      "filePath": "tests/test_recorder.py",
+      "summary": "Tests recorder behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tests/test_remediation.py",
+      "type": "file",
+      "name": "test_remediation.py",
+      "filePath": "tests/test_remediation.py",
+      "summary": "Tests remediation behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:tests/test_remediation.py:RemediationTests",
+      "type": "class",
+      "name": "RemediationTests",
+      "filePath": "tests/test_remediation.py",
+      "lineRange": [
+        15,
+        174
+      ],
+      "summary": "Defines RemediationTests, responsible for tests remediation behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_semantic_probe.py",
+      "type": "file",
+      "name": "test_semantic_probe.py",
+      "filePath": "tests/test_semantic_probe.py",
+      "summary": "Tests semantic probe behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "class:tests/test_semantic_probe.py:_TransientCurrencySession",
+      "type": "class",
+      "name": "_TransientCurrencySession",
+      "filePath": "tests/test_semantic_probe.py",
+      "lineRange": [
+        36,
+        68
+      ],
+      "summary": "Defines _TransientCurrencySession, responsible for tests semantic probe behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_semantic_probe.py:_CheckoutFailureSession",
+      "type": "class",
+      "name": "_CheckoutFailureSession",
+      "filePath": "tests/test_semantic_probe.py",
+      "lineRange": [
+        83,
+        114
+      ],
+      "summary": "Defines _CheckoutFailureSession, responsible for tests semantic probe behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "class:tests/test_semantic_probe.py:SemanticProbeTests",
+      "type": "class",
+      "name": "SemanticProbeTests",
+      "filePath": "tests/test_semantic_probe.py",
+      "lineRange": [
+        117,
+        280
+      ],
+      "summary": "Defines SemanticProbeTests, responsible for tests semantic probe behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tests/test_web.py",
+      "type": "file",
+      "name": "test_web.py",
+      "filePath": "tests/test_web.py",
+      "summary": "Tests web behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "research"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "class:tests/test_web.py:WebDashboardTests",
+      "type": "class",
+      "name": "WebDashboardTests",
+      "filePath": "tests/test_web.py",
+      "lineRange": [
+        15,
+        359
+      ],
+      "summary": "Defines WebDashboardTests, responsible for tests web behavior in the research pipeline.",
+      "tags": [
+        "test",
+        "validation",
+        "class"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:web/README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "web/README.md",
+      "summary": "Documents or implements the research web dashboard README component.",
+      "tags": [
+        "dashboard",
+        "interface",
+        "research"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:web/static/app.js",
+      "type": "file",
+      "name": "app.js",
+      "filePath": "web/static/app.js",
+      "summary": "Runs the browser dashboard, loading experiment data and rendering interactive RCA views.",
+      "tags": [
+        "dashboard",
+        "interface",
+        "research"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:web/static/index.html",
+      "type": "file",
+      "name": "index.html",
+      "filePath": "web/static/index.html",
+      "summary": "Defines the browser dashboard document and its main interface regions.",
+      "tags": [
+        "dashboard",
+        "interface",
+        "research"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:web/static/styles.css",
+      "type": "file",
+      "name": "styles.css",
+      "filePath": "web/static/styles.css",
+      "summary": "Styles the RCA dashboard layout, controls, and responsive states.",
+      "tags": [
+        "dashboard",
+        "interface",
+        "research"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:agent/evaluate.py",
+      "target": "file:agent/evaluator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/evaluate_final.py",
+      "target": "file:agent/final_evaluator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/evaluator.py",
+      "target": "function:agent/evaluator.py:_resolve_run_path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/evaluator.py",
+      "target": "function:agent/evaluator.py:read_eligible_runs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/evaluator.py",
+      "target": "function:agent/evaluator.py:_blank_result",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/evaluator.py",
+      "target": "function:agent/evaluator.py:_prediction",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/evaluator.py",
+      "target": "function:agent/evaluator.py:_result_from_session",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/evaluator.py",
+      "target": "function:agent/evaluator.py:_metric_bundle",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/evaluator.py",
+      "target": "function:agent/evaluator.py:_cli_provider",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/evaluator.py",
+      "target": "function:agent/evaluator.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/evaluator.py",
+      "target": "class:agent/evaluator.py:EvaluationRun",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/evaluator.py",
+      "target": "class:agent/evaluator.py:BatchEvaluator",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/evaluator.py",
+      "target": "file:agent/models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/evaluator.py",
+      "target": "file:agent/orchestrator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/evaluator.py",
+      "target": "file:agent/providers.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/final_evaluator.py",
+      "target": "function:agent/final_evaluator.py:_build_row",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/final_evaluator.py",
+      "target": "function:agent/final_evaluator.py:_metrics",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/final_evaluator.py",
+      "target": "function:agent/final_evaluator.py:aggregate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/final_evaluator.py",
+      "target": "function:agent/final_evaluator.py:_render_report",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/final_evaluator.py",
+      "target": "function:agent/final_evaluator.py:run_cli",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/final_evaluator.py",
+      "target": "function:agent/final_evaluator.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/final_evaluator.py",
+      "target": "class:agent/final_evaluator.py:CanonicalPaths",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/final_evaluator.py",
+      "target": "file:agent/remediation_review.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/remediation.py",
+      "target": "function:agent/remediation.py:validate_remediation",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/remediation_evaluate.py",
+      "target": "file:agent/remediation_evaluator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/remediation_evaluator.py",
+      "target": "function:agent/remediation_evaluator.py:_rca_prediction",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/remediation_evaluator.py",
+      "target": "function:agent/remediation_evaluator.py:_blank_result",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/remediation_evaluator.py",
+      "target": "function:agent/remediation_evaluator.py:_result_from_sessions",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/remediation_evaluator.py",
+      "target": "function:agent/remediation_evaluator.py:_stored_session",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/remediation_evaluator.py",
+      "target": "function:agent/remediation_evaluator.py:_recommendation_metrics",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/remediation_evaluator.py",
+      "target": "function:agent/remediation_evaluator.py:_cli_provider",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/remediation_evaluator.py",
+      "target": "function:agent/remediation_evaluator.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/remediation_evaluator.py",
+      "target": "class:agent/remediation_evaluator.py:RemediationBatchEvaluator",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/remediation_evaluator.py",
+      "target": "file:agent/evaluator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/remediation_evaluator.py",
+      "target": "file:agent/models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/remediation_evaluator.py",
+      "target": "file:agent/orchestrator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/remediation_evaluator.py",
+      "target": "file:agent/providers.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/remediation_evaluator.py",
+      "target": "file:agent/remediation.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/remediation_evaluator.py",
+      "target": "file:agent/remediation_review.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/remediation_review.py",
+      "target": "function:agent/remediation_review.py:write_review_template",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/remediation_review.py",
+      "target": "function:agent/remediation_review.py:validate_review_rows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/remediation_review.py",
+      "target": "function:agent/remediation_review.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/__init__.py",
+      "target": "file:agent/orchestrator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/actions.py",
+      "target": "class:agent/actions.py:MitigationActionError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/actions.py",
+      "target": "class:agent/actions.py:ServiceActionRuntime",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/actions.py",
+      "target": "class:agent/actions.py:ActiveFaultRuntime",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/actions.py",
+      "target": "class:agent/actions.py:ComposeMitigationActions",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/environment.py",
+      "target": "class:agent/environment.py:EnvironmentError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/environment.py",
+      "target": "class:agent/environment.py:ComposeEvidence",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/orchestrator.py",
+      "target": "function:agent/orchestrator.py:create_orchestrator",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/orchestrator.py",
+      "target": "class:agent/orchestrator.py:AgentRuntimeError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/orchestrator.py",
+      "target": "class:agent/orchestrator.py:LlmAgent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/orchestrator.py",
+      "target": "class:agent/orchestrator.py:AgentOrchestrator",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/orchestrator.py",
+      "target": "file:agent/actions.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/orchestrator.py",
+      "target": "file:agent/environment.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/orchestrator.py",
+      "target": "file:agent/models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/orchestrator.py",
+      "target": "file:agent/parser.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/orchestrator.py",
+      "target": "file:agent/providers.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/orchestrator.py",
+      "target": "file:agent/registry.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/orchestrator.py",
+      "target": "file:agent/tasks.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/parser.py",
+      "target": "class:agent/parser.py:ActionParseError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/parser.py",
+      "target": "class:agent/parser.py:ResponseParser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/registry.py",
+      "target": "class:agent/registry.py:ProblemError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/registry.py",
+      "target": "class:agent/registry.py:ProblemDefinition",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/registry.py",
+      "target": "class:agent/registry.py:ComposeProblemRegistry",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/registry.py",
+      "target": "file:agent/actions.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/registry.py",
+      "target": "file:agent/environment.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/registry.py",
+      "target": "file:agent/tasks.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/tasks.py",
+      "target": "class:agent/tasks.py:EnvironmentResponse",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/tasks.py",
+      "target": "class:agent/tasks.py:TaskError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/tasks.py",
+      "target": "class:agent/tasks.py:BaseTask",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/tasks.py",
+      "target": "class:agent/tasks.py:DetectionTask",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/tasks.py",
+      "target": "class:agent/tasks.py:LocalizationTask",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/tasks.py",
+      "target": "class:agent/tasks.py:AnalysisTask",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/tasks.py",
+      "target": "class:agent/tasks.py:MitigationTask",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/tasks.py",
+      "target": "class:agent/tasks.py:RemediationTask",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/tasks.py",
+      "target": "file:agent/actions.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/tasks.py",
+      "target": "file:agent/environment.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/tasks.py",
+      "target": "file:agent/remediation.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:generators/__init__.py",
+      "target": "file:generators/fault.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:generators/__init__.py",
+      "target": "file:generators/faulty_image.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:generators/__init__.py",
+      "target": "file:generators/pumba.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:generators/__init__.py",
+      "target": "file:generators/semantic.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:generators/__init__.py",
+      "target": "file:generators/semantic_probe.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:generators/fault.py",
+      "target": "function:generators/fault.py:load_scenario",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/fault.py",
+      "target": "function:generators/fault.py:load_scenarios",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/fault.py",
+      "target": "class:generators/fault.py:ScenarioError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/fault.py",
+      "target": "class:generators/fault.py:FaultSpec",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/fault.py",
+      "target": "class:generators/fault.py:FaultScenario",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/faulty_image.py",
+      "target": "function:generators/faulty_image.py:load_faulty_images",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/faulty_image.py",
+      "target": "class:generators/faulty_image.py:FaultyImageError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/faulty_image.py",
+      "target": "class:generators/faulty_image.py:FaultyImageDefinition",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/faulty_image.py",
+      "target": "class:generators/faulty_image.py:FaultyImagePlan",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/faulty_image.py",
+      "target": "class:generators/faulty_image.py:FaultyImageInjector",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/pumba.py",
+      "target": "function:generators/pumba.py:plan_pumba",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/pumba.py",
+      "target": "class:generators/pumba.py:InjectorError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/pumba.py",
+      "target": "class:generators/pumba.py:PumbaPlan",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/pumba.py",
+      "target": "class:generators/pumba.py:RunningInjection",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/pumba.py",
+      "target": "class:generators/pumba.py:PumbaInjector",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic.py",
+      "target": "function:generators/semantic.py:_normalized",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic.py",
+      "target": "function:generators/semantic.py:_missing_exception",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic.py",
+      "target": "function:generators/semantic.py:_incorrect_parameter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic.py",
+      "target": "function:generators/semantic.py:_missing_parameter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic.py",
+      "target": "function:generators/semantic.py:validate_semantic",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic.py",
+      "target": "class:generators/semantic.py:SemanticValidationError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic.py",
+      "target": "class:generators/semantic.py:SemanticValidationResult",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic_probe.py",
+      "target": "function:generators/semantic_probe.py:_checkout_form",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic_probe.py",
+      "target": "function:generators/semantic_probe.py:_run_currency_phase",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic_probe.py",
+      "target": "function:generators/semantic_probe.py:_run_checkout_phase",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic_probe.py",
+      "target": "function:generators/semantic_probe.py:run_semantic_probe",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic_probe.py",
+      "target": "function:generators/semantic_probe.py:_telemetry_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic_probe.py",
+      "target": "function:generators/semantic_probe.py:build_semantic_observation",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic_probe.py",
+      "target": "class:generators/semantic_probe.py:SemanticProbeError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic_probe.py",
+      "target": "class:generators/semantic_probe.py:ProbePhaseResult",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic_probe.py",
+      "target": "class:generators/semantic_probe.py:_ProductPriceParser",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:generators/semantic_probe.py",
+      "target": "class:generators/semantic_probe.py:_FrontendSession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/__main__.py",
+      "target": "file:agent/run.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/providers.py",
+      "target": "function:agent/providers.py:build_provider",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/providers.py",
+      "target": "class:agent/providers.py:ProviderError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/providers.py",
+      "target": "class:agent/providers.py:LlmProvider",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/providers.py",
+      "target": "class:agent/providers.py:FakeProvider",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/providers.py",
+      "target": "class:agent/providers.py:OpenAICompatibleProvider",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/providers.py",
+      "target": "file:agent/sanitize.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/run.py",
+      "target": "function:agent/run.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/run.py",
+      "target": "file:agent/live.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/run.py",
+      "target": "file:agent/orchestrator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/run.py",
+      "target": "file:agent/providers.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/sanitize.py",
+      "target": "function:agent/sanitize.py:sanitize_text",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/sanitize.py",
+      "target": "function:agent/sanitize.py:sanitize_messages",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:web/__init__.py",
+      "target": "file:web/app.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/__main__.py",
+      "target": "function:web/__main__.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:web/__main__.py",
+      "target": "file:web/app.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/app.py",
+      "target": "function:web/app.py:create_app",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:web/app.py",
+      "target": "file:web/jobs.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:web/jobs.py",
+      "target": "function:web/jobs.py:_json_safe",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:web/jobs.py",
+      "target": "class:web/jobs.py:GuiJobError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:web/jobs.py",
+      "target": "class:web/jobs.py:GuiJob",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:web/jobs.py",
+      "target": "class:web/jobs.py:JobManager",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/live.py",
+      "target": "function:agent/live.py:_ground_truth",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/live.py",
+      "target": "function:agent/live.py:_prior_stage_context",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/live.py",
+      "target": "class:agent/live.py:LiveIncidentError",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/live.py",
+      "target": "class:agent/live.py:LiveIncidentController",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/live.py",
+      "target": "file:agent/actions.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/live.py",
+      "target": "file:agent/models.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/live.py",
+      "target": "file:agent/orchestrator.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/live.py",
+      "target": "file:agent/runtime.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:agent/models.py",
+      "target": "class:agent/models.py:SessionItem",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/models.py",
+      "target": "class:agent/models.py:AgentSession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/models.py",
+      "target": "class:agent/models.py:ProblemContext",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/runtime.py",
+      "target": "class:agent/runtime.py:ApplicationRuntime",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/runtime.py",
+      "target": "class:agent/runtime.py:FaultRuntime",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/runtime.py",
+      "target": "class:agent/runtime.py:TelemetryRuntime",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/runtime.py",
+      "target": "class:agent/runtime.py:WorkloadRuntime",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:agent/runtime.py",
+      "target": "class:agent/runtime.py:ComposeWorkload",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:utils/__init__.py",
+      "target": "file:utils/artifacts.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:utils/__init__.py",
+      "target": "file:utils/config.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:utils/artifacts.py",
+      "target": "function:utils/artifacts.py:new_experiment_id",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:utils/artifacts.py",
+      "target": "function:utils/artifacts.py:new_experiment_id",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:utils/artifacts.py",
+      "target": "function:utils/artifacts.py:write_json",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:utils/artifacts.py",
+      "target": "function:utils/artifacts.py:write_json",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:utils/artifacts.py",
+      "target": "function:utils/artifacts.py:create_run",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:utils/artifacts.py",
+      "target": "function:utils/artifacts.py:create_run",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:utils/artifacts.py",
+      "target": "function:utils/artifacts.py:append_event",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:utils/artifacts.py",
+      "target": "function:utils/artifacts.py:append_event",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:utils/config.py",
+      "target": "function:utils/config.py:_load_dotenv",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:utils/config.py",
+      "target": "class:utils/config.py:ResearchConfig",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:utils/config.py",
+      "target": "class:utils/config.py:ResearchConfig",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "service:observability/container-metadata-exporter/Dockerfile",
+      "target": "service:observability/container-metadata-exporter/Dockerfile:python",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:compose/faulty-overrides/FI-CODE-CALL-01.yml",
+      "target": "service:compose/docker-compose.yml",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:compose/faulty-overrides/FI-CODE-EXC-01.yml",
+      "target": "service:compose/docker-compose.yml",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:compose/faulty-overrides/FI-CODE-PARAM-01.yml",
+      "target": "service:compose/docker-compose.yml",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:compose/faulty-overrides/FI-CODE-PARAM-02.yml",
+      "target": "service:compose/docker-compose.yml",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:compose/faulty-overrides/FI-CODE-RETURN-01.yml",
+      "target": "service:compose/docker-compose.yml",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:generators/faulty_images/manifest.yaml",
+      "target": "service:generators/faulty_images/Dockerfile.checkoutservice",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:generators/faulty_images/manifest.yaml",
+      "target": "service:generators/faulty_images/Dockerfile.currencyservice",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:observability/container-metadata-exporter/server.py",
+      "target": "class:observability/container-metadata-exporter/server.py:UnixHTTPConnection",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:observability/container-metadata-exporter/server.py",
+      "target": "class:observability/container-metadata-exporter/server.py:Handler",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:observability/container-metadata-exporter/server.py",
+      "target": "function:observability/container-metadata-exporter/server.py:render_metrics",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:observer/__init__.py",
+      "target": "file:observer/telemetry.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:observer/telemetry.py",
+      "target": "class:observer/telemetry.py:Observer",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:orchestrator/__main__.py",
+      "target": "function:orchestrator/__main__.py:doctor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:orchestrator/__main__.py",
+      "target": "function:orchestrator/__main__.py:snapshot",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:orchestrator/__main__.py",
+      "target": "function:orchestrator/__main__.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:orchestrator/dataset.py",
+      "target": "function:orchestrator/dataset.py:_read_json",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:orchestrator/dataset.py",
+      "target": "function:orchestrator/dataset.py:_loadgenerator_observed",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:orchestrator/dataset.py",
+      "target": "function:orchestrator/dataset.py:index_run",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:orchestrator/dataset.py",
+      "target": "function:orchestrator/dataset.py:build_dataset_index",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:orchestrator/dataset.py",
+      "target": "function:orchestrator/dataset.py:write_dataset_index",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:orchestrator/faults.py",
+      "target": "function:orchestrator/faults.py:fault_lock",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:orchestrator/faults.py",
+      "target": "function:orchestrator/faults.py:describe_scenario",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:orchestrator/faults.py",
+      "target": "function:orchestrator/faults.py:_metric_samples",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:orchestrator/faults.py",
+      "target": "function:orchestrator/faults.py:build_host_impact",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:orchestrator/faults.py",
+      "target": "function:orchestrator/faults.py:_ground_truth",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:orchestrator/faults.py",
+      "target": "function:orchestrator/faults.py:run_fault",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:orchestrator/faults.py",
+      "target": "function:orchestrator/faults.py:run_faulty_image",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:service/__init__.py",
+      "target": "file:service/compose.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:service/compose.py",
+      "target": "class:service/compose.py:ServiceCatalog",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:service/compose.py",
+      "target": "class:service/compose.py:ServiceState",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:service/compose.py",
+      "target": "class:service/compose.py:ComposeApplication",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_aiops_agent.py",
+      "target": "class:tests/test_aiops_agent.py:AioAgentTests",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_catalog.py",
+      "target": "class:tests/test_catalog.py:CatalogTests",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_compose.py",
+      "target": "class:tests/test_compose.py:ComposeTests",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_container_metadata_exporter.py",
+      "target": "class:tests/test_container_metadata_exporter.py:ContainerMetadataExporterTests",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_dataset_index.py",
+      "target": "class:tests/test_dataset_index.py:DatasetIndexTests",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_evaluator.py",
+      "target": "class:tests/test_evaluator.py:RecordingProvider",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_evaluator.py",
+      "target": "class:tests/test_evaluator.py:EvaluatorTests",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_fault_catalog.py",
+      "target": "class:tests/test_fault_catalog.py:FaultCatalogTests",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_faulty_images.py",
+      "target": "class:tests/test_faulty_images.py:FaultyImageTests",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_faulty_images.py",
+      "target": "class:tests/test_faulty_images.py:FaultOverrideTests",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_final_evaluator.py",
+      "target": "class:tests/test_final_evaluator.py:FinalEvaluatorTests",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_observer.py",
+      "target": "class:tests/test_observer.py:FakeResponse",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_observer.py",
+      "target": "class:tests/test_observer.py:ObserverTests",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_remediation.py",
+      "target": "class:tests/test_remediation.py:RemediationTests",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_semantic_probe.py",
+      "target": "class:tests/test_semantic_probe.py:_TransientCurrencySession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_semantic_probe.py",
+      "target": "class:tests/test_semantic_probe.py:_CheckoutFailureSession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_semantic_probe.py",
+      "target": "class:tests/test_semantic_probe.py:SemanticProbeTests",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tests/test_web.py",
+      "target": "class:tests/test_web.py:WebDashboardTests",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    }
+  ],
+  "layers": [
+    {
+      "id": "layer:agent",
+      "name": "RCA Agent",
+      "description": "LLM orchestration, observation analysis, evaluation, and remediation recommendations.",
+      "nodeIds": [
+        "file:agent/evaluate.py",
+        "file:agent/evaluate_final.py",
+        "file:agent/evaluator.py",
+        "file:agent/final_evaluator.py",
+        "file:agent/remediation.py",
+        "file:agent/remediation_evaluate.py",
+        "file:agent/remediation_evaluator.py",
+        "file:agent/remediation_review.py",
+        "file:agent/__init__.py",
+        "file:agent/actions.py",
+        "file:agent/environment.py",
+        "file:agent/orchestrator.py",
+        "file:agent/parser.py",
+        "file:agent/registry.py",
+        "file:agent/tasks.py",
+        "file:agent/__main__.py",
+        "file:agent/providers.py",
+        "file:agent/run.py",
+        "file:agent/sanitize.py",
+        "file:agent/live.py",
+        "file:agent/models.py",
+        "file:agent/runtime.py",
+        "document:agent/README.md",
+        "document:agent/old/README.md",
+        "file:agent/prompts/.gitkeep",
+        "document:agent/prompts/README.md",
+        "file:agent/tools/.gitkeep"
+      ]
+    },
+    {
+      "id": "layer:experiment",
+      "name": "Fault Generation",
+      "description": "Fault scenarios and controlled injection adapters for experiments.",
+      "nodeIds": [
+        "file:generators/__init__.py",
+        "file:generators/fault.py",
+        "file:generators/faulty_image.py",
+        "file:generators/pumba.py",
+        "file:generators/semantic.py",
+        "file:generators/semantic_probe.py",
+        "service:generators/faulty_images/Dockerfile.checkoutservice",
+        "service:generators/faulty_images/Dockerfile.currencyservice",
+        "config:generators/faulty_images/manifest.yaml",
+        "config:generators/scenarios/code-level-01-incorrect-return-currency.yaml",
+        "config:generators/scenarios/code-level-02-missing-exception-checkout.yaml",
+        "config:generators/scenarios/code-level-03-incorrect-parameter-checkout.yaml",
+        "config:generators/scenarios/code-level-04-missing-parameter-checkout.yaml",
+        "config:generators/scenarios/code-level-05-missing-function-call-checkout.yaml",
+        "config:generators/scenarios/network-01-delay-payment.yaml",
+        "config:generators/scenarios/network-02-loss-payment.yaml",
+        "config:generators/scenarios/network-03-delay-shipping.yaml",
+        "config:generators/scenarios/network-04-delay-currency.yaml",
+        "config:generators/scenarios/network-05-loss-productcatalog.yaml",
+        "config:generators/scenarios/resource-01-cpu-hog-recommendation.yaml",
+        "config:generators/scenarios/resource-02-memory-pressure-cart.yaml",
+        "config:generators/scenarios/resource-03-cpu-hog-checkout.yaml",
+        "config:generators/scenarios/resource-04-disk-stress.yaml",
+        "config:generators/scenarios/resource-05-socket-stress.yaml",
+        "file:generators/faulty_images/patches/FI-CODE-CALL-01.patch",
+        "file:generators/faulty_images/patches/FI-CODE-EXC-01.patch",
+        "file:generators/faulty_images/patches/FI-CODE-PARAM-01.patch",
+        "file:generators/faulty_images/patches/FI-CODE-PARAM-02.patch",
+        "file:generators/faulty_images/patches/FI-CODE-RETURN-01.patch"
+      ]
+    },
+    {
+      "id": "layer:runtime",
+      "name": "Experiment Runtime",
+      "description": "Compose service adapter, telemetry observer, and experiment orchestration.",
+      "nodeIds": [
+        "file:observer/__init__.py",
+        "file:observer/telemetry.py",
+        "file:orchestrator/__init__.py",
+        "file:orchestrator/__main__.py",
+        "file:orchestrator/dataset.py",
+        "file:orchestrator/faults.py",
+        "file:service/__init__.py",
+        "file:service/compose.py",
+        "config:service/metadata.yaml"
+      ]
+    },
+    {
+      "id": "layer:infrastructure",
+      "name": "Deployment and Observability",
+      "description": "Docker Compose deployment and monitoring stack configurations.",
+      "nodeIds": [
+        "service:observability/container-metadata-exporter/Dockerfile",
+        "service:observability/container-metadata-exporter/Dockerfile:python",
+        "config:compose/faulty-overrides/FI-CODE-CALL-01.yml",
+        "config:compose/faulty-overrides/FI-CODE-EXC-01.yml",
+        "config:compose/faulty-overrides/FI-CODE-PARAM-01.yml",
+        "config:compose/faulty-overrides/FI-CODE-PARAM-02.yml",
+        "config:compose/faulty-overrides/FI-CODE-RETURN-01.yml",
+        "config:compose/.env.example",
+        "file:compose/.gitkeep",
+        "service:compose/docker-compose.yml",
+        "file:compose/healthcheck/download.sh",
+        "file:observability/.gitkeep",
+        "file:observability/container-metadata-exporter/__init__.py",
+        "file:observability/container-metadata-exporter/server.py",
+        "config:observability/grafana/dashboards/overview.json",
+        "config:observability/grafana/dashboards/service-detail.json",
+        "config:observability/grafana/provisioning/dashboards/dashboards.yml",
+        "config:observability/grafana/provisioning/datasources/datasources.yml",
+        "config:observability/loki/loki-config.yml",
+        "config:observability/opentelemetry/collector-config.yaml",
+        "config:observability/prometheus/prometheus.yml",
+        "config:observability/promtail/promtail-config.yml"
+      ]
+    },
+    {
+      "id": "layer:web",
+      "name": "Research Dashboard",
+      "description": "Web API, job handling, and static interface for research runs.",
+      "nodeIds": [
+        "file:web/__init__.py",
+        "file:web/__main__.py",
+        "file:web/app.py",
+        "file:web/jobs.py",
+        "document:web/README.md",
+        "file:web/static/app.js",
+        "file:web/static/index.html",
+        "file:web/static/styles.css"
+      ]
+    },
+    {
+      "id": "layer:shared",
+      "name": "Shared Utilities",
+      "description": "Shared settings and artifact helpers used across research components.",
+      "nodeIds": [
+        "file:utils/__init__.py",
+        "file:utils/artifacts.py",
+        "file:utils/config.py"
+      ]
+    },
+    {
+      "id": "layer:tests",
+      "name": "Tests",
+      "description": "Automated tests for research subsystems and workflows.",
+      "nodeIds": [
+        "file:tests/__init__.py",
+        "file:tests/test_aiops_agent.py",
+        "file:tests/test_catalog.py",
+        "file:tests/test_compose.py",
+        "file:tests/test_container_metadata_exporter.py",
+        "file:tests/test_dataset_index.py",
+        "file:tests/test_evaluator.py",
+        "file:tests/test_fault_catalog.py",
+        "file:tests/test_faulty_images.py",
+        "file:tests/test_final_evaluator.py",
+        "file:tests/test_ground_truth_schema.py",
+        "file:tests/test_observer.py",
+        "file:tests/test_recorder.py",
+        "file:tests/test_remediation.py",
+        "file:tests/test_semantic_probe.py",
+        "file:tests/test_web.py"
+      ]
+    },
+    {
+      "id": "layer:documentation",
+      "name": "Documentation and Project Metadata",
+      "description": "Architecture, methodology, roadmap, dependency list, and code graph configuration.",
+      "nodeIds": [
+        "document:docs/AGENT_STAGE_CONTEXT.md",
+        "document:docs/AIOPSLAB_REFACTOR_PLAN.md",
+        "document:docs/ARCHITECTURE.md",
+        "document:docs/EXPERIMENT_LOG.md",
+        "document:docs/FAULT_INJECTION.md",
+        "document:docs/FAULT_INJECTION_FLOW.md",
+        "document:docs/FAULT_TAXONOMY.md",
+        "document:docs/REFERENCE_ARCHITECTURE_ADAPTATION.md",
+        "document:docs/old/DATASET_RESET.md",
+        "document:docs/old/README.md",
+        "document:docs/old/REMEDIATION_RECOMMENDATION.md",
+        "document:docs/old/SEMANTIC_PROBES.md",
+        "document:milestones/old/00-environment-setup.md",
+        "document:milestones/old/01-experiment-architecture.md",
+        "document:milestones/old/01-fault-injection-pipeline.md",
+        "document:milestones/old/02-ground-truth-dataset.md",
+        "document:milestones/old/03-rca-agent.md",
+        "document:milestones/old/04-remediation-recommendation.md",
+        "document:milestones/old/05-evaluation.md",
+        "document:milestones/old/06-web-dashboard.md",
+        "document:milestones/old/README.md",
+        "config:.ua/config.json",
+        "document:README.md",
+        "file:__init__.py",
+        "document:milestones/README.md",
+        "document:requirements.txt"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "Project purpose",
+      "description": "Begin with the thesis goals and the separation between upstream Online Boutique and the research scaffold.",
+      "nodeIds": [
+        "document:README.md",
+        "document:docs/ARCHITECTURE.md"
+      ]
+    },
+    {
+      "order": 2,
+      "title": "Runtime foundation",
+      "description": "See how Docker Compose runs the application and telemetry stack under explicit resource limits.",
+      "nodeIds": [
+        "service:compose/docker-compose.yml",
+        "config:observability/prometheus/prometheus.yml",
+        "config:observability/opentelemetry/collector-config.yaml"
+      ]
+    },
+    {
+      "order": 3,
+      "title": "Service and telemetry adapters",
+      "description": "Learn the boundaries for Docker state and read-only observability access before following a fault run.",
+      "nodeIds": [
+        "file:service/compose.py",
+        "file:observer/telemetry.py",
+        "file:utils/config.py"
+      ]
+    },
+    {
+      "order": 4,
+      "title": "Controlled faults",
+      "description": "Read the methodology, scenario validation, and allowlisted Pumba command planning.",
+      "nodeIds": [
+        "document:docs/FAULT_INJECTION.md",
+        "file:generators/fault.py",
+        "file:generators/pumba.py"
+      ]
+    },
+    {
+      "order": 5,
+      "title": "Experiment lifecycle",
+      "description": "Follow the CLI into a single controlled fault run and its append-only evidence artifacts.",
+      "nodeIds": [
+        "file:orchestrator/__main__.py",
+        "file:orchestrator/faults.py",
+        "file:utils/artifacts.py"
+      ]
+    },
+    {
+      "order": 6,
+      "title": "Agent reasoning",
+      "description": "Trace the RCA session from live evidence through observations, localization, analysis, and recommendations.",
+      "nodeIds": [
+        "file:agent/live.py",
+        "file:agent/orchestrator.py",
+        "file:agent/actions.py",
+        "file:agent/models.py"
+      ]
+    },
+    {
+      "order": 7,
+      "title": "Guarded remediation",
+      "description": "Inspect how remediation is reviewed and restricted to allowed operations.",
+      "nodeIds": [
+        "file:agent/remediation.py",
+        "file:agent/remediation_review.py"
+      ]
+    },
+    {
+      "order": 8,
+      "title": "Evaluation",
+      "description": "Study how agent outputs are compared with withheld ground truth across the evaluation tasks.",
+      "nodeIds": [
+        "file:agent/evaluator.py",
+        "file:agent/final_evaluator.py",
+        "file:agent/remediation_evaluator.py"
+      ]
+    },
+    {
+      "order": 9,
+      "title": "Research dashboard",
+      "description": "Finish with the web routes and job runner that present scenarios, live progress, and completed results.",
+      "nodeIds": [
+        "file:web/app.py",
+        "file:web/jobs.py",
+        "file:web/static/app.js"
+      ]
+    }
+  ]
+}

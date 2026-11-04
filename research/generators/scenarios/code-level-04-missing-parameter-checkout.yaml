@@ -8,9 +8,9 @@ workload: {generator: loadgenerator, trigger: active checkout traffic}
 parameters: {duration_seconds: 120, delivery_requirement: faulty_image_variant}
 semantic_probe: {type: checkout_flow, product_id: 0PUK6V6EV0, repetitions: 3, timeout_seconds: 15}
 severity: high
-expected_local_symptoms: ["required downstream argument is absent"]
+expected_local_symptoms: ["checkout omits the destination currency and encounters a currency-code mismatch"]
 expected_propagated_symptoms: ["checkout errors surface at frontend"]
-expected_telemetry_evidence: {metrics: [checkout_error_rate], logs: [missing_required_field]}
+expected_telemetry_evidence: {metrics: [checkout_error_rate], logs: [conversion_request_empty_to_code, currency_code_mismatch_panic]}
 ground_truth: {root_cause_service: checkoutservice, fault_category: code_level, fault_type: missing_parameter}
 expected_remediation: ["restore required parameter handling and deploy a corrected image"]
 recovery: "Replace the approved faulty image with the baseline image after the run."

@@ -20,6 +20,16 @@ manifests/Helm chart/Skaffold config at the repo root — see
 | Fault injection | Versioned scenario catalog, gated Pumba planner, and allowlisted workload controls | `research/generators/` |
 | Agentic AI | LLM via API, read-only RCA actions, and gated live mitigation | `research/agent/` |
 
+## Codebase knowledge graph
+
+Understand Anything analyzes only `research/`; its shareable graph lives in
+`research/.ua/knowledge-graph.json`. Experiment artifacts are excluded by
+`research/.ua/.understandignore`. Install the Codex skill from the official
+Understand Anything repository, restart Codex, and run `$understand research`
+from the repository root to refresh the graph manually. Use
+`$understand-dashboard research` to explore it. Review changes to the graph
+before committing; automatic updates are disabled.
+
 ## Why Online Boutique
 
 Chosen over Sock Shop primarily for **source code transparency**: Online Boutique is a
