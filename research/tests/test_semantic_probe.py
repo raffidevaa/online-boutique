@@ -197,10 +197,37 @@ class SemanticProbeTests(unittest.TestCase):
                 "downstream_service": "currencyservice",
                 "incident_error_count": 2,
                 "downstream_error_evidence": True,
+                "baseline_checkout_succeeded": True,
+                "observed_parameter": "INVALID",
             },
         }
         result = validate_semantic("incorrect_parameter", observation)
         self.assertEqual(result.status, "passed")
+        with self.assertRaisesRegex(Exception, "missing parameter"):
+            validate_semantic("missing_parameter", observation)
+
+    def test_parameter_probes_require_distinct_target_log_values(self) -> None:
+        for scenario_file, code, validator in (
+            ("code-level-03-incorrect-parameter-checkout.yaml", "INVALID", "incorrect_parameter"),
+            ("code-level-04-missing-parameter-checkout.yaml", "", "missing_parameter"),
+        ):
+            scenario = load_scenario(Path("research/generators/scenarios") / scenario_file)
+            baseline = ProbePhaseResult("baseline", "start", "end", [], {
+                "checkout_succeeded": True, "error_count": 0,
+            })
+            incident = ProbePhaseResult("incident", "start", "end", [], {
+                "checkout_succeeded": False, "error_count": 3,
+                "downstream_status": "ERROR",
+            })
+            capture = {"logs": {"result": {"data": {"result": [{
+                "stream": {"compose_service": "checkoutservice"},
+                "values": [["1", f'{{"message":"currency conversion request","to_code":"{code}"}}']],
+            }]}}}}
+            observation = build_semantic_observation(scenario, baseline, incident, capture)
+            self.assertEqual(validate_semantic(validator, observation).status, "passed")
+            opposite = "missing_parameter" if validator == "incorrect_parameter" else "incorrect_parameter"
+            with self.assertRaises(Exception):
+                validate_semantic(opposite, observation)
 
     def test_observation_builder_records_panic_evidence(self) -> None:
         scenario = load_scenario(
@@ -221,7 +248,7 @@ class SemanticProbeTests(unittest.TestCase):
                         "result": [
                             {
                                 "stream": {"compose_service": "checkoutservice"},
-                                "values": [["1", "panic: faulty image"]],
+                                "values": [["1", "panic: faulty image: unhandled checkout dependency error"]],
                             }
                         ]
                     }

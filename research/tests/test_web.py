@@ -33,6 +33,27 @@ class WebDashboardTests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(listed["task_result"])
             self.assertEqual(set(detail["agent_sessions"]), {"live_detection", "live_localization", "live_rca", "remediation_recommendation", "live_mitigation"})
 
+    async def test_history_duration_uses_run_lifecycle(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            config = self._config(Path(temporary))
+            run = config.experiment_runs / "EXP-DURATION"
+            run.mkdir(parents=True)
+            (run / "metadata.json").write_text(json.dumps({
+                "experiment_id": run.name, "scenario_id": "FI-CODE-RETURN-01",
+                "timestamp_start": "2026-11-02T13:08:42+00:00",
+            }))
+            (run / "result.json").write_text('{"status":"completed"}')
+            (run / "agent-session.json").write_text('{"duration_seconds":1.09}')
+            (run / "agent-evaluation.json").write_text('{"task":"full"}')
+            (run / "events.jsonl").write_text(
+                '{"event":"live_preflight_complete","timestamp":"2026-11-02T13:08:43+00:00"}\n'
+                '{"event":"live_run_complete","timestamp":"2026-11-02T13:11:14+00:00"}\n'
+            )
+            app = create_app(config)
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
+                listed = (await client.get("/api/runs")).json()["runs"][0]
+            self.assertEqual(listed["duration_seconds"], 152.0)
+
     async def test_code_fault_history_uses_semantic_validation(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             config = self._config(Path(temporary))
@@ -82,17 +103,21 @@ class WebDashboardTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(job.experiment_id, "EXP-FAIL")
             manager.close()
 
-    def test_code_fault_job_uses_semantic_runner_and_records_experiment(self) -> None:
+    def test_code_fault_job_uses_full_pipeline_and_records_experiment(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             manager = JobManager(self._config(Path(temporary)))
             with patch.object(manager, "_preflight", return_value={"scenario_id": "FI-CODE-RETURN-01"}):
-                job_id = manager.prepare("FI-CODE-RETURN-01", "semantic_fault", 2)["job"]["job_id"]
+                job_id = manager.prepare("FI-CODE-RETURN-01", "full", 2)["job"]["job_id"]
             result = {"status": "completed", "experiment_id": "EXP-CODE"}
-            with patch("research.web.jobs.run_faulty_image", return_value=result) as runner, patch("research.web.jobs.write_dataset_index"):
+            async def completed_run(*args, **kwargs):
+                return result
+
+            with patch("research.web.jobs.create_orchestrator") as factory, patch("research.web.jobs.write_dataset_index"):
+                factory.return_value.run_live_problem = completed_run
                 manager._run(job_id)
             self.assertEqual(manager.get(job_id).experiment_id, "EXP-CODE")
             self.assertEqual(manager.get(job_id).status, "completed")
-            self.assertEqual(runner.call_args.kwargs["semantic_probe_mode"], "auto")
+            self.assertEqual(manager.get(job_id).task, "full")
             manager.close()
 
     async def test_current_mitigation_runs_keep_failed_status_out_of_success_summary(self) -> None:
@@ -142,7 +167,7 @@ class WebDashboardTests(unittest.IsolatedAsyncioTestCase):
             ready = [scenario for scenario in scenarios if scenario["runnable_for_gui"]]
             self.assertTrue(ready)
             self.assertTrue(any(scenario["category"] == "code_level" for scenario in ready))
-            self.assertTrue(all(scenario["gui_mode"] == "semantic_fault" for scenario in ready if scenario["category"] == "code_level"))
+            self.assertTrue(all(scenario["gui_mode"] == "full" for scenario in ready if scenario["category"] == "code_level"))
 
     async def test_static_dashboard_assets_are_served(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -250,7 +275,7 @@ class WebDashboardTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json()["status"], "ok")
 
-    async def test_prepare_requires_semantic_mode_for_code_level(self) -> None:
+    async def test_prepare_requires_full_mode_for_code_level(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             app = create_app(self._config(Path(temporary)))
             async with httpx.AsyncClient(
@@ -258,10 +283,10 @@ class WebDashboardTests(unittest.IsolatedAsyncioTestCase):
             ) as client:
                 response = await client.post(
                     "/api/jobs/prepare",
-                    json={"scenario_id": "FI-CODE-RETURN-01", "task": "full"},
+                    json={"scenario_id": "FI-CODE-RETURN-01", "task": "semantic_fault"},
                 )
             self.assertEqual(response.status_code, 409)
-            self.assertIn("semantic_fault", response.json()["error"])
+            self.assertIn("task=full", response.json()["error"])
 
     def test_event_sanitization_removes_secrets_and_evaluator_labels(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

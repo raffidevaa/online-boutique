@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import subprocess
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable
 
-from research.generators import FaultScenario, PumbaInjector
+from research.generators import (FaultScenario, PumbaInjector, FaultyImageInjector,
+    run_semantic_probe, build_semantic_observation, validate_semantic)
 from research.observer import Observer, ObserverError
 from research.orchestrator.faults import (
     build_host_impact,
@@ -31,6 +34,83 @@ from .runtime import (
 
 class LiveIncidentError(RuntimeError):
     """Raised when an integrated incident cannot complete safely."""
+
+
+class ImageFaultRuntime:
+    """Adapt an approved faulty image to the live fault lifecycle."""
+
+    restores_on_stop = True
+
+    def __init__(self, config: ResearchConfig, application: Any, observer: Any) -> None:
+        self.config = config
+        self.application = application
+        self.observer = observer
+        self.images = FaultyImageInjector(config)
+        self.scenario: FaultScenario | None = None
+        self.run_path: Path | None = None
+        self.baseline_probe: Any = None
+        self.restored = False
+
+    def plan(self, scenario: FaultScenario, container_id: str) -> Any:
+        self.scenario = scenario
+        return self.images.plan(scenario)
+
+    def check_images_available(self, scenario: FaultScenario) -> None:
+        self.images.check_image_available(scenario)
+        plan = self.images.plan(scenario)
+        self.application.validate_fault_override(
+            plan.definition.override, scenario.target_service,
+            plan.definition.image, plan.definition.trigger,
+        )
+
+    def start(self, plan: Any) -> Any:
+        from types import SimpleNamespace
+
+        assert self.scenario is not None and self.run_path is not None
+        self.baseline_probe = run_semantic_probe(self.scenario, self.config, "baseline")
+        applied = False
+        try:
+            self.application.apply_fault_override(
+                plan.definition.override, self.scenario.target_service
+            )
+            applied = True
+            if self.scenario.fault_type not in {
+                "missing_exception_handler", "incorrect_parameter", "missing_parameter"
+            }:
+                self.application.wait_for_service_healthy(self.scenario.target_service)
+            started = datetime.now(UTC)
+            time.sleep(max(0.0, self.config.semantic_probe_stabilization_seconds))
+            incident_probe = run_semantic_probe(self.scenario, self.config, "incident")
+            if self.scenario.fault_type in {"incorrect_parameter", "missing_parameter"}:
+                time.sleep(10)
+            captured = self.observer.capture(started, datetime.now(UTC))
+            observation = build_semantic_observation(
+                self.scenario, self.baseline_probe, incident_probe, captured
+            )
+            write_json(self.run_path / "semantic-observation.json", observation)
+            write_json(self.run_path / "semantic-probe.json", {
+                "schema_version": 2, "status": "completed", **observation,
+            })
+            validation = validate_semantic(plan.definition.validator, observation).to_dict()
+            write_json(self.run_path / "semantic-validation.json", validation)
+            return SimpleNamespace(started_at=started, ended_at=None, plan=plan)
+        except Exception:
+            if applied:
+                self.application.restore_service(self.scenario.target_service)
+                self.restored = True
+            raise
+
+    def stop(self, running: Any) -> None:
+        if not self.restored:
+            assert self.scenario is not None
+            self.application.restore_service(self.scenario.target_service)
+            self.application.wait_for_service_healthy(self.scenario.target_service)
+            self.restored = True
+        running.ended_at = datetime.now(UTC)
+
+    def wait(self, running: Any, timeout: float) -> subprocess.CompletedProcess[str]:
+        self.stop(running)
+        return subprocess.CompletedProcess(["faulty_image"], 0, "", "")
 
 
 def _capture(destination: Path, capture: dict[str, Any]) -> None:
@@ -189,7 +269,7 @@ class LiveIncidentController:
     ) -> dict[str, Any]:
         if not acknowledge_execute:
             raise LiveIncidentError("Integrated live mode requires explicit execute acknowledgement")
-        if not scenario.runnable or scenario.category == "code_level":
+        if not scenario.runnable and scenario.category != "code_level":
             raise LiveIncidentError(
                 "Integrated live currently supports ready_for_pilot runtime scenarios only"
             )
@@ -199,6 +279,8 @@ class LiveIncidentController:
         application = self.application
         observer = self.observer
         injector = self.injector
+        if scenario.category == "code_level":
+            injector = ImageFaultRuntime(self.config, application, observer)
         running = None
         run_path: Path | None = None
         metadata: dict[str, Any] | None = None
@@ -219,7 +301,15 @@ class LiveIncidentController:
                 self.workload.ensure_running(scenario.workload.get("generator"))
                 run_path, metadata = create_run(self.config.experiment_runs, scenario.scenario_id)
                 write_json(run_path / "scenario.json", scenario.to_dict())
-                write_json(run_path / "injector-plan.json", plan.to_dict())
+                write_json(run_path / "injector-plan.json", (
+                    plan.to_dict(self.config.research_root.parent)
+                    if scenario.category == "code_level" else plan.to_dict()
+                ))
+                if scenario.category == "code_level":
+                    injector.run_path = run_path
+                    write_json(run_path / "faulty-image-plan.json", plan.to_dict(
+                        self.config.research_root.parent
+                    ))
                 append_event(run_path, "live_preflight_complete", {"task": task_name})
                 self._emit(
                     "preflight_complete",

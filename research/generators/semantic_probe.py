@@ -280,7 +280,15 @@ def _run_checkout_phase(
             raise SemanticProbeError(
                 f"{phase} add-to-cart returned HTTP {add_response['status']}"
             )
-        checkout_response = session.request("POST", "/cart/checkout", _checkout_form())
+        try:
+            checkout_response = session.request("POST", "/cart/checkout", _checkout_form())
+        except SemanticProbeError as error:
+            if phase != "incident":
+                raise
+            checkout_response = {
+                "method": "POST", "path": "/cart/checkout", "status": 0,
+                "body": "", "transport_error": str(error),
+            }
         requests.append({key: value for key, value in checkout_response.items() if key != "body"})
         succeeded = _is_order_success(
             str(checkout_response["body"]), int(checkout_response["status"])
@@ -370,6 +378,26 @@ def _matches_telemetry(capture: dict[str, Any], service: str, terms: tuple[str, 
     return matches
 
 
+def _service_log_messages(capture: dict[str, Any], service: str) -> list[str]:
+    """Read messages for one service without matching unrelated trace metadata."""
+    streams = (
+        capture.get("logs", {}).get("result", {}).get("data", {}).get("result", [])
+    )
+    messages: list[str] = []
+    if not isinstance(streams, list):
+        return messages
+    for stream in streams:
+        if not isinstance(stream, dict):
+            continue
+        labels = stream.get("stream", {})
+        if not isinstance(labels, dict) or labels.get("compose_service") != service:
+            continue
+        for item in stream.get("values", []):
+            if isinstance(item, list) and len(item) == 2 and isinstance(item[1], str):
+                messages.append(item[1])
+    return messages
+
+
 def build_semantic_observation(
     scenario: FaultScenario,
     baseline: ProbePhaseResult,
@@ -389,11 +417,11 @@ def build_semantic_observation(
             "incident_value": incident_values["value"],
         }
     elif fault_type == "missing_exception_handler":
-        checkout_matches = _matches_telemetry(
-            incident_capture,
-            "checkoutservice",
-            ("panic", "runtime error", "unhandled", "faulty image"),
-        )
+        checkout_matches = [
+            message[:500] for message in _service_log_messages(
+                incident_capture, "checkoutservice"
+            ) if "panic: faulty image: unhandled checkout dependency error" in message
+        ]
         telemetry_matches["checkoutservice"] = checkout_matches
         normalized = {
             "baseline_error_count": baseline_values["error_count"],
@@ -403,24 +431,25 @@ def build_semantic_observation(
         }
         evidence_source.extend(["loki", "jaeger"])
     elif fault_type in {"incorrect_parameter", "missing_parameter"}:
-        checkout_matches = _matches_telemetry(
-            incident_capture,
-            "checkoutservice",
-            ("failed to convert", "failed to prepare", "invalid", "error", "unavailable"),
-        )
-        currency_matches = _matches_telemetry(
-            incident_capture,
-            "currencyservice",
-            ("conversion request failed", "error", "invalid", "nan"),
-        )
+        expected_value = "INVALID" if fault_type == "incorrect_parameter" else ""
+        checkout_matches = [
+            message[:500] for message in _service_log_messages(
+                incident_capture, "checkoutservice"
+            ) if 'currency conversion request' in message
+            and f'"to_code":"{expected_value}"' in message
+        ]
+        currency_matches: list[str] = []
         telemetry_matches["checkoutservice"] = checkout_matches
         telemetry_matches["currencyservice"] = currency_matches
         normalized = {
+            "baseline_checkout_succeeded": baseline_values["checkout_succeeded"],
             "checkout_succeeded": incident_values["checkout_succeeded"],
             "incident_error_count": incident_values["error_count"],
             "downstream_status": incident_values["downstream_status"],
             "downstream_service": "currencyservice",
             "downstream_error_evidence": bool(checkout_matches or currency_matches),
+            "observed_parameter": expected_value if checkout_matches else None,
+            "missing_parameter": "to_code" if fault_type == "missing_parameter" and checkout_matches else None,
         }
         evidence_source.extend(["loki", "jaeger"])
     elif fault_type == "missing_function_call":

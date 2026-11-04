@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from typing import Any, Callable
 
 
@@ -58,8 +59,12 @@ def _currency_return(observation: object) -> dict[str, Any]:
     value, _ = _normalized(observation)
     baseline = _require(value, "baseline_value")
     incident = _require(value, "incident_value")
-    if baseline == incident:
-        raise SemanticValidationError("currency result did not change during the fault")
+    try:
+        changed_by = Decimal(str(incident)) - Decimal(str(baseline))
+    except InvalidOperation as error:
+        raise SemanticValidationError("currency results must be decimal values") from error
+    if changed_by != Decimal("1.00"):
+        raise SemanticValidationError("currency result did not increase by one unit")
     return {"baseline_value": baseline, "incident_value": incident}
 
 
@@ -87,12 +92,15 @@ def _incorrect_parameter(observation: object) -> dict[str, Any]:
     if status == "OK":
         raise SemanticValidationError("incorrect parameter behavior was not demonstrated")
     if schema_v2:
-        if value.get("downstream_error_evidence") is not True:
+        if (value.get("downstream_error_evidence") is not True
+                or value.get("observed_parameter") != "INVALID"
+                or value.get("baseline_checkout_succeeded") is not True):
             raise SemanticValidationError("incorrect parameter lacks downstream evidence")
         return {
             "downstream_status": status,
             "downstream_service": value.get("downstream_service"),
             "incident_error_count": value.get("incident_error_count"),
+            "observed_parameter": value.get("observed_parameter"),
         }
     parameter = _require(value, "observed_parameter")
     if parameter == value.get("expected_parameter"):
@@ -106,12 +114,17 @@ def _missing_parameter(observation: object) -> dict[str, Any]:
     if status == "OK":
         raise SemanticValidationError("missing parameter behavior was not demonstrated")
     if schema_v2:
-        if value.get("downstream_error_evidence") is not True:
+        if (value.get("downstream_error_evidence") is not True
+                or value.get("observed_parameter") != ""
+                or value.get("missing_parameter") != "to_code"
+                or value.get("baseline_checkout_succeeded") is not True):
             raise SemanticValidationError("missing parameter lacks downstream evidence")
         return {
             "downstream_status": status,
             "downstream_service": value.get("downstream_service"),
             "incident_error_count": value.get("incident_error_count"),
+            "missing_parameter": value.get("missing_parameter"),
+            "observed_parameter": value.get("observed_parameter"),
         }
     missing = _require(value, "missing_parameter")
     if not isinstance(missing, str) or not missing:
@@ -123,7 +136,9 @@ def _missing_function_call(observation: object) -> dict[str, Any]:
     value, _ = _normalized(observation)
     succeeded = _require(value, "checkout_succeeded")
     remaining = _require(value, "cart_items_after_checkout")
-    if succeeded is not True or not isinstance(remaining, int) or remaining <= 0:
+    baseline_remaining = value.get("baseline_cart_items_after_checkout", 0)
+    if (succeeded is not True or not isinstance(remaining, int) or remaining <= 0
+            or baseline_remaining != 0):
         raise SemanticValidationError("missing function call behavior was not demonstrated")
     return {"checkout_succeeded": succeeded, "cart_items_after_checkout": remaining}
 

@@ -41,7 +41,7 @@ class ComposeMitigationActions:
         if service != self.target_service:
             raise MitigationActionError("Only the active problem target may be restored")
         before = self.runtime.get_service_state(service)
-        if before is None:
+        if before is None and getattr(self.fault_runtime, "restores_on_stop", False) is not True:
             raise MitigationActionError("Target service is unavailable")
         if self.fault_runtime is not None and self.running_fault is not None:
             process = getattr(self.running_fault, "process", None)
@@ -50,7 +50,10 @@ class ComposeMitigationActions:
             if active:
                 self.fault_runtime.stop(self.running_fault)
                 self.fault_stopped = True
-        self.runtime.restore_service(service)
+        if not (self.fault_runtime is not None
+                and getattr(self.fault_runtime, "restores_on_stop", False) is True
+                and getattr(self.fault_runtime, "restored", False) is True):
+            self.runtime.restore_service(service)
         after = self.runtime.get_service_state(service)
         status = getattr(after, "status", "unknown")
         self.history.append({"action": "restore_service", "service": service, "status": status})

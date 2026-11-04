@@ -40,9 +40,11 @@ Preparation validates the
 stack and starts the required `loadgenerator` profile when it is stopped; a separate confirmation
 then starts the fault. It permits only one active fault job. Code-level scenarios and catalogued
 unavailable scenarios remain visible for context. Code-level scenarios can be prepared
-when their research-owned faulty image has been built locally. Their GUI jobs use the
-existing semantic fault runner, record the result in History, and restore the baseline
-image automatically; they do not run the five-stage agent pipeline.
+when their research-owned faulty image has been built locally. Their GUI jobs validate
+the behavioral change with a semantic probe, then run the same five-stage agent pipeline
+and record stage scores in History. Mitigation or final cleanup restores the baseline image.
+Older semantic-only runs remain readable in History and are labeled "Validation only";
+they have no agent-stage scores. New GUI jobs use the full pipeline.
 
 The live trace is sanitized before it is streamed to the browser. Ground truth is not sent to
 the agent and is only available in a completed run detail. Agent session events and GUI job events

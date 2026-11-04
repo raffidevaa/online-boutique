@@ -19,7 +19,6 @@ from research.agent.sanitize import sanitize_text
 from research.generators import FaultScenario, FaultyImageInjector, ScenarioError, load_scenario
 from research.observer import Observer
 from research.orchestrator.dataset import write_dataset_index
-from research.orchestrator.faults import run_faulty_image
 from research.generators import PumbaInjector
 from research.service import ComposeApplication
 from research.utils import ResearchConfig
@@ -70,6 +69,31 @@ def _read_csv(path: Path) -> list[dict[str, str]]:
             return list(csv.DictReader(handle))
     except OSError:
         return []
+
+
+def _run_duration_seconds(run_path: Path, metadata: dict[str, Any]) -> float | None:
+    """Measure the experiment lifecycle, rather than one agent stage."""
+    started_at = metadata.get("timestamp_start")
+    if not isinstance(started_at, str):
+        return None
+    try:
+        started = datetime.fromisoformat(started_at)
+        if started.tzinfo is None:
+            return None
+        events = (run_path / "events.jsonl").read_text(encoding="utf-8").splitlines()
+        for line in reversed(events):
+            try:
+                event = json.loads(line)
+                ended_at = event.get("timestamp")
+                if event.get("event") in {"live_run_complete", "live_run_failed", "run_complete"} and isinstance(ended_at, str):
+                    ended = datetime.fromisoformat(ended_at)
+                    if ended.tzinfo is not None:
+                        return max(0.0, (ended - started).total_seconds())
+            except (json.JSONDecodeError, TypeError, ValueError):
+                continue
+    except (OSError, ValueError, TypeError):
+        return None
+    return None
 
 
 @dataclass
@@ -146,7 +170,7 @@ class JobManager:
             record.pop("ground_truth", None)
             record["source_path"] = str(path.relative_to(self.config.research_root))
             record["runnable_for_gui"] = scenario.runnable or scenario.category == "code_level"
-            record["gui_mode"] = "semantic_fault" if scenario.category == "code_level" else "full"
+            record["gui_mode"] = "full"
             if not record["runnable_for_gui"]:
                 record["gui_reason"] = (
                     "Only ready_for_pilot runtime scenarios can be executed from the GUI."
@@ -202,7 +226,8 @@ class JobManager:
             "plan": plan,
             "warnings": ([
                 "Fault injection is bounded to one scenario and one target.",
-                "The baseline image is restored after semantic validation.",
+                "The baseline image is restored during mitigation or final cleanup.",
+                "Ground truth is withheld until the full agent pipeline has ended.",
             ] if scenario.category == "code_level" else [
                 "Fault injection is bounded to one scenario and one target.",
                 "The required loadgenerator is started during preparation when it is not already running.",
@@ -213,7 +238,7 @@ class JobManager:
 
     def prepare(self, scenario_id: str, task: str, max_steps: int) -> dict[str, Any]:
         scenario = self._scenario(scenario_id)
-        expected_task = "semantic_fault" if scenario.category == "code_level" else "full"
+        expected_task = "full"
         if task != expected_task:
             raise GuiJobError(f"This scenario requires task={expected_task}")
         if max_steps < 1 or max_steps > 50:
@@ -293,23 +318,18 @@ class JobManager:
                 job.updated_at = _now()
                 job.condition.notify_all()
             self.emit(job_id, "run_started")
-            if scenario.category == "code_level":
-                self.emit(job_id, "semantic_fault_started", target_service=scenario.target_service)
-                result = run_faulty_image(scenario, self.config, semantic_probe_mode="auto")
-                self.emit(job_id, "semantic_fault_finished", status=result.get("status"))
-            else:
-                orchestrator = create_orchestrator(self.config)
-                result = asyncio.run(
-                    orchestrator.run_live_problem(
-                        scenario,
-                        job.task,
-                        max_steps=job.max_steps,
-                        acknowledge_execute=True,
-                        event_sink=lambda event: self.emit(
-                            job_id, event.pop("kind", "agent_event"), **event
-                        ),
-                    )
+            orchestrator = create_orchestrator(self.config)
+            result = asyncio.run(
+                orchestrator.run_live_problem(
+                    scenario,
+                    job.task,
+                    max_steps=job.max_steps,
+                    acknowledge_execute=True,
+                    event_sink=lambda event: self.emit(
+                        job_id, event.pop("kind", "agent_event"), **event
+                    ),
                 )
+            )
             job.experiment_id = result.get("experiment_id")
             job.result = result
             job.status = "completed" if result.get("status") == "completed" else "failed"
@@ -427,7 +447,7 @@ class JobManager:
                     "task_result": task_result if result.get("status") == "completed" else None,
                     "stages": {stage: values.get(key) for stage, key in stage_keys.items() for values in [stages.get(stage, {})]} if task == "full" else {},
                     "submitted": session.get("submitted", False),
-                    "duration_seconds": session.get("duration_seconds"),
+                    "duration_seconds": _run_duration_seconds(run_path, metadata),
                     "predicted_service": (solution.get("faulty_components") or [""])[0],
                     "predicted_category": solution.get("system_level", ""),
                     "predicted_fault_type": solution.get("fault_type", ""),

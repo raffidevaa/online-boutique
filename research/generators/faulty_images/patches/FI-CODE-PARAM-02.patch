@@ -1,5 +1,7 @@
 --- main.go
 +++ main.go
-@@ -362 +362 @@
+@@ -359,0 +360 @@
++	log.WithField("to_code", "").Info("currency conversion request")
+@@ -362 +363 @@
 -		ToCode: toCurrency})
 +		})
