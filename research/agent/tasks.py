@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 import json
 from typing import Any, Callable
 
@@ -40,6 +41,8 @@ class BaseTask:
             "get_logs": self.get_logs,
             "get_traces": self.get_traces,
             "get_alerts": self.get_alerts,
+            "get_evidence_detail": self.get_evidence_detail,
+            "update_hypothesis": self.update_hypothesis,
         }
 
     def get_metrics(self, service: str | None = None, window: str = "incident") -> EnvironmentResponse:
@@ -62,6 +65,51 @@ class BaseTask:
     def get_alerts(self, window: str = "incident") -> EnvironmentResponse:
         return EnvironmentResponse(self.evidence.get_alerts(window))
 
+    def get_evidence_detail(self, evidence_id: str, limit: int = 5) -> EnvironmentResponse:
+        return EnvironmentResponse(self.evidence.get_evidence_detail(evidence_id, limit))
+
+    def update_hypothesis(
+        self, hypothesis_id: str, candidate_service: str | None = None,
+        candidate_fault: str | None = None, status: str = "uncertain",
+        supporting_evidence_ids: list[str] | None = None,
+        contradicting_evidence_ids: list[str] | None = None,
+        next_question: str | None = None,
+    ) -> EnvironmentResponse:
+        if not hypothesis_id or not isinstance(hypothesis_id, str):
+            raise TaskError("hypothesis_id must be a nonempty string")
+        if candidate_service is not None and (
+            not isinstance(candidate_service, str)
+            or candidate_service not in self.evidence.get_targetable_services()
+        ):
+            raise TaskError("candidate_service must be a targetable service")
+        if candidate_fault is not None and (
+            not isinstance(candidate_fault, str) or candidate_fault not in VALID_FAULT_TYPES
+        ):
+            raise TaskError("candidate_fault must be a taxonomy fault type")
+        if status not in {"proposed", "supported", "rejected", "uncertain"}:
+            raise TaskError("status must be proposed, supported, rejected, or uncertain")
+        support = supporting_evidence_ids or []
+        contradict = contradicting_evidence_ids or []
+        if not isinstance(support, list) or not isinstance(contradict, list):
+            raise TaskError("supporting and contradicting evidence IDs must be lists")
+        if not all(isinstance(item, str) for item in support + contradict):
+            raise TaskError("evidence IDs must be strings")
+        if not all(item in self.evidence.evidence_store for item in support + contradict):
+            raise TaskError("evidence IDs must be observations in this session")
+        note = {
+            "hypothesis_id": hypothesis_id, "candidate_service": candidate_service,
+            "candidate_fault": candidate_fault, "status": status,
+            "supporting_evidence_ids": support, "contradicting_evidence_ids": contradict,
+            "next_question": next_question, "updated_at": datetime.now(UTC).isoformat(),
+        }
+        for previous in reversed(self.evidence.notes):
+            if previous.get("hypothesis_id") == hypothesis_id:
+                if all(previous.get(key) == value for key, value in note.items() if key != "updated_at"):
+                    raise TaskError("hypothesis is unchanged; request specific new evidence")
+                break
+        self.evidence.notes.append(note)
+        return EnvironmentResponse("hypothesis_updated: " + json.dumps(note, sort_keys=True))
+
     def get_task_description(self) -> str:
         return "You are an SRE analyzing an Online Boutique incident."
 
@@ -76,6 +124,8 @@ class BaseTask:
             "get_logs": 'get_logs(service: str | None = None, window: str = "incident")',
             "get_traces": 'get_traces(service: str | None = None, window: str = "incident")',
             "get_alerts": 'get_alerts(window: str = "incident")',
+            "get_evidence_detail": 'get_evidence_detail(evidence_id: str, limit: int = 5)',
+            "update_hypothesis": 'update_hypothesis(hypothesis_id: str, candidate_service: str | None = None, candidate_fault: str | None = None, status: "proposed|supported|rejected|uncertain" = "uncertain", supporting_evidence_ids: list[str] = [], contradicting_evidence_ids: list[str] = [], next_question: str | None = None)',
         }
 
     def perform_action(self, action_name: str, *args: Any, **kwargs: Any) -> EnvironmentResponse:
@@ -409,6 +459,7 @@ class RemediationTask(BaseTask):
                 "task": self.task_name,
                 "recommendation_valid": valid,
                 "recommendation_complete": valid,
+                "recommendation_correctness": None,
                 "TTA": duration,
             }
         )

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 import json
+import hashlib
 from pathlib import Path
 import re
 from typing import Any
@@ -35,6 +36,8 @@ class ComposeEvidence:
         self._live: dict[str, Any] | None = None
         self._targetable_services_cache: set[str] | None = None
         self._targetable_service_ports_cache: dict[str, set[str]] | None = None
+        self.evidence_store: dict[str, dict[str, Any]] = {}
+        self.notes: list[dict[str, Any]] = []
 
     def _targetable_services(self) -> set[str]:
         """Return application services that are valid root-cause candidates."""
@@ -87,8 +90,27 @@ class ComposeEvidence:
         self._targetable_service_ports_cache = ports
         return ports
 
-    def _payload(self, kind: str, window: str) -> dict[str, Any]:
-        return self._capture_window(window)[kind]
+    def _payload(self, kind: str, window: str, service: str | None = None) -> dict[str, Any]:
+        if self.run_dir is not None:
+            phase = window if window in {"baseline", "incident", "recovery"} else "incident"
+            path = self.run_dir / phase / f"{kind}.json"
+            try:
+                return json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as error:
+                raise EnvironmentError(f"Unable to read replay evidence: {path}") from error
+        start, end = self._window_bounds(window)
+        try:
+            return Observer(self.config).capture_kind(kind, start, end, service)
+        except ObserverError as error:
+            raise EnvironmentError(str(error)) from error
+
+    def _window_bounds(self, window: str) -> tuple[datetime, datetime]:
+        if window == "baseline":
+            duration = (self.end - self.start) if self.end else timedelta(minutes=1)
+            return self.start - duration, self.start
+        if window == "recovery":
+            raise EnvironmentError("Recovery telemetry is unavailable before fault recovery")
+        return self.start, self.end or datetime.now(UTC)
 
     def _capture_window(self, window: str) -> dict[str, Any]:
         if self.run_dir is not None:
@@ -101,47 +123,138 @@ class ComposeEvidence:
                 except (OSError, json.JSONDecodeError) as error:
                     raise EnvironmentError(f"Unable to read replay evidence: {path}") from error
             return payloads
-        if window == "baseline":
-            duration = (self.end - self.start) if self.end else timedelta(minutes=1)
-            query_start, query_end = self.start - duration, self.start
-        elif window == "recovery":
-            raise EnvironmentError("Recovery telemetry is unavailable before fault recovery")
-        else:
-            query_start, query_end = self.start, self.end or datetime.now(UTC)
+        query_start, query_end = self._window_bounds(window)
         try:
             return Observer(self.config).capture(query_start, query_end)
         except ObserverError as error:
             raise EnvironmentError(str(error)) from error
 
+    def _record_evidence(
+        self, source: str, window: str, service: str | None, payload: Any,
+        summary: Any, count: int, displayed: int,
+    ) -> str:
+        start, end = self._window_bounds(window) if window != "recovery" else (self.start, self.end or self.start)
+        material = json.dumps({"source": source, "window": window, "service": service,
+                               "payload": payload}, sort_keys=True, default=str)
+        evidence_id = "ev-" + hashlib.sha256(material.encode("utf-8")).hexdigest()[:16]
+        self.evidence_store[evidence_id] = {
+            "source": source, "window": window, "service": service,
+            "start": start.isoformat(), "end": end.isoformat(),
+            "payload": payload, "summary": summary,
+        }
+        envelope = {
+            "evidence_id": evidence_id, "source": source, "service": service,
+            "start": start.isoformat(), "end": end.isoformat(),
+            "total_item_count": count, "displayed_item_count": displayed,
+            "limited": displayed < count, "data_quality": "available" if count else "empty",
+            "detail_options": {"action": "get_evidence_detail", "limit": "1..20"},
+            "summary": summary,
+        }
+        return json.dumps(envelope, sort_keys=True)
+
+    def _signal_summary(self, kind: str, payload: dict[str, Any], service: str | None, window: str) -> str:
+        if kind == "metrics":
+            items = []
+            for name, response in payload.get("queries", {}).items():
+                for series in response.get("data", {}).get("result", []):
+                    if service and series.get("metric", {}).get("service") != service:
+                        continue
+                    values = series.get("values", [])
+                    numbers = []
+                    for pair in values:
+                        try:
+                            numbers.append(float(pair[1]))
+                        except (IndexError, TypeError, ValueError):
+                            pass
+                    items.append({"query": name, "labels": series.get("metric", {}),
+                                  "samples": len(values), "mean": sum(numbers) / len(numbers) if numbers else None,
+                                  "max": max(numbers) if numbers else None})
+        elif kind == "logs":
+            items = []
+            for stream in self._log_streams(payload):
+                if service and stream.get("stream", {}).get("compose_service") != service:
+                    continue
+                values = stream.get("values", [])
+                items.append({"service": stream.get("stream", {}).get("compose_service"),
+                              "count": len(values), "sample": str(values[0][1])[:240] if values else None})
+        elif kind == "traces":
+            items = []
+            for name, result in payload.get("services", {}).items():
+                if service and name != service:
+                    continue
+                traces = result.get("data", []) if isinstance(result, dict) else []
+                ranked = sorted(traces, key=self._trace_relevance, reverse=True)
+                items.append({"service": name, "trace_count": len(traces),
+                              "sample_trace_ids": [item.get("traceID") for item in ranked[:3]],
+                              "ranking": "error spans then longest span"})
+        else:
+            result = payload.get("alerts", {})
+            items = result.get("data", {}).get("alerts", []) if isinstance(result, dict) else []
+        displayed = min(len(items), 5)
+        return self._record_evidence(kind, window, service, payload, items[:displayed], len(items), displayed)
+
     @staticmethod
-    def _compact(payload: Any, service: str | None) -> str:
-        if service and isinstance(payload, dict):
-            if "queries" in payload:
-                filtered_queries: dict[str, Any] = {}
-                for name, response in payload["queries"].items():
-                    result = response.get("data", {}).get("result", [])
-                    selected = [
-                        item for item in result
-                        if item.get("metric", {}).get("service") == service
-                    ]
-                    filtered_queries[name] = {"data": {"result": selected}}
-                payload = {"queries": filtered_queries}
-            elif "result" in payload:
-                result = payload.get("result", {}).get("data", {}).get("result", [])
-                payload = {
-                    "result": {
-                        "data": {
-                            "result": [
-                                item for item in result
-                                if item.get("stream", {}).get("compose_service") == service
-                            ]
-                        }
-                    }
-                }
-            elif "services" in payload:
-                payload = {"services": {service: payload["services"].get(service, {})}}
-        encoded = json.dumps(payload, sort_keys=True)
-        return encoded if len(encoded) <= 8_000 else encoded[:8_000] + "...[truncated]"
+    def _trace_relevance(trace: dict[str, Any]) -> tuple[int, int]:
+        spans = trace.get("spans", [])
+        errors = sum(
+            any(tag.get("key") == "error" and str(tag.get("value")).lower() == "true"
+                for tag in span.get("tags", []))
+            for span in spans
+        )
+        longest = max((int(span.get("duration") or 0) for span in spans), default=0)
+        return errors, longest
+
+    def get_evidence_detail(self, evidence_id: str, limit: int = 5) -> str:
+        if evidence_id not in self.evidence_store:
+            raise EnvironmentError("evidence_id is not available in this session")
+        if type(limit) is not int or not 1 <= limit <= 20:
+            raise EnvironmentError("limit must be an integer from 1 to 20")
+        entry = self.evidence_store[evidence_id]
+        payload = entry["payload"]
+        source = entry["source"]
+        service = entry["service"]
+        if source == "logs":
+            items = [
+                {"timestamp": value[0], "message": str(value[1])[:500],
+                 "message_limited": len(str(value[1])) > 500}
+                for stream in self._log_streams(payload)
+                if service is None or stream.get("stream", {}).get("compose_service") == service
+                for value in stream.get("values", []) if len(value) >= 2
+            ]
+        elif source == "traces":
+            traces = [trace for name, result in payload.get("services", {}).items()
+                      if service is None or name == service
+                      for trace in result.get("data", [])]
+            items = [
+                {"trace_id": trace.get("traceID"),
+                 "span_count": len(trace.get("spans", [])),
+                 "spans_displayed": min(len(trace.get("spans", [])), 5),
+                 "spans_limited": len(trace.get("spans", [])) > 5,
+                 "spans": [{"operation": span.get("operationName"),
+                            "duration": span.get("duration"),
+                            "process_id": span.get("processID")}
+                           for span in trace.get("spans", [])[:5]]}
+                for trace in sorted(traces, key=self._trace_relevance, reverse=True)
+            ]
+        elif source == "metrics":
+            items = [
+                {"labels": series.get("metric", {}),
+                 "total_samples": len(series.get("values", [])),
+                 "displayed_samples": min(len(series.get("values", [])), 20),
+                 "samples_limited": len(series.get("values", [])) > 20,
+                 "values": series.get("values", [])[:20]}
+                for response in payload.get("queries", {}).values()
+                for series in response.get("data", {}).get("result", [])
+                if service is None or series.get("metric", {}).get("service") == service
+            ]
+        else:
+            items = [entry["summary"]]
+        shown = items[:limit]
+        return "evidence_detail: " + json.dumps({
+            "evidence_id": evidence_id, "source": source,
+            "total_item_count": len(items), "displayed_item_count": len(shown),
+            "limited": len(shown) < len(items), "items": shown,
+        }, sort_keys=True)
 
     @staticmethod
     def _metric_values(payload: dict[str, Any], query_name: str) -> dict[str, list[float]]:
@@ -451,6 +564,9 @@ class ComposeEvidence:
                     "peer_service": peer,
                     "operation": incident_edge["operation"],
                     "call_count": incident_edge["call_count"],
+                    "sample_quality": (
+                        "sparse" if incident_edge["call_count"] < 3 else "sufficient"
+                    ),
                     "baseline_p50_latency_ms": round(baseline_p50, 3),
                     "incident_p50_latency_ms": round(incident_p50, 3),
                     "baseline_p95_latency_ms": round(baseline_p95, 3),
@@ -475,10 +591,14 @@ class ComposeEvidence:
         network_scores: dict[str, float] = {}
         caller_scores: dict[str, float] = {}
         for evidence in network_evidence:
-            if evidence["inferred_signature"] == "ambiguous":
+            if evidence["call_count"] < 3 or evidence["inferred_signature"] == "ambiguous":
                 continue
             peer = evidence["peer_service"]
-            score = max(evidence["delay_score"], evidence["loss_score"])
+            score = (
+                evidence["delay_score"]
+                if evidence["inferred_signature"] == "network_delay"
+                else evidence["loss_score"]
+            )
             network_scores[peer] = max(network_scores.get(peer, 0.0), score)
             caller = evidence["caller_service"]
             caller_scores[caller] = max(caller_scores.get(caller, 0.0), score)
@@ -662,24 +782,41 @@ class ComposeEvidence:
             "network_evidence": network_evidence[:12],
             "top_anomalies": anomalies[:8],
         }
-        return f"incident_summary: {json.dumps(output, sort_keys=True)}"
+        summary = self._record_evidence(
+            "incident_summary", window, None, output, output, len(anomalies),
+            len(output["top_anomalies"]),
+        )
+        envelope = json.loads(summary)
+        envelope.pop("summary", None)
+        envelope.update(output)
+        return f"incident_summary: {json.dumps(envelope, sort_keys=True)}"
 
     def get_error_logs(self, service: str | None = None, window: str = "incident") -> str:
         output = {
             "schema_version": 1,
             "window": window,
-            "services": self._error_log_summary(self._payload("logs", window), service),
+            "services": self._error_log_summary(self._payload("logs", window, service), service),
         }
-        return f"error_logs: {json.dumps(output, sort_keys=True)}"
+        envelope = json.loads(self._record_evidence(
+            "error_logs", window, service, output, output, len(output["services"]),
+            len(output["services"]),
+        ))
+        envelope.pop("summary", None)
+        envelope.update(output)
+        return "error_logs: " + json.dumps(envelope, sort_keys=True)
 
     def get_metrics(self, service: str | None = None, window: str = "incident") -> str:
-        return f"metrics window={window}: {self._compact(self._payload('metrics', window), service)}"
+        payload = self._payload("metrics", window, service)
+        return f"metrics window={window}: {self._signal_summary('metrics', payload, service, window)}"
 
     def get_logs(self, service: str | None = None, window: str = "incident") -> str:
-        return f"logs window={window}: {self._compact(self._payload('logs', window), service)}"
+        payload = self._payload("logs", window, service)
+        return f"logs window={window}: {self._signal_summary('logs', payload, service, window)}"
 
     def get_traces(self, service: str | None = None, window: str = "incident") -> str:
-        return f"traces window={window}: {self._compact(self._payload('traces', window), service)}"
+        payload = self._payload("traces", window, service)
+        return f"traces window={window}: {self._signal_summary('traces', payload, service, window)}"
 
     def get_alerts(self, window: str = "incident") -> str:
-        return f"alerts window={window}: {self._compact(self._payload('alerts', window), None)}"
+        payload = self._payload("alerts", window)
+        return f"alerts window={window}: {self._signal_summary('alerts', payload, None, window)}"

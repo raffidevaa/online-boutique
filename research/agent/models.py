@@ -28,6 +28,9 @@ class AgentSession:
     submitted: bool = False
     termination_reason: str | None = None
     invalid_action_count: int = 0
+    metrics: dict[str, Any] = field(default_factory=dict)
+    notes: list[dict[str, Any]] = field(default_factory=list)
+    partial_result: dict[str, Any] | None = None
     start_time: datetime | None = None
     end_time: datetime | None = None
     submitted_at: datetime | None = None
@@ -74,6 +77,9 @@ class AgentSession:
             "submitted": self.submitted,
             "termination_reason": self.termination_reason,
             "invalid_action_count": self.invalid_action_count,
+            "metrics": self.metrics,
+            "notes": self.notes,
+            "partial_result": self.partial_result,
             "results": self.results,
             "duration_seconds": self.duration_seconds,
         }

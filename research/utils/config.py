@@ -75,6 +75,19 @@ class ResearchConfig:
     aiops_llm_api_key: str = ""
     aiops_llm_model: str = ""
     aiops_llm_timeout_seconds: float = 60.0
+    aiops_strategy: str = "enabled"
+    aiops_incident_max_steps: int = 35
+    aiops_max_input_tokens: int = 60000
+    aiops_max_output_tokens: int = 12000
+    aiops_final_reserve_tokens: int = 800
+    aiops_max_cost_usd: float | None = None
+    aiops_input_usd_per_million: float | None = None
+    aiops_output_usd_per_million: float | None = None
+    aiops_max_stage_seconds: float = 300.0
+    aiops_tool_timeout_seconds: float = 20.0
+    aiops_context_compact_tokens: int = 12000
+    aiops_live_cache_ttl_seconds: float = 15.0
+    aiops_stagnant_limit: int = 4
     gui_host: str = "0.0.0.0"
     gui_port: int = 8000
     gui_auth_token: str = ""
@@ -117,6 +130,22 @@ class ResearchConfig:
             aiops_llm_timeout_seconds=float(
                 env("AIOPS_LLM_TIMEOUT_SECONDS", str(cls.aiops_llm_timeout_seconds))
             ),
+            aiops_strategy=env("AIOPS_STRATEGY", cls.aiops_strategy),
+            aiops_incident_max_steps=int(env("AIOPS_INCIDENT_MAX_STEPS", "35")),
+            aiops_max_input_tokens=int(env("AIOPS_MAX_INPUT_TOKENS", "60000")),
+            aiops_max_output_tokens=int(env("AIOPS_MAX_OUTPUT_TOKENS", "12000")),
+            aiops_final_reserve_tokens=int(env("AIOPS_FINAL_RESERVE_TOKENS", "800")),
+            aiops_max_cost_usd=(float(env("AIOPS_MAX_COST_USD", ""))
+                                if env("AIOPS_MAX_COST_USD", "") else None),
+            aiops_input_usd_per_million=(float(env("AIOPS_INPUT_USD_PER_MILLION", ""))
+                                         if env("AIOPS_INPUT_USD_PER_MILLION", "") else None),
+            aiops_output_usd_per_million=(float(env("AIOPS_OUTPUT_USD_PER_MILLION", ""))
+                                          if env("AIOPS_OUTPUT_USD_PER_MILLION", "") else None),
+            aiops_max_stage_seconds=float(env("AIOPS_MAX_STAGE_SECONDS", "300")),
+            aiops_tool_timeout_seconds=float(env("AIOPS_TOOL_TIMEOUT_SECONDS", "20")),
+            aiops_context_compact_tokens=int(env("AIOPS_CONTEXT_COMPACT_TOKENS", "12000")),
+            aiops_live_cache_ttl_seconds=float(env("AIOPS_LIVE_CACHE_TTL_SECONDS", "15")),
+            aiops_stagnant_limit=int(env("AIOPS_STAGNANT_LIMIT", "4")),
             gui_host=env("RESEARCH_GUI_HOST", cls.gui_host),
             gui_port=int(env("RESEARCH_GUI_PORT", str(cls.gui_port))),
             gui_auth_token=env("RESEARCH_GUI_AUTH_TOKEN", cls.gui_auth_token),

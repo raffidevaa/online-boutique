@@ -22,6 +22,7 @@ from research.utils import ResearchConfig, append_event, create_run, write_json
 
 from .orchestrator import AgentOrchestrator
 from .models import AgentSession
+from .strategy import IncidentBudget
 from .actions import ComposeMitigationActions
 from .runtime import (
     ApplicationRuntime,
@@ -135,24 +136,44 @@ def _ground_truth(scenario: FaultScenario, experiment_id: str, start: datetime, 
     }
 
 
-def _prior_stage_context(records: dict[str, tuple[Any, AgentSession]]) -> str | None:
-    """Carry agent findings and bounded observations, never evaluator labels."""
+def _prior_stage_context(
+    records: dict[str, tuple[Any, AgentSession]], max_age_seconds: float = 15.0
+) -> str | None:
+    """Carry agent-owned findings and evidence references, never evaluator labels."""
     if not records:
         return None
     stages = []
     for name, (_, session) in records.items():
-        observations = [
-            item.content[:3000] for item in session.history
-            if item.role == "env" and item.content != "VALID_SUBMISSION"
-            and item.content != "VALID_REMEDIATION_SUBMISSION"
-        ]
+        evidence_times = []
+        for note in session.notes:
+            if note.get("status") == "evidence_collected" and note.get("updated_at"):
+                try:
+                    evidence_times.append(datetime.fromisoformat(note["updated_at"]))
+                except (TypeError, ValueError):
+                    pass
+        reference_time = min(evidence_times) if evidence_times else session.end_time
+        age = (
+            (datetime.now(UTC) - reference_time).total_seconds()
+            if reference_time is not None else None
+        )
         stages.append({
             "stage": name,
             "submitted": session.submitted,
             "solution": session.solution if session.submitted else None,
-            "observations": observations[:8],
+            "notes": session.notes[-5:],
+            "evidence_ids": session.metrics.get("evidence_ids", []),
+            "evidence_age_seconds": round(age, 3) if age is not None else None,
+            "evidence_stale": age is None or age > max_age_seconds,
         })
     return json.dumps(stages, ensure_ascii=False, separators=(",", ":"))
+
+
+def _rca_handoff_trace(session: AgentSession) -> list[dict[str, str]]:
+    """Give recommendation a concise agent-owned evidence ledger."""
+    return [{"role": "env", "content": json.dumps({
+        "notes": session.notes[-5:],
+        "evidence_ids": session.metrics.get("evidence_ids", []),
+    }, separators=(",", ":"))}]
 
 
 class LiveIncidentController:
@@ -287,6 +308,7 @@ class LiveIncidentController:
         injection_start: datetime | None = None
         injection_end: datetime | None = None
         session: AgentSession | None = None
+        self.orchestrator.incident_budget = IncidentBudget()
         with fault_lock():
             try:
                 self._emit("preflight_started", scenario_id=scenario.scenario_id)
@@ -353,7 +375,10 @@ class LiveIncidentController:
                             application, scenario.target_service, injector, running
                         )
                     self._emit("stage_started", stage=stage)
-                    prior_context = _prior_stage_context(stage_records) if task_name == "full" else None
+                    prior_context = (
+                        _prior_stage_context(stage_records, self.config.aiops_live_cache_ttl_seconds)
+                        if task_name == "full" else None
+                    )
                     _, current_task, current_session = self.orchestrator.init_problem(
                         f"{scenario.scenario_id}-{stage}",
                         start=injection_start,
@@ -391,10 +416,7 @@ class LiveIncidentController:
                     self._emit("stage_finished", stage=stage, submitted=current_session.submitted)
                     if stage == "analysis" and current_session.submitted:
                         rca_solution = current_session.solution
-                        rca_trace = [
-                            item.to_dict() for item in current_session.history
-                            if item.role in {"assistant", "env"}
-                        ]
+                        rca_trace = _rca_handoff_trace(current_session)
                 task, session = stage_records["analysis" if task_name == "full" else task_name]
                 remediation_task, remediation_session = stage_records.get("remediation", (None, None))
                 if task_name == "analysis" and session.submitted and isinstance(session.solution, dict):
@@ -403,7 +425,7 @@ class LiveIncidentController:
                         f"{scenario.scenario_id}-remediation",
                         start=injection_start, end=None, run_dir=None,
                         rca_solution=session.solution,
-                        rca_trace=[item.to_dict() for item in session.history if item.role in {"assistant", "env"}],
+                        rca_trace=_rca_handoff_trace(session),
                     )
                     await self.orchestrator.start_problem(
                         remediation_task, remediation_session, max_steps=max_steps,
@@ -436,6 +458,9 @@ class LiveIncidentController:
                         "task": task_name,
                         "task_results": session_result["results"],
                         "stages": {stage: result["results"] for stage, result in stage_results.items()},
+                        "strategy_metrics": {
+                            stage: result.get("metrics", {}) for stage, result in stage_results.items()
+                        },
                         "rca": stage_results.get("analysis", {}).get("results"),
                         "remediation": remediation_result["results"] if remediation_result else None,
                         "remediation_status": "completed" if remediation_result else "skipped",

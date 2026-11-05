@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 import json
+import re
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
@@ -35,6 +36,7 @@ class Observer:
         self.limit = config.telemetry_limit
         self.trace_limit = config.trace_limit
         self.trace_services = config.trace_services
+        self.timeout = config.aiops_tool_timeout_seconds
 
     def _check_endpoint(self, url: str, name: str) -> None:
         try:
@@ -163,6 +165,57 @@ class Observer:
             "errors": trace_errors,
         }
         return {"metrics": metrics, "logs": logs, "alerts": alerts, "traces": traces}
+
+    def capture_kind(
+        self, kind: str, start: datetime, end: datetime, service: str | None = None
+    ) -> dict[str, Any]:
+        """Fetch one signal for a bounded live detail request."""
+        if service is not None and not re.fullmatch(r"[a-z][a-z0-9]*", service):
+            raise ObserverError("service must be a simple Compose service name")
+        if kind == "metrics":
+            expressions = {
+                "container_cpu": self.CONTAINER_CPU_QUERY,
+                "container_memory": self.CONTAINER_MEMORY_QUERY,
+            }
+            if service:
+                expressions = {
+                    name: f'({expression}) and on(service) compose_container_info{{service="{service}"}}'
+                    for name, expression in expressions.items()
+                }
+            return {
+                "schema_version": 1, "start": start.isoformat(), "end": end.isoformat(),
+                "queries": {
+                    name: _get_json(f"{self.prometheus_url}/api/v1/query_range", {
+                        "query": expression, "start": start.timestamp(),
+                        "end": end.timestamp(), "step": "10s",
+                    }, timeout=self.timeout) for name, expression in expressions.items()
+                },
+            }
+        if kind == "logs":
+            selector = ('{compose_service="' + service + '"}' if service else
+                        '{compose_service=~".+"}')
+            return {
+                "schema_version": 1, "start": start.isoformat(), "end": end.isoformat(),
+                "query": selector, "result": _get_json(
+                    f"{self.loki_url}/loki/api/v1/query_range", {
+                        "query": selector, "start": int(start.timestamp() * 1_000_000_000),
+                        "end": int(end.timestamp() * 1_000_000_000),
+                        "limit": min(self.limit, 500), "direction": "forward",
+                    }, timeout=self.timeout),
+            }
+        if kind == "alerts":
+            return {"schema_version": 1, "captured_at": datetime.now(UTC).isoformat(),
+                    "alerts": _get_json(f"{self.prometheus_url}/api/v1/alerts", timeout=self.timeout)}
+        if kind == "traces":
+            services = (service,) if service else self.trace_services
+            return {
+                "schema_version": 1, "start": start.isoformat(), "end": end.isoformat(),
+                "services": {name: _get_json(f"{self.jaeger_url}/api/traces", {
+                    "service": name, "start": int(start.timestamp() * 1_000_000),
+                    "end": int(end.timestamp() * 1_000_000), "limit": self.trace_limit,
+                }, timeout=min(self.timeout, 8)) for name in services}, "errors": {},
+            }
+        raise ObserverError(f"Unknown telemetry kind: {kind}")
 
     def capture_recent(
         self, destination: Path, duration: timedelta = timedelta(minutes=1)

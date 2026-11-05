@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from dataclasses import dataclass
 from typing import Any, Protocol
 from urllib.request import Request, urlopen
 
@@ -16,12 +17,21 @@ class ProviderError(RuntimeError):
     """Raised when a configured LLM provider cannot produce a response."""
 
 
+@dataclass(frozen=True)
+class ProviderOutput:
+    text: str
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    model: str | None = None
+    usage_source: str = "unavailable"
+
+
 class LlmProvider(Protocol):
     name: str
 
     async def complete(
         self, messages: list[dict[str, str]], actions: dict[str, str]
-    ) -> str: ...
+    ) -> str | ProviderOutput: ...
 
 
 class FakeProvider:
@@ -44,7 +54,7 @@ class FakeProvider:
         if "system_level" in submit:
             return (
                 'submit({"system_level": "resource", "fault_type": "cpu_hog", '
-                '"faulty_components": ["unknown"]})'
+                '"faulty_components": ["checkoutservice"]})'
             )
         if "action_type" in submit:
             return (
@@ -75,10 +85,10 @@ class OpenAICompatibleProvider:
         self.model = config.aiops_llm_model
         self.timeout = config.aiops_llm_timeout_seconds
 
-    async def complete(self, messages: list[dict[str, str]], actions: dict[str, str]) -> str:
+    async def complete(self, messages: list[dict[str, str]], actions: dict[str, str]) -> ProviderOutput:
         return await asyncio.to_thread(self._complete_sync, messages, actions)
 
-    def _complete_sync(self, messages: list[dict[str, str]], actions: dict[str, str]) -> str:
+    def _complete_sync(self, messages: list[dict[str, str]], actions: dict[str, str]) -> ProviderOutput:
         payload = {
             "model": self.model,
             "messages": sanitize_messages(messages),
@@ -99,7 +109,17 @@ class OpenAICompatibleProvider:
         except (OSError, TimeoutError, json.JSONDecodeError) as error:
             raise ProviderError(f"LLM provider request failed: {error}") from error
         try:
-            return str(body["choices"][0]["message"]["content"])
+            usage = body.get("usage") or {}
+            input_tokens = usage.get("prompt_tokens")
+            output_tokens = usage.get("completion_tokens")
+            actual = isinstance(input_tokens, int) and isinstance(output_tokens, int)
+            return ProviderOutput(
+                str(body["choices"][0]["message"]["content"]),
+                input_tokens if actual else None,
+                output_tokens if actual else None,
+                str(body.get("model", self.model)),
+                "actual" if actual else "unavailable",
+            )
         except (KeyError, IndexError, TypeError) as error:
             raise ProviderError("LLM response did not contain choices[0].message.content") from error
 
