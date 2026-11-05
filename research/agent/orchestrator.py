@@ -120,6 +120,7 @@ class AgentOrchestrator:
         rca_trace: list[dict[str, str]] | None = None,
         mitigation_actions: ComposeMitigationActions | None = None,
         prior_context: str | None = None,
+        prior_evidence: dict[str, dict[str, Any]] | None = None,
     ) -> tuple[ProblemContext, Any, AgentSession]:
         if self.agent is None:
             raise AgentRuntimeError("Register an agent before initializing a problem")
@@ -134,6 +135,7 @@ class AgentOrchestrator:
                 rca_solution=rca_solution,
                 rca_trace=rca_trace,
                 mitigation_actions=mitigation_actions,
+                prior_evidence=prior_evidence,
             )
         except (ProblemError, OSError) as error:
             raise AgentRuntimeError(str(error)) from error

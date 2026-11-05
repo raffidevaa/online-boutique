@@ -28,6 +28,7 @@ class ComposeEvidence:
         start: datetime,
         end: datetime | None,
         run_dir: Path | None = None,
+        prior_evidence: dict[str, dict[str, Any]] | None = None,
     ) -> None:
         self.config = config
         self.start = start
@@ -37,6 +38,7 @@ class ComposeEvidence:
         self._targetable_services_cache: set[str] | None = None
         self._targetable_service_ports_cache: dict[str, set[str]] | None = None
         self.evidence_store: dict[str, dict[str, Any]] = {}
+        self.prior_evidence = dict(prior_evidence or {})
         self.notes: list[dict[str, Any]] = []
 
     def _targetable_services(self) -> set[str]:
@@ -205,11 +207,11 @@ class ComposeEvidence:
         return errors, longest
 
     def get_evidence_detail(self, evidence_id: str, limit: int = 5) -> str:
-        if evidence_id not in self.evidence_store:
+        if not self.has_evidence(evidence_id):
             raise EnvironmentError("evidence_id is not available in this session")
         if type(limit) is not int or not 1 <= limit <= 20:
             raise EnvironmentError("limit must be an integer from 1 to 20")
-        entry = self.evidence_store[evidence_id]
+        entry = self.evidence_store.get(evidence_id) or self.prior_evidence[evidence_id]
         payload = entry["payload"]
         source = entry["source"]
         service = entry["service"]
@@ -252,9 +254,13 @@ class ComposeEvidence:
         shown = items[:limit]
         return "evidence_detail: " + json.dumps({
             "evidence_id": evidence_id, "source": source,
+            "observed_at": entry["end"],
             "total_item_count": len(items), "displayed_item_count": len(shown),
             "limited": len(shown) < len(items), "items": shown,
         }, sort_keys=True)
+
+    def has_evidence(self, evidence_id: str) -> bool:
+        return evidence_id in self.evidence_store or evidence_id in self.prior_evidence
 
     @staticmethod
     def _metric_values(payload: dict[str, Any], query_name: str) -> dict[str, list[float]]:
@@ -770,6 +776,7 @@ class ComposeEvidence:
                 anomalies[-1]["score"] + (1.5 * network_root_score), 6
             )
         anomalies.sort(key=lambda item: (-item["score"], item["service"]))
+        full_output = {"network_evidence": network_evidence[:12], "top_anomalies": anomalies[:8]}
         output = {
             "schema_version": 1,
             "window": window,
@@ -779,11 +786,21 @@ class ComposeEvidence:
                 "baseline_cpu_samples": sum(len(values) for values in cpu_baseline.values()),
                 "incident_services": len(services),
             },
-            "network_evidence": network_evidence[:12],
-            "top_anomalies": anomalies[:8],
+            "network_evidence": [{key: edge[key] for key in (
+                "caller_service", "peer_service", "operation", "call_count",
+                "sample_quality", "latency_shift_ms", "error_delta",
+                "inferred_signature", "delay_score", "loss_score",
+            )} for edge in network_evidence[:12]],
+            "top_anomalies": [{"service": item["service"], "score": item["score"],
+                "signals": {key: item["signals"][key] for key in (
+                    "dominant_signal", "resource_signature", "cpu_delta",
+                    "cpu_incident_max", "memory_growth_mb", "memory_relative",
+                    "network_root_score", "trace_p95_latency_ms",
+                    "error_incident_count", "trace_error_incident_count",
+                )}} for item in anomalies[:8]],
         }
         summary = self._record_evidence(
-            "incident_summary", window, None, output, output, len(anomalies),
+            "incident_summary", window, None, full_output, output, len(anomalies),
             len(output["top_anomalies"]),
         )
         envelope = json.loads(summary)

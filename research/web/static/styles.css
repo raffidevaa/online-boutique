@@ -41,3 +41,4 @@ dialog{border:1px solid var(--line);box-shadow:0 22px 65px #15231f55;max-width:6
 .history-toolbar{flex-wrap:wrap}
 .history-toolbar select{background:var(--surface);border:1px solid var(--line);border-radius:2px;color:var(--ink);min-height:38px;padding:8px 10px}
 .history-toolbar label:not(.search-label){color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap}
+.token-total{color:var(--ink);font:700 13px ui-monospace,monospace;margin:8px 0 0}.session-count{white-space:normal;text-align:right}

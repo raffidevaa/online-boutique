@@ -94,7 +94,7 @@ class BaseTask:
             raise TaskError("supporting and contradicting evidence IDs must be lists")
         if not all(isinstance(item, str) for item in support + contradict):
             raise TaskError("evidence IDs must be strings")
-        if not all(item in self.evidence.evidence_store for item in support + contradict):
+        if not all(self.evidence.has_evidence(item) for item in support + contradict):
             raise TaskError("evidence IDs must be observations in this session")
         note = {
             "hypothesis_id": hypothesis_id, "candidate_service": candidate_service,

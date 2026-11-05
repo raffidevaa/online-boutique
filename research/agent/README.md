@@ -52,7 +52,7 @@ Optional environment variables (also accepted from the repository-root `.env`):
 | Variable | Default | Meaning |
 |---|---:|---|
 | `AIOPS_INCIDENT_MAX_STEPS` | 35 | Cumulative model calls across a full incident. |
-| `AIOPS_MAX_INPUT_TOKENS` | 60000 | Estimated or reported incident input-token ceiling. |
+| `AIOPS_MAX_INPUT_TOKENS` | 120000 | Estimated or reported incident input-token ceiling. |
 | `AIOPS_MAX_OUTPUT_TOKENS` | 12000 | Estimated or reported incident output-token ceiling. |
 | `AIOPS_FINAL_RESERVE_TOKENS` | 800 | Capacity reserved before another model call. |
 | `AIOPS_MAX_COST_USD` | unset | Optional cost ceiling; requires both model rates. |
@@ -68,8 +68,10 @@ Each session records `metrics`, structured `notes`, and, if no valid submission 
 made, a `partial_result`. Provider usage is tagged `actual` only when the endpoint
 reports both token counts; otherwise it is `estimated`. Cost stays null until
 both rates are configured. A partial result does not satisfy the evaluator's
-submission contract. `get_evidence_detail` accepts only evidence IDs produced
-in the current stage. `update_hypothesis` records agent-owned hypotheses and
+submission contract. `get_evidence_detail` accepts IDs from the current or
+earlier stages of the same live incident; detail includes the observation time.
+Incident summaries show key signals, with complete signals available in detail.
+`update_hypothesis` records agent-owned hypotheses and
 supporting or contradicting evidence IDs; it cannot access ground truth. Live
 handoff marks prior evidence as stale using its age, so the next stage can refresh
 the relevant signal.

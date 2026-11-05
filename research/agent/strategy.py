@@ -55,7 +55,7 @@ def validate_action(task: Any, name: str, args: list[Any], kwargs: dict[str, Any
             raise TaskError("recovery window is unavailable during a live incident")
         if name == "get_evidence_detail":
             evidence_id = normalized.get("evidence_id")
-            if not isinstance(evidence_id, str) or evidence_id not in task.evidence.evidence_store:
+            if not isinstance(evidence_id, str) or not task.evidence.has_evidence(evidence_id):
                 raise TaskError("evidence_id must identify an observation in this session")
             limit = normalized.get("limit", 5)
             if type(limit) is not int or not 1 <= limit <= 20:

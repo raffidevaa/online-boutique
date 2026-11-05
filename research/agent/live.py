@@ -388,6 +388,7 @@ class LiveIncidentController:
                         rca_solution=rca_solution if stage == "remediation" else None,
                         rca_trace=rca_trace if stage == "remediation" else None,
                         prior_context=prior_context,
+                        prior_evidence={evidence_id: entry for previous_task, _ in stage_records.values() for evidence_id, entry in {**previous_task.evidence.prior_evidence, **previous_task.evidence.evidence_store}.items()} if task_name == "full" else None,
                     )
                     session = current_session
                     await self.orchestrator.start_problem(

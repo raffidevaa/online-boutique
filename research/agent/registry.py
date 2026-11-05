@@ -105,6 +105,7 @@ class ComposeProblemRegistry:
         rca_solution: dict[str, Any] | None = None,
         rca_trace: list[dict[str, str]] | None = None,
         mitigation_actions: ComposeMitigationActions | None = None,
+        prior_evidence: dict[str, dict[str, Any]] | None = None,
     ) -> tuple[BaseTask, FaultScenario, dict[str, Any]]:
         definition = self.get_problem_definition(problem_id)
         scenario, task_name = definition.fault, definition.task
@@ -115,7 +116,7 @@ class ComposeProblemRegistry:
             except ValueError as error:
                 raise ProblemError("Replay run must be under research/experiments/runs") from error
             run_dir = resolved
-        evidence = ComposeEvidence(self.config, start, end, run_dir)
+        evidence = ComposeEvidence(self.config, start, end, run_dir, prior_evidence)
         # Replay needs the run directory for telemetry, but the agent must not receive
         # evaluator labels during its action loop.  The evaluator hands the labels to
         # ``finalize_session`` only after the loop has ended.

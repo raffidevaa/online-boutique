@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "803a114a2c44f6657e009d26a130bffe8e556ed7",
-  "generatedAt": "2026-11-01T17:16:47.251Z",
+  "gitCommitHash": "74bada0b6a1445a0c24760c1e3ab629edcf7fb11",
+  "generatedAt": "2026-11-05T05:35:08.668Z",
   "files": {
     ".ua/config.json": {
       "filePath": ".ua/config.json",
@@ -35,12 +35,12 @@
     },
     "agent/README.md": {
       "filePath": "agent/README.md",
-      "contentHash": "e163acea5c4b929d7b2041e8e15be818772baa82413c3a1217df5cb190dbdd19",
+      "contentHash": "60f92108dd7b201d31313b71807f530313713e4943ccac7e858b377e87241455",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 40,
+      "totalLines": 79,
       "hasStructuralAnalysis": false
     },
     "agent/__init__.py": {
@@ -79,7 +79,7 @@
     },
     "agent/actions.py": {
       "filePath": "agent/actions.py",
-      "contentHash": "e0e3f0752113c0ce409e6d06d0943eaf6d2baa27ebeb2e378af30692e9cbfdc7",
+      "contentHash": "9e65832ff81608aba1924c17cd528d9c9ad9728235563ad402abcd55599406b5",
       "functions": [],
       "classes": [
         {
@@ -116,7 +116,7 @@
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 37
+          "lineCount": 40
         }
       ],
       "imports": [
@@ -134,12 +134,12 @@
         "ActiveFaultRuntime",
         "ComposeMitigationActions"
       ],
-      "totalLines": 58,
+      "totalLines": 61,
       "hasStructuralAnalysis": true
     },
     "agent/environment.py": {
       "filePath": "agent/environment.py",
-      "contentHash": "a5c2d49d8c947d5db25e9cad08753d5a2571846e65075589e9fa43bbe6b70f8e",
+      "contentHash": "ae6f28f6f0ac7ef3d09dc465448b3c85880a59c90857cd9f571864ca5363f7b3",
       "functions": [],
       "classes": [
         {
@@ -157,8 +157,12 @@
             "get_targetable_services",
             "_targetable_service_ports",
             "_payload",
+            "_window_bounds",
             "_capture_window",
-            "_compact",
+            "_record_evidence",
+            "_signal_summary",
+            "_trace_relevance",
+            "get_evidence_detail",
             "_metric_values",
             "_log_streams",
             "_log_text",
@@ -178,7 +182,7 @@
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 665
+          "lineCount": 801
         }
       ],
       "imports": [
@@ -194,6 +198,12 @@
           "source": "json",
           "specifiers": [
             "json"
+          ]
+        },
+        {
+          "source": "hashlib",
+          "specifiers": [
+            "hashlib"
           ]
         },
         {
@@ -238,7 +248,7 @@
         "EnvironmentError",
         "ComposeEvidence"
       ],
-      "totalLines": 686,
+      "totalLines": 823,
       "hasStructuralAnalysis": true
     },
     "agent/evaluate.py": {
@@ -802,7 +812,7 @@
     },
     "agent/live.py": {
       "filePath": "agent/live.py",
-      "contentHash": "4c792dc9a93577b57114d9fc1dda0877dd45ac2f9e68353faf3476f176c1dbdf",
+      "contentHash": "dfb594a22355b2d0f08a91405b1bf6fe7e1e48b326a17ddd97ffa2275aa2f5f5",
       "functions": [
         {
           "name": "_capture",
@@ -829,11 +839,21 @@
         {
           "name": "_prior_stage_context",
           "params": [
-            "records"
+            "records",
+            "max_age_seconds"
           ],
           "returnType": "str | None",
           "exported": true,
-          "lineCount": 18
+          "lineCount": 30
+        },
+        {
+          "name": "_rca_handoff_trace",
+          "params": [
+            "session"
+          ],
+          "returnType": "list[dict[str, str]]",
+          "exported": true,
+          "lineCount": 6
         }
       ],
       "classes": [
@@ -845,6 +865,20 @@
           "lineCount": 2
         },
         {
+          "name": "ImageFaultRuntime",
+          "methods": [
+            "__init__",
+            "plan",
+            "check_images_available",
+            "start",
+            "stop",
+            "wait"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 75
+        },
+        {
           "name": "LiveIncidentController",
           "methods": [
             "__init__",
@@ -854,7 +888,7 @@
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 370
+          "lineCount": 384
         }
       ],
       "imports": [
@@ -868,6 +902,18 @@
           "source": "json",
           "specifiers": [
             "json"
+          ]
+        },
+        {
+          "source": "subprocess",
+          "specifiers": [
+            "subprocess"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
           ]
         },
         {
@@ -895,7 +941,11 @@
           "source": "research.generators",
           "specifiers": [
             "FaultScenario",
-            "PumbaInjector"
+            "PumbaInjector",
+            "FaultyImageInjector",
+            "run_semantic_probe",
+            "build_semantic_observation",
+            "validate_semantic"
           ]
         },
         {
@@ -940,6 +990,12 @@
           ]
         },
         {
+          "source": ".strategy",
+          "specifiers": [
+            "IncidentBudget"
+          ]
+        },
+        {
           "source": ".actions",
           "specifiers": [
             "ComposeMitigationActions"
@@ -958,17 +1014,19 @@
       ],
       "exports": [
         "LiveIncidentError",
+        "ImageFaultRuntime",
         "_capture",
         "_ground_truth",
         "_prior_stage_context",
+        "_rca_handoff_trace",
         "LiveIncidentController"
       ],
-      "totalLines": 448,
+      "totalLines": 563,
       "hasStructuralAnalysis": true
     },
     "agent/models.py": {
       "filePath": "agent/models.py",
-      "contentHash": "cb2961331c7cbf90e1262a6f83d15d184717acf62510cf544f524cd76e3c280c",
+      "contentHash": "00dafa85bcad9cb4ea89b6d8587b8ee503043c90480ea06e24c4b9a3d3999332",
       "functions": [],
       "classes": [
         {
@@ -1002,13 +1060,16 @@
             "submitted",
             "termination_reason",
             "invalid_action_count",
+            "metrics",
+            "notes",
+            "partial_result",
             "start_time",
             "end_time",
             "submitted_at",
             "submission_elapsed_seconds"
           ],
           "exported": true,
-          "lineCount": 59
+          "lineCount": 65
         },
         {
           "name": "ProblemContext",
@@ -1056,7 +1117,7 @@
         "AgentSession",
         "ProblemContext"
       ],
-      "totalLines": 88,
+      "totalLines": 94,
       "hasStructuralAnalysis": true
     },
     "agent/old/README.md": {
@@ -1071,7 +1132,7 @@
     },
     "agent/orchestrator.py": {
       "filePath": "agent/orchestrator.py",
-      "contentHash": "9570e4a3587180642d26b261a3aac2d4cf80ad5f8b4670439432e5cbe0be93ef",
+      "contentHash": "b107e600f81ee681cc453831c62e6d857952548a97f8714ed6c2b368843e1284",
       "functions": [
         {
           "name": "create_orchestrator",
@@ -1101,7 +1162,7 @@
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 35
+          "lineCount": 38
         },
         {
           "name": "AgentOrchestrator",
@@ -1111,11 +1172,13 @@
             "run_live_problem",
             "init_problem",
             "start_problem",
+            "_limit_reason",
+            "_compact_agent_context",
             "finalize_session"
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 228
+          "lineCount": 434
         }
       ],
       "imports": [
@@ -1124,6 +1187,12 @@
           "specifiers": [
             "UTC",
             "datetime"
+          ]
+        },
+        {
+          "source": "asyncio",
+          "specifiers": [
+            "asyncio"
           ]
         },
         {
@@ -1176,7 +1245,19 @@
           "source": ".providers",
           "specifiers": [
             "LlmProvider",
+            "ProviderOutput",
             "build_provider"
+          ]
+        },
+        {
+          "source": ".strategy",
+          "specifiers": [
+            "IncidentBudget",
+            "QueryCache",
+            "READ_ACTIONS",
+            "action_fingerprint",
+            "estimate_tokens",
+            "validate_action"
           ]
         },
         {
@@ -1200,7 +1281,7 @@
         "AgentOrchestrator",
         "create_orchestrator"
       ],
-      "totalLines": 295,
+      "totalLines": 507,
       "hasStructuralAnalysis": true
     },
     "agent/parser.py": {
@@ -1282,7 +1363,7 @@
     },
     "agent/providers.py": {
       "filePath": "agent/providers.py",
-      "contentHash": "db368bd31f45cf7849418f2ed307c59e7c969cd970c9a0b479a0f1504f36d5c4",
+      "contentHash": "413e544f38d5453d9a3b337ddcf02c0c0dcfbe6948e1bb0685289ab981e217fe",
       "functions": [
         {
           "name": "build_provider",
@@ -1301,6 +1382,19 @@
           "properties": [],
           "exported": true,
           "lineCount": 2
+        },
+        {
+          "name": "ProviderOutput",
+          "methods": [],
+          "properties": [
+            "text",
+            "input_tokens",
+            "output_tokens",
+            "model",
+            "usage_source"
+          ],
+          "exported": true,
+          "lineCount": 6
         },
         {
           "name": "LlmProvider",
@@ -1333,7 +1427,7 @@
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 40
+          "lineCount": 50
         }
       ],
       "imports": [
@@ -1347,6 +1441,12 @@
           "source": "json",
           "specifiers": [
             "json"
+          ]
+        },
+        {
+          "source": "dataclasses",
+          "specifiers": [
+            "dataclass"
           ]
         },
         {
@@ -1378,12 +1478,13 @@
       ],
       "exports": [
         "ProviderError",
+        "ProviderOutput",
         "LlmProvider",
         "FakeProvider",
         "OpenAICompatibleProvider",
         "build_provider"
       ],
-      "totalLines": 114,
+      "totalLines": 134,
       "hasStructuralAnalysis": true
     },
     "agent/registry.py": {
@@ -2079,7 +2180,7 @@
     },
     "agent/tasks.py": {
       "filePath": "agent/tasks.py",
-      "contentHash": "b52af33e38450c6cd5a56e5744689a2aa651f8357dc228b8aaba82c6ff420757",
+      "contentHash": "b88d243639330a8d11d4909e5baaa922a1abb6d8cb937ca87102793ea7c5dec3",
       "functions": [],
       "classes": [
         {
@@ -2110,6 +2211,8 @@
             "get_logs",
             "get_traces",
             "get_alerts",
+            "get_evidence_detail",
+            "update_hypothesis",
             "get_task_description",
             "get_instructions",
             "get_available_actions",
@@ -2118,7 +2221,7 @@
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 59
+          "lineCount": 108
         },
         {
           "name": "DetectionTask",
@@ -2189,7 +2292,7 @@
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 91
+          "lineCount": 92
         }
       ],
       "imports": [
@@ -2197,6 +2300,13 @@
           "source": "dataclasses",
           "specifiers": [
             "dataclass"
+          ]
+        },
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime"
           ]
         },
         {
@@ -2248,7 +2358,7 @@
         "MitigationTask",
         "RemediationTask"
       ],
-      "totalLines": 416,
+      "totalLines": 467,
       "hasStructuralAnalysis": true
     },
     "agent/tools/.gitkeep": {
@@ -2852,22 +2962,22 @@
     },
     "generators/faulty_images/patches/FI-CODE-PARAM-01.patch": {
       "filePath": "generators/faulty_images/patches/FI-CODE-PARAM-01.patch",
-      "contentHash": "cd22dba32bea688a00c25b50242d29f4f6a33a6c29c9ede1c2b83d8fdceca530",
+      "contentHash": "7a9092e442d92340c0adf7b4729bde246f3f85280adb2fc45e342887ce050701",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 6,
+      "totalLines": 8,
       "hasStructuralAnalysis": false
     },
     "generators/faulty_images/patches/FI-CODE-PARAM-02.patch": {
       "filePath": "generators/faulty_images/patches/FI-CODE-PARAM-02.patch",
-      "contentHash": "f4c8180e9181256ff07a67326e52aa08483003fc58f7c249b61cce771387fd59",
+      "contentHash": "9462de2507b3c1039166114b3dc87637fd3506ec0fdde78268b87fbd559631ab",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 6,
+      "totalLines": 8,
       "hasStructuralAnalysis": false
     },
     "generators/faulty_images/patches/FI-CODE-RETURN-01.patch": {
@@ -3018,7 +3128,7 @@
     },
     "generators/scenarios/code-level-03-incorrect-parameter-checkout.yaml": {
       "filePath": "generators/scenarios/code-level-03-incorrect-parameter-checkout.yaml",
-      "contentHash": "12053789ff68b86f9d74cec72ce6d237e3219b9704615c4abc7c49eec281b791",
+      "contentHash": "d6a724ca75e0665b1e1e38a3dfe3e449347b232b4285f86bd3a8e095ffd54635",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -3028,7 +3138,7 @@
     },
     "generators/scenarios/code-level-04-missing-parameter-checkout.yaml": {
       "filePath": "generators/scenarios/code-level-04-missing-parameter-checkout.yaml",
-      "contentHash": "2c55ae66292100f556a45b82093d7087a6cfd89dceaa969ba26f118b6681b949",
+      "contentHash": "82a3cefe5615967e157243fdfa6861f64ff174db0872f5c47b9883e16daa43ba",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -3148,7 +3258,7 @@
     },
     "generators/semantic.py": {
       "filePath": "generators/semantic.py",
-      "contentHash": "8163ff1f35fea2933814f23f30b49640f84778a5f1855552355f95af7ed49bba",
+      "contentHash": "794a06c6756c2d5649117b30ffb4a05e5db2fc27554741d7bcb21c1990d90b50",
       "functions": [
         {
           "name": "_mapping",
@@ -3185,7 +3295,7 @@
           ],
           "returnType": "dict[str, Any]",
           "exported": true,
-          "lineCount": 7
+          "lineCount": 11
         },
         {
           "name": "_missing_exception",
@@ -3203,7 +3313,7 @@
           ],
           "returnType": "dict[str, Any]",
           "exported": true,
-          "lineCount": 17
+          "lineCount": 20
         },
         {
           "name": "_missing_parameter",
@@ -3212,7 +3322,7 @@
           ],
           "returnType": "dict[str, Any]",
           "exported": true,
-          "lineCount": 17
+          "lineCount": 22
         },
         {
           "name": "_missing_function_call",
@@ -3221,7 +3331,7 @@
           ],
           "returnType": "dict[str, Any]",
           "exported": true,
-          "lineCount": 7
+          "lineCount": 9
         },
         {
           "name": "validate_semantic",
@@ -3264,6 +3374,13 @@
           ]
         },
         {
+          "source": "decimal",
+          "specifiers": [
+            "Decimal",
+            "InvalidOperation"
+          ]
+        },
+        {
           "source": "typing",
           "specifiers": [
             "Any",
@@ -3284,12 +3401,12 @@
         "_missing_function_call",
         "validate_semantic"
       ],
-      "totalLines": 148,
+      "totalLines": 163,
       "hasStructuralAnalysis": true
     },
     "generators/semantic_probe.py": {
       "filePath": "generators/semantic_probe.py",
-      "contentHash": "3c47e74e1bc176ae0b4f2eadf0af243433584620a221db4288794f6edc04180c",
+      "contentHash": "8d3e24c462d6bea20afd685782a78d02610204b30caa78f878f0135871fcc8e0",
       "functions": [
         {
           "name": "_price_value",
@@ -3384,7 +3501,7 @@
           ],
           "returnType": "ProbePhaseResult",
           "exported": true,
-          "lineCount": 67
+          "lineCount": 75
         },
         {
           "name": "run_semantic_probe",
@@ -3419,6 +3536,16 @@
           "lineCount": 7
         },
         {
+          "name": "_service_log_messages",
+          "params": [
+            "capture",
+            "service"
+          ],
+          "returnType": "list[str]",
+          "exported": true,
+          "lineCount": 18
+        },
+        {
           "name": "build_semantic_observation",
           "params": [
             "scenario",
@@ -3428,7 +3555,7 @@
           ],
           "returnType": "dict[str, Any]",
           "exported": true,
-          "lineCount": 74
+          "lineCount": 75
         }
       ],
       "classes": [
@@ -3582,9 +3709,10 @@
         "run_semantic_probe",
         "_telemetry_text",
         "_matches_telemetry",
+        "_service_log_messages",
         "build_semantic_observation"
       ],
-      "totalLines": 447,
+      "totalLines": 476,
       "hasStructuralAnalysis": true
     },
     "milestones/README.md": {
@@ -3953,7 +4081,7 @@
     },
     "observer/telemetry.py": {
       "filePath": "observer/telemetry.py",
-      "contentHash": "d8b5f93d1640ac4f601c85c9dcd5041c2a9f062669b2534ad5ddec6159527f58",
+      "contentHash": "0ed7a8e12861e28eafefca24bf1a8238711b61bdca1bf1b19161fb862e4b0957",
       "functions": [
         {
           "name": "_get_json",
@@ -3983,11 +4111,12 @@
             "check_ready",
             "_query_instant",
             "capture",
+            "capture_kind",
             "capture_recent"
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 149
+          "lineCount": 201
         }
       ],
       "imports": [
@@ -4003,6 +4132,12 @@
           "source": "json",
           "specifiers": [
             "json"
+          ]
+        },
+        {
+          "source": "re",
+          "specifiers": [
+            "re"
           ]
         },
         {
@@ -4041,7 +4176,7 @@
         "_get_json",
         "Observer"
       ],
-      "totalLines": 177,
+      "totalLines": 230,
       "hasStructuralAnalysis": true
     },
     "orchestrator/__init__.py": {
@@ -5791,7 +5926,7 @@
     },
     "tests/test_semantic_probe.py": {
       "filePath": "tests/test_semantic_probe.py",
-      "contentHash": "888b9ab60cf63a085aacb865533c42f2608734a8c9b2a0ae6bca7d697dfa33f1",
+      "contentHash": "ce312dc4a1a3538848eaf1892f3f263db9e97fb40887a7093696cd14ce7928df",
       "functions": [],
       "classes": [
         {
@@ -5842,12 +5977,13 @@
             "test_checkout_probe_collects_success_and_empty_cart",
             "test_checkout_probe_does_not_replay_checkout_transaction",
             "test_schema_v2_validator_uses_telemetry_evidence",
+            "test_parameter_probes_require_distinct_target_log_values",
             "test_observation_builder_records_panic_evidence",
             "test_auto_probe_failure_prevents_fault_injection"
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 164
+          "lineCount": 191
         }
       ],
       "imports": [
@@ -5920,22 +6056,23 @@
         "_CheckoutFailureSession",
         "SemanticProbeTests"
       ],
-      "totalLines": 285,
+      "totalLines": 312,
       "hasStructuralAnalysis": true
     },
     "tests/test_web.py": {
       "filePath": "tests/test_web.py",
-      "contentHash": "da953ff026d955c52749ba4bc04b6c2c1bbfa547b5c7b76a55a73a0ffbda4ee6",
+      "contentHash": "b8a3b8934a2b2c56c3a360c5f5dd0836960c4fd70d1027d958d5f28780340e31",
       "functions": [],
       "classes": [
         {
           "name": "WebDashboardTests",
           "methods": [
             "test_full_run_history_exposes_five_stage_sessions",
+            "test_history_duration_uses_run_lifecycle",
             "test_code_fault_history_uses_semantic_validation",
             "test_prepare_accepts_only_full_pipeline",
             "test_job_marks_injector_failure_as_failed",
-            "test_code_fault_job_uses_semantic_runner_and_records_experiment",
+            "test_code_fault_job_uses_full_pipeline_and_records_experiment",
             "test_current_mitigation_runs_keep_failed_status_out_of_success_summary",
             "test_gui_defaults_to_all_host_interfaces",
             "_config",
@@ -5944,7 +6081,7 @@
             "test_history_detail_shows_single_rca_and_remediation",
             "test_live_run_detail_retains_legacy_session_and_withholds_truth_until_done",
             "test_authentication_is_required_when_configured",
-            "test_prepare_requires_semantic_mode_for_code_level",
+            "test_prepare_requires_full_mode_for_code_level",
             "test_event_sanitization_removes_secrets_and_evaluator_labels",
             "test_prepared_job_accepts_only_one_valid_confirmation",
             "test_preflight_starts_stopped_loadgenerator_before_fault_confirmation",
@@ -5952,7 +6089,7 @@
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 345
+          "lineCount": 370
         }
       ],
       "imports": [
@@ -6022,7 +6159,7 @@
       "exports": [
         "WebDashboardTests"
       ],
-      "totalLines": 364,
+      "totalLines": 389,
       "hasStructuralAnalysis": true
     },
     "utils/__init__.py": {
@@ -6138,7 +6275,7 @@
     },
     "utils/config.py": {
       "filePath": "utils/config.py",
-      "contentHash": "e4442cd66fcb90cfb5d3b34701ba6ababbfb16cb741ca79a4e5549d6aadd8e8a",
+      "contentHash": "affe5a809a75d3bfe26322e5c5a72a67154bf81a4a5141d20a8f4fb77eb093c4",
       "functions": [
         {
           "name": "_load_dotenv",
@@ -6184,12 +6321,25 @@
             "aiops_llm_api_key",
             "aiops_llm_model",
             "aiops_llm_timeout_seconds",
+            "aiops_strategy",
+            "aiops_incident_max_steps",
+            "aiops_max_input_tokens",
+            "aiops_max_output_tokens",
+            "aiops_final_reserve_tokens",
+            "aiops_max_cost_usd",
+            "aiops_input_usd_per_million",
+            "aiops_output_usd_per_million",
+            "aiops_max_stage_seconds",
+            "aiops_tool_timeout_seconds",
+            "aiops_context_compact_tokens",
+            "aiops_live_cache_ttl_seconds",
+            "aiops_stagnant_limit",
             "gui_host",
             "gui_port",
             "gui_auth_token"
           ],
           "exported": true,
-          "lineCount": 84
+          "lineCount": 113
         }
       ],
       "imports": [
@@ -6216,17 +6366,17 @@
         "_load_dotenv",
         "ResearchConfig"
       ],
-      "totalLines": 124,
+      "totalLines": 153,
       "hasStructuralAnalysis": true
     },
     "web/README.md": {
       "filePath": "web/README.md",
-      "contentHash": "cfc2cac7e719bd088ba4a587584a63e53cfd765e8d4da1237d5fb16b69ef7942",
+      "contentHash": "edbb05cf1ea5377dfe6f9d132290565bbbde39df9f1e9fd34a55f5eb69f33360",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 62,
+      "totalLines": 64,
       "hasStructuralAnalysis": false
     },
     "web/__init__.py": {
@@ -6400,7 +6550,7 @@
     },
     "web/jobs.py": {
       "filePath": "web/jobs.py",
-      "contentHash": "defaa2b0c10c4b3d21c5674b8106877ea4b9b49684a845c3a73a2ded0831047b",
+      "contentHash": "435aeedca8e3365d71f4c1db486805eb0651b617e859d1e9e01a89d80f4986a5",
       "functions": [
         {
           "name": "_now",
@@ -6436,6 +6586,16 @@
           "returnType": "list[dict[str, str]]",
           "exported": true,
           "lineCount": 6
+        },
+        {
+          "name": "_run_duration_seconds",
+          "params": [
+            "run_path",
+            "metadata"
+          ],
+          "returnType": "float | None",
+          "exported": true,
+          "lineCount": 23
         }
       ],
       "classes": [
@@ -6495,7 +6655,7 @@
           ],
           "properties": [],
           "exported": true,
-          "lineCount": 392
+          "lineCount": 388
         }
       ],
       "imports": [
@@ -6603,12 +6763,6 @@
           ]
         },
         {
-          "source": "research.orchestrator.faults",
-          "specifiers": [
-            "run_faulty_image"
-          ]
-        },
-        {
           "source": "research.generators",
           "specifiers": [
             "PumbaInjector"
@@ -6633,15 +6787,16 @@
         "_json_safe",
         "_read_json",
         "_read_csv",
+        "_run_duration_seconds",
         "GuiJob",
         "JobManager"
       ],
-      "totalLines": 505,
+      "totalLines": 525,
       "hasStructuralAnalysis": true
     },
     "web/static/app.js": {
       "filePath": "web/static/app.js",
-      "contentHash": "e2aac46f35251c326a6f16af3be3324b12aeb9735a41b3869444666c88c35dad",
+      "contentHash": "b03aa583a82c1586115c1c3ab0fcd44addfafdd40eb7daa83d43c8eccc8b556c",
       "functions": [
         {
           "name": "$",
@@ -6918,7 +7073,7 @@
     },
     "web/static/index.html": {
       "filePath": "web/static/index.html",
-      "contentHash": "dcf623337b894438bcd87f861d81cf312d2074c773e564349a6a9de84849594b",
+      "contentHash": "dbfaf1c3e01a9decd9aa62f2c889c8b9eac66b5cf730f743ce3283c171596994",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -6935,6 +7090,351 @@
       "exports": [],
       "totalLines": 44,
       "hasStructuralAnalysis": false
+    },
+    "agent/strategy.py": {
+      "filePath": "agent/strategy.py",
+      "contentHash": "0e11ad32a9b3255f74c26136b1ed6f0162af0005e2680c1efa0bf9b60ad6b4a7",
+      "functions": [
+        {
+          "name": "estimate_tokens",
+          "params": [
+            "text"
+          ],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "validate_action",
+          "params": [
+            "task",
+            "name",
+            "args",
+            "kwargs"
+          ],
+          "returnType": "dict[str, Any]",
+          "exported": true,
+          "lineCount": 38
+        },
+        {
+          "name": "action_fingerprint",
+          "params": [
+            "name",
+            "arguments",
+            "run_identity"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "classes": [
+        {
+          "name": "IncidentBudget",
+          "methods": [],
+          "properties": [
+            "steps_used",
+            "input_tokens",
+            "output_tokens",
+            "cost_usd",
+            "cost_known"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "QueryCache",
+          "methods": [
+            "get",
+            "put"
+          ],
+          "properties": [
+            "entries"
+          ],
+          "exported": true,
+          "lineCount": 14
+        }
+      ],
+      "imports": [
+        {
+          "source": "hashlib",
+          "specifiers": [
+            "hashlib"
+          ]
+        },
+        {
+          "source": "inspect",
+          "specifiers": [
+            "inspect"
+          ]
+        },
+        {
+          "source": "json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "time",
+          "specifiers": [
+            "time"
+          ]
+        },
+        {
+          "source": "dataclasses",
+          "specifiers": [
+            "dataclass",
+            "field"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "Any"
+          ]
+        },
+        {
+          "source": ".tasks",
+          "specifiers": [
+            "TaskError"
+          ]
+        }
+      ],
+      "exports": [
+        "estimate_tokens",
+        "validate_action",
+        "action_fingerprint",
+        "IncidentBudget",
+        "QueryCache"
+      ],
+      "totalLines": 98,
+      "hasStructuralAnalysis": true
+    },
+    "docs/ACTION_CONTROL_AND_CONTEXT_MANAGEMENT_PROMPT.md": {
+      "filePath": "docs/ACTION_CONTROL_AND_CONTEXT_MANAGEMENT_PROMPT.md",
+      "contentHash": "462c3482e2c96670d602e013470cca33f765ce1cb534312d9a17a853489d4b1a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 59,
+      "hasStructuralAnalysis": false
+    },
+    "docs/ACTION_CONTROL_CONTEXT_IMPLEMENTATION_REPORT.md": {
+      "filePath": "docs/ACTION_CONTROL_CONTEXT_IMPLEMENTATION_REPORT.md",
+      "contentHash": "b1c859cc64c090d75a28b42a4fc95c912633dc10526a822c7cbca31743ee79da",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 105,
+      "hasStructuralAnalysis": false
+    },
+    "tests/test_agent_strategy.py": {
+      "filePath": "tests/test_agent_strategy.py",
+      "contentHash": "1b6d7627a0f2c846991c7e12aa0b88c3016336f15fdb0090fe10fdcf0d319fca",
+      "functions": [],
+      "classes": [
+        {
+          "name": "StrategyTests",
+          "methods": [
+            "_replay",
+            "test_fingerprint_normalizes_arguments_and_live_cache_expires",
+            "test_combined_budget_and_partial_result",
+            "test_input_budget_stops_before_call_and_cost_needs_rates",
+            "test_validation_rejects_unknown_service_window_and_arguments",
+            "test_deduplication_and_stagnation",
+            "test_evidence_id_detail_and_ground_truth_isolation",
+            "test_hypothesis_update_requires_session_evidence",
+            "test_compaction_retains_notes_and_evidence_ids",
+            "test_automatic_compaction_keeps_audit_history",
+            "test_handoff_marks_old_live_evidence_stale",
+            "test_live_detail_fetches_one_signal_without_full_capture",
+            "test_replay_detail_respects_service_filter",
+            "test_sparse_single_span_does_not_dominate_network_ranking"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 228
+        }
+      ],
+      "imports": [
+        {
+          "source": "asyncio",
+          "specifiers": [
+            "asyncio"
+          ]
+        },
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime",
+            "timedelta"
+          ]
+        },
+        {
+          "source": "json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "tempfile",
+          "specifiers": [
+            "tempfile"
+          ]
+        },
+        {
+          "source": "unittest",
+          "specifiers": [
+            "unittest"
+          ]
+        },
+        {
+          "source": "unittest.mock",
+          "specifiers": [
+            "patch"
+          ]
+        },
+        {
+          "source": "research.agent.environment",
+          "specifiers": [
+            "ComposeEvidence",
+            "EnvironmentError"
+          ]
+        },
+        {
+          "source": "research.agent.orchestrator",
+          "specifiers": [
+            "AgentOrchestrator",
+            "LlmAgent"
+          ]
+        },
+        {
+          "source": "research.agent.live",
+          "specifiers": [
+            "_prior_stage_context"
+          ]
+        },
+        {
+          "source": "research.agent.models",
+          "specifiers": [
+            "AgentSession"
+          ]
+        },
+        {
+          "source": "research.agent.providers",
+          "specifiers": [
+            "FakeProvider"
+          ]
+        },
+        {
+          "source": "research.agent.strategy",
+          "specifiers": [
+            "QueryCache",
+            "action_fingerprint",
+            "validate_action"
+          ]
+        },
+        {
+          "source": "research.utils",
+          "specifiers": [
+            "ResearchConfig"
+          ]
+        }
+      ],
+      "exports": [
+        "StrategyTests"
+      ],
+      "totalLines": 258,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_image_live.py": {
+      "filePath": "tests/test_image_live.py",
+      "contentHash": "2eceeb00881eeb46e3ccb9625f53b89efd8d7d6612388c47ecb22d9397c098a1",
+      "functions": [],
+      "classes": [
+        {
+          "name": "ImageLiveTests",
+          "methods": [
+            "test_start_validates_fault_and_cleanup_restores_baseline",
+            "test_failed_probe_restores_baseline"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 48
+        }
+      ],
+      "imports": [
+        {
+          "source": "datetime",
+          "specifiers": [
+            "UTC",
+            "datetime"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "subprocess",
+          "specifiers": [
+            "subprocess"
+          ]
+        },
+        {
+          "source": "tempfile",
+          "specifiers": [
+            "tempfile"
+          ]
+        },
+        {
+          "source": "unittest",
+          "specifiers": [
+            "unittest"
+          ]
+        },
+        {
+          "source": "types",
+          "specifiers": [
+            "SimpleNamespace"
+          ]
+        },
+        {
+          "source": "unittest.mock",
+          "specifiers": [
+            "Mock",
+            "patch"
+          ]
+        },
+        {
+          "source": "research.agent.live",
+          "specifiers": [
+            "ImageFaultRuntime"
+          ]
+        },
+        {
+          "source": "research.generators",
+          "specifiers": [
+            "load_scenario"
+          ]
+        }
+      ],
+      "exports": [
+        "ImageLiveTests"
+      ],
+      "totalLines": 63,
+      "hasStructuralAnalysis": true
     }
   }
 }

@@ -77,7 +77,7 @@ class ResearchConfig:
     aiops_llm_timeout_seconds: float = 60.0
     aiops_strategy: str = "enabled"
     aiops_incident_max_steps: int = 35
-    aiops_max_input_tokens: int = 60000
+    aiops_max_input_tokens: int = 120000
     aiops_max_output_tokens: int = 12000
     aiops_final_reserve_tokens: int = 800
     aiops_max_cost_usd: float | None = None
@@ -132,7 +132,7 @@ class ResearchConfig:
             ),
             aiops_strategy=env("AIOPS_STRATEGY", cls.aiops_strategy),
             aiops_incident_max_steps=int(env("AIOPS_INCIDENT_MAX_STEPS", "35")),
-            aiops_max_input_tokens=int(env("AIOPS_MAX_INPUT_TOKENS", "60000")),
+            aiops_max_input_tokens=int(env("AIOPS_MAX_INPUT_TOKENS", "120000")),
             aiops_max_output_tokens=int(env("AIOPS_MAX_OUTPUT_TOKENS", "12000")),
             aiops_final_reserve_tokens=int(env("AIOPS_FINAL_RESERVE_TOKENS", "800")),
             aiops_max_cost_usd=(float(env("AIOPS_MAX_COST_USD", ""))
